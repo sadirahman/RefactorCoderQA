@@ -1,0 +1,4179 @@
+instruction,input,output,Categories
+do clock_monotonic and clock_monotonic_coarse have the same base,"The man page for clock_gettime() describes CLOCK_MONOTONIC_COARSE as:
+
+A  faster but less precise version of CLOCK_MONOTONIC.  Use when you need very fast, but
+                not fine-grained timestamps.
+
+What does it mean for one to be a ""version of"" the other?  
+Can I validly compare one to the other, assuming I truncate a CLOCK_MONOTONIC value to the same precision as the coarse one?
+","The short answer is YES (at least for Linux!), you can compare them, compute delays, etc...
+The precision would be that of the less precise, most probably COARSE one.
+See this short program:
+#include <time.h>
+#include <stdio.h>
+
+int main()
+{
+    int ret;
+    struct  timespec res;
+
+    ret = clock_getres(CLOCK_MONOTONIC, &res);
+    if (0 != ret)
+        return ret;
+    printf(""CLOCK_MONOTONIC resolution is: %ld sec, %ld nsec\n"", (long)res.tv_sec, (long)res.tv_nsec);
+
+    ret = clock_getres(CLOCK_MONOTONIC_COARSE, &res);
+    if (0 != ret)
+        return ret;
+    printf(""CLOCK_MONOTONIC_COARSE resolution is: %ld sec, %ld nsec\n"", (long)res.tv_sec, (long)res.tv_nsec);
+
+    return 0;
+}
+
+It returns (Ubuntu 20.04 - 64bits - kernel 5.4)
+CLOCK_MONOTONIC resolution is: 0 sec, 1 nsec
+CLOCK_MONOTONIC_COARSE resolution is: 0 sec, 4000000 nsec
+
+So MONOTONIC has nanosecond precision, and COARSE has 4 milliseconds precision.
+Unlike above comment, I would on the contrary recommend to use the COARSE version when the timings you need allow.
+Calls to the clock are so frequent in user programs that they have a place in vDSO
+When you use COARSE versions, you have exactly zero system call, and it is as fast as your machine can run a few instructions. Thanks to vDSO your program fully stays in ""userland"" during the call with COARSE.
+With other types of clocks, you will have some system calls, and potential access to hardware. So at least a switch to ""kernel"" and back to ""userland"".
+This of course has zero importance if your program just needs a dozen of calls, but it can be a huge time saver if, on the contrary, the program relies heavily on the clock. That is why, vDSO is there in the first place: performance!
+
+Define first what is the accuracy you need for your timings. Is
+second enough, do you need milli second, micro, etc...
+Have in mind, unless you are tinkering with RT systems, that time is a
+relative value! Imagine you called clock_gettime, and immediately
+after returning your thread gets interrupted for any kernel business:
+what is the accuracy you get? That is exactly the famous question
+that defeated HAL in 2001: A space Odyssey: ""what time is it?"".
+From that you can derive what is the type of clock you need.
+You can mix MONOTONIC and the COARSE version of it and still compute delays or compare (that was the original question). But of course the precision is that of the less precise.
+The monotonics are best suited to do time delays and do comparisons since they don't depend on the real time (as your watch displays). They don't change when the user changes the actual time.
+On the contrary, if you need to display at what time (meaningful for the user) an event occurred, don't use monotonic!
+
+",c
+multiple image operations in a single process with gm4java,"This question is about using the gm4java library to interact with Graphics Magick (in scala).
+I've been testing the PooledGMService as it is demonstrated here with scala, and it's working well.
+However, I noticed that it does not perform similarly to batch mode within the command line interface for gm (gm batch batchfile.gm). When I run a gm batch file from the command line with any number of images, it launches 1 gm process. However, if I:
+val config = new GMConnectionPoolConfig()
+val service = new PooledGMService(config)
+
+and then share the instance of service across 4 threads, where I perform some operation on one image per thread like:
+service.execute(
+    ""convert"",
+    srcPath.toString(),
+    ""-resize"", percent + ""%"",
+    outPath.toString()
+)
+
+I see that 4 separate gm processes are created.
+I believe this has performance impacts (a test with 100 images, with the code mentioned above against the gm cli with a batch file, takes the same time, but my scala code uses 4x as much CPU).
+My question is: how do I use gm4java so that a single gm process is working on several images (or at least several kinds of conversions for the same image), just like the cli batch mode? I've tried a few attempts (some desperately silly) with no luck here.
+My exact scala code, can be found here if you are curious.
+update 05/27/14
+With the guidance of a comment by gm4java's author I realized that I was benchmarking two different gm commands. The updated benchmarking results are:
+100 x 30MB images (3.09GB tot)
+on i7 quadcore (8 logical cpu's w/ hyper-threading)
+
+Criteria            Time
+gm cli batchfile    106s
+my code 1 thread    112s
+my code 4 threads   40s
+my code 6 threads   31s
+my code 7 threads   31s
+my code 8 threads   28s
+
+Upon closer inspection, I also saw that while my code ran, the same gm processes with the same process ids were kept up the whole time. This alleviated my worries that I was losing out on performance due to some overhead related to starting and terminating gm threads.
+Rephrasing
+I guess the heart of my question is what to do to make gm4java as fast as possible? The tip about matching gm the threadcount with the machine's execution engine count is useful. Is there anything else that comes to mind?
+My particular use case is resizing input images (30MB is average, 50-60MB occasionally, and 100-500MB very rarely) to a few set sizes (with thumbnails being the most important and highest priority). Deployment will probably be on amazon ec2 with 7 or 14 ""compute units""
+","The design of PooledGMService is to make max use of your computer power by starting multiple instances of GM processes to process your image manipulation request in a highly concurrent manner. 100 image is a too small sample size to test performance. If your goal is to make best use of your multi-CPU server to convert images, you need to test with large amount of samples (at least few thousands) and tweak the configuration to find the best number of concurrent GM processes to use. See documentation of GMConnectionPoolConfig for all the configuration options.
+If you have only 8 CPUs, don't start more than 7 GM processes. If you are testing on a 2-CPU laptop, don't run more than 2 GM processes. In the example, you accepted all the default configuration setting, which will start maximal 8 GM processes upon demand. But that won't be the right configuration to just process 100 images on a merely 2 CPU laptop. 
+If all you want is to mimic the command line batch mode. Than the SimpleGMService is your best friend. Look at the usage pattern here.
+The right solution is very much depends on your real use case. If you can tell us more about what exactly you are trying to achieve, your hardware environment and etc, we can be better equipped to help you.
+",java
+how should i configure a pathfinding algororithim for my new level generation program,"my problem is that I have a 2D array like this:
+    [[""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+     [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+
+the player starts in the to right (represented as ""X"") and the goal is to get to the door (""["") . I've already made the game and player movement, but I'm trying to make a level generator so that I don't have to manually make levels, Ive already made the level gen, I just need an algorithm to check whether or not the level is possible to play, (sometimes the door isn't reachable)
+i tried to make my own (quite janky) pathfinding algorithm and it really just didn't work.
+How do I go about making such a function, to check the levels for playability?
+code for the game below:
+import sys
+import tty
+import termios
+import os
+import random
+#instalize base variables for the game
+levelnum = 1
+op = 1
+atk = 1
+hp = 20
+ehp = 5
+XX = 0
+XY = 0
+keytf = False
+level = [[""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""[""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""[""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+#key getting function
+def get_key():  # get the key pressed
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+#print level function
+def printlevel():  # Print the current level
+    level[XY][XX] = ""X""
+    print(""\033[H"", end="""")  # Clear the terminal
+    for i in range(10):
+        print("" "".join(level[i]))
+    print(""Stats:"")
+    print(""HP: "" + str(hp))
+    print(""ATK: "" + str(atk))
+    print(""Enemy HP: "" + str(ehp))
+#level storage
+def newlevel(levelnum):
+    global level
+    if levelnum == 1:
+        level = [[""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+    elif levelnum == 2:
+        level = [[""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""#"", ""e"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+    elif levelnum == 3:
+        level = [[""#"", ""|"", ""#"", ""e"", ""#"", ""|"", ""#"", ""e"", ""#"", ""#""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""H"", ""|"", ""H"", ""|"", ""H"", ""|"", ""H"", ""|"", ""#"", ""[""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""[""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""|"", ""#"", ""#""],
+                 [""#"", ""e"", ""#"", ""|"", ""#"", ""e"", ""#"", ""|"", ""#"", ""#""]]
+    elif levelnum == 4:
+        level = [[""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#""],
+                 [""#"", ""#"", ""#"", ""#"", ""#"", ""D"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""|"", ""|"", ""|"", ""|"", ""|"", ""#"", ""#"", ""#"", ""[""],
+                 [""#"", ""#"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""|"", ""|"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""|"", ""K"", ""#"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""],
+                 [""|"", ""|"", ""|"", ""|"", ""|"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+#check your next move
+def movechecker(move, op):
+    global XY, XX, levelnum, ehp, atk, hp, keytf
+    level[XY][XX] = ""#""
+    
+    if move == ""["":
+        XX = 0
+        XY = 0
+        levelnum += 1
+        newlevel(levelnum)
+    elif move == ""e"" and ehp >= 1:
+        ehp -= atk
+        hp -= 1
+    elif move == ""H"":
+        hp += 10
+        moveit(op)
+    elif move == ""K"":
+        keytf = True
+        moveit(op)
+    elif move == ""D"" and keytf == True:
+        moveit(op)
+    elif ehp < 1:
+        moveit(op)
+        ehp = 5
+    else:
+        moveit(op)
+
+    printlevel()
+#move the player   
+def moveit(op):
+    global XY, XX
+    
+    if op == 1:  # Move right
+        XX += 1
+    elif op == 2:  # Move left
+        XX -= 1
+    elif op == 3:  # Move up
+        XY -= 1
+    elif op == 4:  # Move down
+        XY += 1
+    level[XY][XX] = ""X""
+    printlevel()
+
+printlevel()
+#main game loop
+while True:  # Main game loop
+    key = get_key()
+    if key == ""d"" and XX < 9 and level[XY][XX+1] != ""|"":
+        move = level[XY][XX+1]
+        op = 1
+        movechecker(move, op)
+    elif key == ""a"" and XX > 0 and level[XY][XX-1] != ""|"":
+        move = level[XY][XX-1]
+        op = 2
+        movechecker(move, op)
+    elif key == ""w"" and XY > 0 and level[XY-1][XX] != ""|"":
+        move = level[XY-1][XX]
+        op = 3
+        movechecker(move, op)
+    elif key == ""s"" and XY < 9 and level[XY+1][XX] != ""|"":
+        move = level[XY+1][XX]
+        op = 4
+        movechecker(move, op)
+
+level gen:
+    import random
+
+level = [[""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""],
+         [""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#"", ""#""]]
+def getwall():
+    if random.randint(1, 100) < 35:
+        return ""|""
+    return ""#""
+def genlevel():
+    for i in range (10):
+        for j in range (10):
+            level [i][j] = getwall()
+    level [0][0] = "" ""
+    level [9][9] = ""[""
+
+","Your approach is to generate a random grid, and then verify whether it is one where you can reach the exit from the entry point. I suppose if this is not possible, you will generate another random grid, and continue like that until you have found a valid one.
+I would suggest to approach this differently. You can enhance the generation part to always generate a grid that has a solution. I would also suggest to avoid cycles, which also means you'd avoid trivial ""spaces"" that have no walls, like this:
+# #
+# #
+
+You could use one of the algorithms suggested on Wikipedia - Maze generation algorithm, such as the depth-first traversal, using an explicit stack:
+from random import choice, randrange
+
+WALL = ""|""
+FREE = "" ""  # A temporary value. Will not occur in a fully generated level
+REACHABLE = ""#""
+ENTRY = ""[""  # The single cell where the player starts
+EXIT = ""]""   # The target cell that the player should reach
+
+def gen_level(size):
+    size |= 1 # ensure it is odd
+    # start with all cells surrounded by walls
+    level = [
+        [
+            (WALL, FREE)[(x & y) % 2]
+            for x in range(size)
+        ]
+        for y in range(size)
+    ]
+    stack = [(1, 1)]
+    level[1][1] = REACHABLE
+    while stack:
+        x1, y1 = stack[-1]
+        try:
+            x2, y2 = choice([
+                (x2, y2)
+                for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2))
+                for x2, y2 in ((x1 + dx, y1 + dy), )
+                if 0 <= x2 < size and 0 <= y2 < size and level[y2][x2] == FREE
+            ])
+            level[y2][x2] = level[(y1+y2)//2][(x1+x2)//2] = REACHABLE
+            stack.append((x2, y2))
+        except IndexError:
+            stack.pop()
+            
+    level[1 + randrange(size//2) * 2][0] = ENTRY
+    level[1 + randrange(size//2) * 2][-1] = EXIT
+    return level
+
+Here is how you would call the above function:
+level = gen_level(20)
+for line in level:
+    print(*line)
+
+And here is one possible output that this produces:
+| | | | | | | | | | | | | | | | | | | | |
+| # # # # # # # | # # # # # # # # # | # |
+| | | | | | | # | | | # | | | | | # | # |
+| # | # # # | # # # | # # # | # # # | # |
+| # | # | # | | | # | | | # | # | | | # |
+| # # # | # # # | # # # | # | # # # | # |
+| # | | | # | | | | | # | # | | | # | # |
+| # # # | # # # # # # # | # # # | # # # ]
+| | | # | | | | | | | | | # | # | | | # |
+[ # | # # # # # | # # # # # | # # # | # |
+| # | | | | | # | # | | | | | | | # | # |
+| # # # # # | # | # # # # # # # | # | # |
+| # | | | # | # | | | | | | | # | # | | |
+| # # # | # # # | # # # # # | # | # # # |
+| | | # | | | | | # | | | # | | | | | # |
+| # | # | # # # | # # # | # # # # # # # |
+| # | # | # | # | | | # | | | | | | | # |
+| # | # # # | # # # | # # # | # | # # # |
+| # | | | | | | | # | | | # | # | # | | |
+| # # # # # # # # # # # # # | # # # # # |
+| | | | | | | | | | | | | | | | | | | | |
+
+Note that the actual height/width is odd (not 20, but 21): this is a consequence of the choice to have all (x, y) reachable that have odd x and odd y.
+Unrelated, but the output is a bit more ""readable"" when you use block-characters for walls, and a very light character (like a dot) for the reachable cells, like using:
+WALL = ""█""
+REACHABLE = ""·""
+
+...and then format the output as follows:
+for line in level:
+    print("" "".join(line).replace(WALL + "" "" + WALL, WALL * 3)
+                        .replace(WALL + "" "" + WALL, WALL * 3))
+
+Then you get an output like this:
+█████████████████████████████████████████
+█ · · · █ · · · · · · · · · · · · · █ · █
+█████ · █████████ · █████████ · █ · █ · █
+█ · █ · █ · · · █ · █ · · · █ · █ · · · █
+█ · █ · █ · █ · █ · █████ · █ · █████████
+█ · █ · · · █ · █ · · · · · █ · █ · · · █
+█ · █████████ · █████████ · █ · █ · █ · █
+[ · · · · · █ · █ · · · █ · █ · · · █ · █
+█ · █████████ · █ · █ · █████████████ · █
+█ · · · · · █ · · · █ · █ · · · · · · · █
+█ · █████ · █████████ · █ · █████████████
+█ · █ · · · █ · · · · · █ · █ · · · · · █
+█████ · █████ · █████████ · █ · █████ · █
+█ · · · █ · · · █ · · · · · █ · █ · █ · █
+█ · █████ · █████ · █████████ · █ · █ · █
+█ · █ · · · █ · · · · · · · · · · · █ · █
+█ · █ · █████ · █████████████████ · █ · █
+█ · █ · █ · · · · · · · █ · · · █ · █ · █
+█ · █ · █████████████████ · █ · █████ · █
+█ · · · · · · · · · · · · · █ · · · · · ]
+█████████████████████████████████████████
+
+",python
+warning no mapping found for http request with uri orgspringframeworkwebservletpagenotfound nohandlerfound,"I am learning Spring MVC and I am blocked since a few hours in this problem, that should have an obvious resolution:
+
+I am defining in web.xml the DispatcherServlet springSoccer and configuring it in springSoccer-servlet.xml under WEB-INF directory.
+In springSoccer-servlet.xml I am configuring the ViewResolver setting up the component scan pointing to the package of my controller.
+
+I am deploying in Tomcat 8.0 and when I point my browser to http://localhost:8080/SoccerSpringMaven3/springSoccer/users/ I am getting the error:
+Nov 19, 2015 9:07:50 PM org.springframework.web.servlet.PageNotFound noHandlerFound
+WARNING: No mapping found for HTTP request with URI [/SoccerSpringMaven3/springSoccer/users] in DispatcherServlet with name 'springSoccer'
+
+It's just a problem of not finding my RequestMapping. Find below the configuration:
+web.xml
+<!DOCTYPE web-app PUBLIC
+ ""-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN""
+ ""http://java.sun.com/dtd/web-app_2_3.dtd"" >
+
+<web-app>
+    <display-name>Archetype Created Web Application</display-name>
+
+
+    <!-- Source project: sip05, branch: 01 (Maven Project) -->
+    <servlet>
+        <servlet-name>springSoccer</servlet-name>
+        <servlet-class>
+            org.springframework.web.servlet.DispatcherServlet
+        </servlet-class>
+
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+
+    <servlet-mapping>
+        <servlet-name>springSoccer</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+
+
+</web-app>
+
+springSoccer-servlet.xml
+<beans xmlns=""http://www.springframework.org/schema/beans""
+    xmlns:context=""http://www.springframework.org/schema/context""
+    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+    xmlns:mvc=""http://www.springframework.org/schema/mvc""
+    xsi:schemaLocation=""
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+        http://www.springframework.org/schema/mvc 
+        http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.2.xsd"">
+
+
+   <context:component-scan base-package=""com.spring.soccer.controller"" />
+
+    <bean
+        class=""org.springframework.web.servlet.view.InternalResourceViewResolver"">
+        <property name=""prefix"">
+            <value>/WEB-INF/views/jsp/</value>
+        </property>
+        <property name=""suffix"">
+            <value>.jsp</value>
+        </property>
+    </bean>
+
+    <mvc:resources mapping=""/resources/**"" location=""/resources/"" />
+
+    <mvc:annotation-driven />
+
+</beans>
+
+SoccerController.xml
+package com.spring.soccer.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+@Controller
+public class SoccerController {
+
+    @RequestMapping(""/users"")
+    public String printSoccerHome(ModelMap model) {
+        return ""HelloSoccer"";
+    }
+}
+
+Any pointers?. Thanks a lot.
+","The <servlet-name> only defines which DispatcherServlet handles specific requests. It doesn't work like @RequestMapping annotation. You only configured Spring so that all requests are handled by springSoccer DispatcherServlet. 
+Read Spring MVC documentation- 21.2 The DispatcherServlet for more info.
+In order for this request to work:
+http://localhost:8080/SoccerSpringMaven3/springSoccer/users/
+you have to either annotate your controller with @RequestMapping(""/springSoccer"") or annotate your method with @RequestMapping(""/springSoccer/users"")
+",java
+regular expression that allows only a specific special character when it has a specific length,"I need a regular expression that matches these cases:
+EXAMPLE1
+1EXAMPLE
+EXAMPLE
+***** 
+
+Not Match
+EXAMPLE 1
+EXAMPLE.
+**EXAMPLE**
+EXAMPLE**
+**EXAMPLE
+*****EXAMPLE
+EXA MPLE
+*******
+EXAMPLEÑ
+
+I try with this regex ^(\*{0,5}?)([a-zA-Z0-9])*$ (DEMO)
+but the regular expression matches cases like these which I don't need to match:
+*****EXAMPLE
+**EXAMPLE
+****
+
+They should only match when the asterisks have a length of 5 or words without special characters or asterisks
+","If you want to match only cases where the entire string either only contains letters and digits, or else is exactly 5 asterisks, you can use the regex ^(\*{5}|[a-zA-Z0-9]+)$ .
+This assumes empty strings are not allowed. If you want to allow empty strings, replace + with *.
+",java
+html code to implement collapsible sections,"I have a popup.html file which presents the user with a slew of checkboxes.  There are major sections that I would like to create expand/collapse sections.  I am a neophyte web developer who knows enough to be dangerous.  I have spent the better part of the past 10 hours trying to modify my code to address this issue.  I have failed.  I would love some help.
+Here is my current code:
+<!DOCTYPE html>
+<html>
+<head>
+  <style type=""text/css"">
+    div.top {
+      width: 250px;
+    }
+    div.indent {
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+<p>Select Games / Expansions / Assets:</p>
+<div class=""top"">
+  <div>
+    <input type=""checkbox"" id=""g1"" value=""g1"">
+    <label for=""g1"">G1</label><br>
+    <div class=""indent"">
+      <input type=""checkbox"" id=""g1-oc"" value=""g1-oc"">
+      <label for=""g1-oc"">G1 OC</label><br>
+      <div class=""indent"">
+        <input type=""checkbox"" id=""g1-oc-x1"" value=""g1-oc-x1"">
+        <label for=""g1-oc-x1"">G1 OC X1</label><br>
+        <div class=""indent"">
+          <input type=""checkbox"" id=""g1-oc-x1-a1"" value=""g1-oc-x1-a1"">
+          <label for=""g1-oc-x1-a1"">G1 OC X1 A1</label><br>
+        </div>
+        <div class=""indent"">
+          <input type=""checkbox"" id=""g1-oc-x1-a2"" value=""g1-oc-x1-a2"">
+          <label for=""g1-oc-x1-a2"">G1 OC X1 A2</label><br>
+        </div>
+      </div>
+      <div class=""indent"">
+        <input type=""checkbox"" id=""g1-oc-x2"" value=""g1-oc-x2"">
+        <label for=""g1-oc-x2"">G1 OC X2</label><br>
+        <div class=""indent"">
+          <input type=""checkbox"" id=""g1-oc-x2-a1"" value=""g1-oc-x2-a1"">
+          <label for=""g1-oc-x2-a1"">G1 OC X2 A1</label><br>
+        </div>
+        <div class=""indent"">
+          <input type=""checkbox"" id=""g1-oc-x2-a2"" value=""g1-oc-x2-a2"">
+          <label for=""g1-oc-x2-a2"">G1 OC X2 A2</label><br>
+        </div>
+      </div>
+    </div>
+    <div class=""indent"">
+      <input type=""checkbox"" id=""g1-uc"" value=""g1-uc"">
+      <label for=""g1-uc"">G1 UC</label><br>
+      <div class=""indent"">
+        <div>
+          <input type=""checkbox"" id=""g1-uc-x1"" value=""g1-uc-x1"">
+          <label for=""g1-uc-x1"">G1 UC X1</label><br>
+          <div class=""indent"">
+            <input type=""checkbox"" id=""g1-uc-x1-a1"" value=""g1-uc-x1-a1"">
+            <label for=""g1-uc-x1-a1"">G1 UC X1 A1</label><br>
+          </div>
+          <div class=""indent"">
+            <input type=""checkbox"" id=""g1-uc-x1-a2"" value=""g1-us-c1-a2"">
+            <label for=""g1-us-c1-a2"">G1 UC X1 A2</label><br>
+          </div>
+        </div>
+        <div>
+          <input type=""checkbox"" id=""g1-uc-x2"" value=""g1-uc-x2"">
+          <label for=""g1-uc-x2"">G1 UC X2</label><br>
+          <div class=""indent"">
+            <input type=""checkbox"" id=""g1-uc-x2-a1"" value=""g1-uc-x2-a1"">
+            <label for=""g1-uc-x2-a1"">G1 UC X2 A1</label><br>
+          </div>
+          <div class=""indent"">
+            <input type=""checkbox"" id=""g1-uc-x2-a2"" value=""g1-uc-x2-a2"">
+            <label for=""g1-uc-x2-a2"">G1 UC X2 A2</label><br>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src=""popup.js""></script>
+</body>
+</html>
+
+This code results in the following:
+Select Games / Expansions / Assets:
+
+[ ] G1
+    [ ] G1 OC
+        [ ] G1 OC X1
+            [ ] G1 OC X1 A1
+            [ ] G1 OC X1 A2
+        [ ] G1 OC X2
+            [ ] G1 OC X2 A1
+            [ ] G1 OC X2 A2
+    [ ] G1 UC
+        [ ] G1 UC X1
+            [ ] G1 UC X1 A1
+            [ ] G1 UC X1 A2
+        [ ] G1 UC X2
+            [ ] G1 UC X2 A1
+            [ ] G1 UC X2 A2
+
+What I am trying to accomplish is have the code which will present the user collapsed sections as follows:
+[ ] G1
+
+When the user expands G1, they would see:
+[ ] G1
+    [ ] G1 OC
+    [ ] G1 UC
+
+If the user would expand G1 OC, they would see
+[ ] G1
+    [ ] G1 OC
+        [ ] G1 OC X1
+        [ ] G1 OC X2
+
+If the user would expand G1 OC X1 they would see
+[ ] G1
+    [ ] G1 OC
+        [ ] G1 OC X1
+            [ ] G1 OC X1 A1
+            [ ] G1 OC X1 A2
+
+And so on.  Obviously, the functionality would have to expand and collapse the sections.  For now, I don't need a fancy caret, arrow, etc.  I could live with a simple ""+"" and ""-"" in front of each checkbox.
+Ideally, the code would be self-contained without referencing outside resources.
+I would appreciate any help I could get.  Hell, if someone could simply make one of the expansions/collapses to work, I am sure I could then modify the rest of the code to work in a similar fashion.  Thanks in advance for any help provided.
+","It sounds like you're looking for <details> element. It is supported by all major browsers and requires no extra code.
+<details>
+  <summary>This content is visible at all times</summary>
+  <p>This content is only visible when expanded</p>
+</details>
+
+",javascript
+why do i have to specify data type each time in c to printf and scanf,"As you can see from the code snippet below, I have declared one char variable and one int variable. When the code gets compiled, it must identify the data types of variables str and i.
+Why do I need to tell again during scanning my variable that it's a string or integer variable by specifying %s or %d to scanf? Isn't the compiler mature enough to identify that when I declared my variables?
+#include <stdio.h>
+
+int main ()
+{
+  char str [80];
+  int i;
+
+  printf (""Enter your family name: "");
+  scanf (""%s"",str);  
+  printf (""Enter your age: "");
+  scanf (""%d"",&i);
+
+  return 0;
+}
+
+","Because there's no portable way for a variable argument functions like scanf and printf to know the types of the variable arguments, not even how many arguments are passed.
+See C FAQ: How can I discover how many arguments a function was actually called with?
+
+This is the reason there must be at least one fixed argument to determine the number, and maybe the types, of the variable arguments. And this argument (the standard calls it parmN, see C11(ISO/IEC 9899:201x) §7.16 Variable arguments ) plays this special role, and will be passed to the macro va_start. In another word, you can't have a function with a prototype like this in standard C:
+void foo(...);
+
+",c
+need assistance understanding c code about newlines,"This question references Reflections on Trusting Trust, figure 2.
+Take a look at this snippet of code, from figure 2:
+...
+c = next( );
+if(c != '\\')
+    return(c);
+c = next( );
+if (c != '\\')
+    return('\\');
+if (c == 'n')
+    return('\n');
+
+It says:
+
+This is an amazing piece of code. It ""knows"" in a completely portable way what character code is compiled for a new line in any character set. The act of knowing then allows it to recompile itself, thus perpetuating the knowledge.
+
+I would like to read the rest of the paper.  Can someone explain how the above code is recompiling itself?  I'm not sure I understand how this snippet of code relates to the code in ""Stage 1"":
+
+(source: bell-labs.com)
+","The stage 2 example is very interesting because it is an extra level of indirection with a self replicating program.
+What he means is that since this compiler code is written in C it is completely portable because it detects the presence of a literal \n and returns the character code for \n without ever knowing what that actual character code is since the compiler was written in C and compiled for the system.
+The paper goes on to show you very interesting trojan horse with the compiler. If you use this same technique to make the compiler insert a bug into any program, then remove move the bug from the source code, the compiler will compile the bug into the supposedly bug free compiler.
+It is a bit confusing but essentially it is about multiple levels of indirection.
+",c
+flatten an irregular arbitrarily nested list of lists,"Yes, I know this subject has been covered before:
+
+Python idiom to chain (flatten) an infinite iterable of finite iterables?
+Flattening a shallow list in Python
+Comprehension for flattening a sequence of sequences?
+How do I make a flat list out of a list of lists?
+
+but as far as I know, all solutions, except for one, fail on a list like [[[1, 2, 3], [4, 5]], 6], where the desired output is [1, 2, 3, 4, 5, 6] (or perhaps even better, an iterator).
+The only solution I saw that works for an arbitrary nesting is found in this question:
+def flatten(x):
+    result = []
+    for el in x:
+        if hasattr(el, ""__iter__"") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+Is this the best approach? Did I overlook something? Any problems?
+","Using generator functions can make your example easier to read and improve performance.
+Python 2
+Using the Iterable ABC added in 2.6:
+from collections import Iterable
+
+def flatten(xs):
+    for x in xs:
+        if isinstance(x, Iterable) and not isinstance(x, basestring):
+            for item in flatten(x):
+                yield item
+        else:
+            yield x
+
+Python 3
+In Python 3, basestring is no more, but the tuple (str, bytes) gives the same effect. Also, the yield from operator returns an item from a generator one at a time.
+from collections.abc import Iterable
+
+def flatten(xs):
+    for x in xs:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            yield from flatten(x)
+        else:
+            yield x
+
+",python
+algorithm to rotate an image 90 degrees in place no extra memory,"In an embedded C app, I have a large image that I'd like to rotate by 90 degrees.  Currently I use the well-known simple algorithm to do this. However, this algorithm requires me to make another copy of the image.  I'd like to avoid allocating memory for a copy, I'd rather rotate it in-place.  Since the image isn't square, this is tricky.  Does anyone know of a suitable algorithm?
+Edited to add clarification, because people are asking:
+I store an image in the usual format:
+// Images are 16 bpp
+struct Image {
+    int width;
+    int height;
+    uint16_t * data;
+};
+
+uint16_t getPixel(Image *img, int x, int y)
+{
+    return img->data[y * img->width + x];
+}
+
+I'm hoping to move the contents of the data array around, then swap over the width and height member variables.  So if I start with a 9x20 pixel image, then rotate it, I'll end up with a 20x9 pixel image.  This changes the stride of the image, which complicates the algorithm a lot.
+","This might help: In-place matrix transposition.
+(You might also have to do some mirroring after the transposition, as rlbond mentions).
+",c
+creating new string with sorted letters from a string word in java,"How do I create a String with alphabetical order letters taken from another String?
+Let's say I have something like this
+String theWord = ""Hello World"";
+
+How do I compute the new String to make it look like""
+
+dehllloorw
+
+Which is theWord but sorted character by character in alphabetical order.
+Thanks in advance
+","char[] chars = theWord.toCharArray();
+Arrays.sort(chars);
+String newWord = new String(chars);
+
+",java
+how do i format a number to 2 decimal places but only if there are already decimals,"I have a jQuery 1.5+ script, and you select a quantity in a drop-down menu (1,2,3, etc) and it multiplies that quantity by $1.50 to show you a total price. Basically - it's multiplying the quantity selected (1, 2, 3, etc) by the base price of $1.50 - BUT - I can't figure out how to display the price correctly with decimals - example: if you select a quantity of 2, the price displays correctly as $3 (no decimals). But, if you choose 1, or 3, the price displays as $1.5 / $4.5 - missing a 0 in the hundredths decimal place.
+Here's the code - any idea how to show a second 0 in the case that there are not already two decimals? $3 should stay as $3, but $4.5 should become $4.50, etc - I can't get it to work without showing ALL numbers to two decimals, and that's where I'm stuck!
+<script type='text/javascript'>     
+    $(function() {         
+        $('#myQuantity').change(function() {             
+            var x = $(this).val();                      
+            $('#myAmount').text('$'+(x*1.5));// this is the part that isn't displaying decimals correctly!
+        });     
+    }); 
+</script>
+
+I'm experimenting with something like result = num.toFixed(2); but can't get it to work yet.
+Thank you Kindly!
+","Working example: http://jsfiddle.net/peeter/JxPZH/
+
+
+$(document).ready(function() {_x000D_
+    $('#itemQuantitySelect_3').change(function() {_x000D_
+        _x000D_
+        var itemPrice = 1.50;_x000D_
+        var itemQuantity = $(this).val();_x000D_
+        var quantityPrice = (itemPrice * itemQuantity);_x000D_
+        if(Math.round(quantityPrice) !== quantityPrice) {_x000D_
+            quantityPrice = quantityPrice.toFixed(2);_x000D_
+        }_x000D_
+        _x000D_
+        $(this).next(""span"").html(""$"" + quantityPrice);_x000D_
+_x000D_
+    });_x000D_
+});
+<script src=""https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js""></script>_x000D_
+<form action=""/"" method=""post"">_x000D_
+    <select id='itemQuantitySelect_3' name=""itemQuantity_3"">_x000D_
+        <option value='1'>1 Item</option>_x000D_
+        <option value='2'>2 Items</option>_x000D_
+        <option value='3'>3 Items</option>_x000D_
+    </select>_x000D_
+    <span>$1.50</span>_x000D_
+</form>
+
+
+
+",javascript
+unable to click on ltagt tag using puppeteer,"I am trying to scrape a real estate website. This is my first time using Puppeteer. Up to now I have managed to open the link and click on the ""accept all"" button for cookies. Now I am trying to click on the ""sign in"" button. This is my code:
+const puppeteer = require(""puppeteer"");
+
+const link1 =
+  ""https://www.daft.ie/for-rent/walled-garden-wyckham-way-dundrum-dublin-14/3988400"";
+
+(async () => {
+  const browser = await puppeteer.launch({
+    headless: false,
+    defaultViewport: null,
+  });
+  const page = await browser.newPage();
+  await page.goto(link1);
+
+  const elements = await page.$x(""//button[normalize-space()='Accept All']"");
+  await elements[0].click();
+  console.log(""cookies accepted"");
+
+  const signin = await page.$x(""//a[contains(., 'Sign in')]"");
+  await signin[0].click();
+
+  console.log(""Sign in clicked"");
+
+  await browser.close();
+})();
+
+This is the error I get after I run the script:
+ throw new Error('Execution context was destroyed, most likely because of a navigation.');
+              ^
+
+Error: Execution context was destroyed, most likely because of a navigation.
+    at rewriteError (/Users/devang/Desktop/coding/daft/node_modules/puppeteer/lib/cjs/puppeteer/common/ExecutionContext.js:280:15)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5)
+    at async ExecutionContext._ExecutionContext_evaluate (/Users/devang/Desktop/coding/daft/node_modules/puppeteer/lib/cjs/puppeteer/common/ExecutionContext.js:226:56)
+    at async ElementHandle.evaluateHandle (/Users/devang/Desktop/coding/daft/node_modules/puppeteer/lib/cjs/puppeteer/common/JSHandle.js:97:16)
+    at async Object.internalHandler.queryAll (/Users/devang/Desktop/coding/daft/node_modules/puppeteer/lib/cjs/puppeteer/common/QueryHandler.js:63:30)
+    at async ElementHandle.$$ (/Users/devang/Desktop/coding/daft/node_modules/puppeteer/lib/cjs/puppeteer/common/ElementHandle.js:116:17)
+    at async /Users/alex/Desktop/coding/daft/index.js:18:1
+
+I verified the xPath I am using for the a tag sign in button is correct.
+Here's the HTML of the sign in link:
+<a data-testid=""top-level-active-nav-link"" href=""/auth/authenticate"" class=""Navigationstyled__TopLevelItemActiveLink-sc-1tagpb7-6 bsFoce"">Sign in</a>
+
+What am I doing wrong here?
+Link of the target page - list
+","page.click() issues a trusted event that sometimes fails due to visibility issues. A workaround is using element.evaluate(el => el.click()) to trigger a native DOM click.
+import puppeteer from ""puppeteer""; // ^23.10.4
+
+let browser;
+(async () => {
+  browser = await puppeteer.launch({headless: false});
+  const [page] = await browser.pages();
+  const url =
+    ""https://www.daft.ie/for-rent/walled-garden-wyckham-way-dundrum-dublin-14/3988400"";
+  await page.goto(url, {waitUntil: ""domcontentloaded""});
+  const signIn = await page.waitForSelector(""::-p-text(Sign in)"");
+  await signIn.evaluate(el => el.click()),
+  await page.waitForSelector(""#username"");
+  await page.type(""#username"", ""hello"");
+  await page.type(""#password"", ""world"");
+  await page.click(""#login"");
+
+  // just to show it's working
+  await page.waitForSelector(""::-p-text(Invalid username)"");
+  await page.screenshot({path: ""proof.png""});
+})()
+  .catch(err => console.error(err))
+  .finally(() => browser?.close());
+
+You can typically skip dismissing the cookie banner, or call .remove() on its parent container to rip it out entirely if it's in the way.
+Going a step further, it's often a good idea to navigate directly to the sign in page URL, skipping a button click and navigation that could fail.
+Another trick I use for scripts with complex sign-in workflows that involve a lot of frames, oauth and other difficult-to-automate components is to do it all by hand in Puppeteer's browser while saving the cookies and site data in the userDataDir. It seems that this website should be workable without that trick but it's worth mentioning in case you run into trouble.
+",javascript
+regex for complex delimited string with multiple parse patterns,"I have the following string:
+def str='prop1: value1, prop2: value2;value3, prop3:""test:1234, test1:23;45, test2:34;34"", prop4: ""test1:66;77, 888""'
+
+what I want to end up with is the following list of pairs
+prop1: value1
+prop2: value2;value3
+prop3: test:1234, test1:23;45, test4:34;34
+prop4: test, 66;77, 888
+
+I figure if I can first parse and strip out props3 and 4, then I can simply split on comma for the rest of the string.  but having a problem with being able to get a match for prop 4
+The following is the code and regex I have tried so far. Commented out in the code are various regex I have tried but have not been able to extract the last prop4
+  def str='prop1: value1, prop2: value2;value3, prop3:""test:1234, test1:23;45, test4:34;34"", prop4: ""test, 66;77, 888""'
+  //def regex = /(\w+):""(.*)""[,\s$]/
+  //def regex = /(\w+):""(.*)""[,|\s|$]/
+  def regex = /(\w+):""(.*)""[,\s]|$/
+  def m = (str =~ regex)
+  (0..<m.count).each{
+    println(""${m[it][1]}=${m[it][2]}"")
+  }
+
+This returns:
+prop3=test:1234, test1:23;45, test2:34;34
+null=null
+
+What am I missing here?
+(Also, is there a way to parse all this with just a single regex pass as opposed to my approach described above..regex first, then split?)
+","Basee on your give example data, following regex would work:
+\b(\w+):\s*(\""[^\""]*\""|[^,\""]*)
+
+RegEx Demo
+RegEx Demo:
+
+\b: Word boundary
+(\w+): Capture group #1 t match 1+ word characters
+:: Match a :
+\s*: 0 or more whitespaces
+(: Start capture group #2
+
+\""[^\""]*\"": Match a quoted text
+|: OR
+[^,\""]*: Match 0 or more of any char that is not , and ""
+
+
+): End capture group #2
+
+",java
+is there any online compiler with executer that would compile apps that use gpuspecific cc code,"Generally I need some online compiler that can compile and execute provided program and output execution speed and other statistics. All program can be in one C file and it would use any GPU C/C++ lib provided. I want to compile at least C code. Does any GPU vendor provide any such compiler? Actually my problem is next - I have powerful CPU and weak GPU on my machine. I need to test some algorithms that are specific to GPUs and get statistics on there execution. I would like to test my programs any way possible so If there Is no such online GPU thing maybe there is any emulator that can output time and other statistics that I would get on some real GPUs? (meaning I would give it a program it would be executing it on my CPU but count time somehow as it was some GPU running).
+So is it possible any how to test GPU specific programs not having GPU card mening on emulation software of somewhere in internet cloud?
+","Amazon EC2 recently added support for ""GPU instances"", which are normal HPC instances which come with two NVIDIA Tesla “Fermi” M2050 GPUs. You can SSH into these instances, install a compiler, and go to town with them.
+It'll cost $2.10/hour (or $0.74/hour if you get a Reserved Instance for a longer block of time)
+",c
+possible to raise two types of errors,"So I'm experimenting making my own program. I have the user input a string and an integer (name, age).
+I want to raise a Value Error if the age is under 1 (if age > 1:) I did that. But I'm not sure what to do if the name is not a string. Is it a TypeError and can two types of errors be raised at the same time? If so how?
+Probably got some terminology wrong but having trouble thinking right now.
+Here's the code:
+# This program asks name how old you are and makes exceptions to check and see if 
+there are errors
+
+def hogwarts_express (name, age):
+
+    if age < 1:
+
+        raise ValueError (""Error: Apparently you don't exist.  Please pick a number older 
+than 0!"")
+
+    if int (age) >= 10:
+        print (""Hello {}!  Welcome to the Hogwarts Express, your old enough to go now.  
+Here 's your ticket!"".format(name))
+    else:
+        print (""Sorry {} you're not old enough to board the express."".format(name))
+try:
+    your_name = input(""What's your name?  "")
+    age = int(input(""How old might you be?  ""))
+    together = hogwarts_express (your_name, age)
+
+except ValueError as err:
+    print (""That's not a valid value.  Please input something else."")
+    print (""{}"".format(err))
+
+else:
+    print (together)
+
+","There's really no need to raise two exceptions simultaneously. It's fine to raise the first error you detect. Yes, a TypeError is appropriate if you expected a string but got something else. You can do the check and raise the TypeError either before or after the ValueError. You can catch multiple exception types in the same try statement by adding more except clauses.
+Another option is to use an assert statement to validate all the arguments. An assertion indicates that a violation is a bug in the program, and you don't want to recover by using a try statement.
+I should mention that it is possible to chain exceptions in Python (using the raise ... from ... syntax), but this used when translating from one exception type to another or for when one exception causes another, which does not seem to apply to this case.
+
+Update: PEP 654 adds exception groups and except* as of Python 3.11. Still probably overkill for this case, but it is possible now.
+",python
+overwrite symbol in cc,"Is it possible in C/C++ (or, with any compiler) to overwrite a symbol specifically? For example there's a library a.lib which contains, besides other functions, the implementation of foo(). Now, in my program, I want to replace the implementation of foo() with another function, so that any call to foo() goes straight to my implementation, rather than the implementation in a.lib.
+Macros are not an option.
+Is this possible without modifieng the source of a.lib?
+","Yes, probably.
+When you do a static link the linker loads symbols from the library if and only if they are needed. If the program, or an earlier library provides that symbol then it won't be on the ""needed"" list.
+A problem arises if the library defined that symbol in the same ""object"" as other symbols that are needed. A well designed library has one object per symbol (basically, each function is defined in it's own source file, compiled separately, and added to the library individually). A poorly designed library might have objects (source files) that define several functions at once, and then you have to pull in all of them to get just one. Hopefully you don't have this problem.
+For dynamic libraries on Linux systems (and other Unix) things are not so clear. You can define the function, and it might get used by your own callers, but callers within the library might still use the library copy. It's all a bit confusing. On Windows, .lib files probably work similarly to Linux's .a files, but .dll files are quite different beasts, with different ways of being confusing.
+",c
+how can i remove all items in a hashmap where key value is greater than a defined value,"In my Android project I have a method to partially invalidate a cache 
+(HashMap<Integer, Boolean>). 
+I am currently using a HashMap for compatibility with third party code. 
+I found a great answer here but it requires switching to a TreeMap. The given solution is:
+treeMap.tailMap(key).clear();
+
+The TreeMap solution is much better than my effort on HashMap:
+//where hashMap is a copied instance for the method
+for (Integer key : hashMap.keySet()) {
+    if (key > minPosition) {
+        hashMap.remove(key);
+    }
+}
+
+Is there a better time/complexity solution for doing this in a HashMap, similar to the TreeMap solution?
+","If you are required to use HashMap, there is no better (more efficient) solution than iterating the entry set, and removing entries one at a time.  This is going to be an O(N) operation.  You need to visit / test all entries in the map.
+As you correctly observed you can bulk remove entries more neatly and more efficiently from a TreeMap.  It will be an O(logN) operation.  But the downside is that insertions and deletions are O(logN) rather than O(1).
+A LinkedHashMap can help in certain use-cases, but not in this one.  (It orders the entries based on the sequence of insertion, not on the values of the keys.)
+",java
+how to find out all palindromic numbers,"A palindromic number or numeral palindrome is a ""symmetrical"" number like 16461, that remains the same when its digits are reversed.
+The term palindromic is derived from palindrome, which refers to a word like rotor that remains unchanged under reversal of its letters.
+The first palindromic numbers (in decimal) are:
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22,
+33, 44, 55, 66, 77, 88, 99, 101, 111,
+121, 131, 141, 151, 161, 171, 181,
+191, ...
+
+How to find out all palindromic numbers below, say, 10000?
+","Generating all palindromes up to a specific limit.
+public static Set<Integer> allPalindromic(int limit) {
+
+    Set<Integer> result = new HashSet<Integer>();
+
+    for (int i = 0; i <= 9 && i <= limit; i++)
+        result.add(i);
+
+    boolean cont = true;
+    for (int i = 1; cont; i++) {
+        StringBuffer rev = new StringBuffer("""" + i).reverse();
+        cont = false;
+        for (String d : "",0,1,2,3,4,5,6,7,8,9"".split("","")) {
+            int n = Integer.parseInt("""" + i + d + rev);
+            if (n <= limit) {
+                cont = true;
+                result.add(n);
+            }
+        }
+    }
+
+    return result;
+}
+
+
+Testing for palindromicity
+Using Strings
+public static boolean isPalindromic(String s, int i, int j) {
+    return j - i < 1 || s.charAt(i) == s.charAt(j) && isPalindromic(s,i+1,j-1);
+}
+
+public static boolean isPalindromic(int i) {
+    String s = """" + i;
+    return isPalindromic(s, 0, s.length() - 1);
+}
+
+Using integers
+public static boolean isPalindromic(int i) {
+    int len = (int) Math.ceil(Math.log10(i+1));
+    for (int n = 0; n < len / 2; n++)
+        if ((i / (int) Math.pow(10, n)) % 10 !=
+            (i / (int) Math.pow(10, len - n - 1)) % 10)
+            return false;
+    return true;
+}
+
+",java
+does consolelog invokes tostring method of an object,"As per this documentation,
+
+The string representations of each of these objects are appended
+  together in the order listed and output.
+
+Also as per answer
+
+The + x coerces the object x into a string, which is just [object
+  Object]:
+
+So, my question is
+If I do
+str = new String(""hello"")
+console.log(str) //prints the string object but not 'hello'
+console.log(""""+str) //prints ""hello""
+
+So, in first case, it simply prints the object (doesn't invoke the toString() method).
+But in second case, it doesn't coerce but simply print the primitive value. Why is that so?
+Which method does console.log invokes to print the object?
+Please note that - this is not a duplicate of this question.
+","Console API is not a standard API that is defined in any specification but is something that is implemented across all browsers, so vendors are usually at their liberty to implement in their own fashion as there's no standard spec to define the output of any methods in API.
+Unless you check the actual implementation of the Console API for a particular browser, you can never be sure. There's a tracker on GitHub listing the differences between implementation from major browsers.
+If you look at the implementation in FF (available here - search for log), it has a comment below
+
+A multi line stringification of an object, designed for use by humans
+
+The actual implementation checks for the type of argument that is passed to log() and based on it's type, it generates a different representation. 
+Coming to your case, log() prints two different values for strings created using literal notation and strings created using String constructor because they are two different types. As explained here, Strings created using literal notation are called String Primitives and strings created using String constructor are called String Objects.
+var str1 = 'test';
+var str2 = new String('hello');
+
+typeof str1 // prints ""string""
+typeof str2 // prints ""object""
+
+As the types differ, their string representation differs in the Console API. If you go through the code for FF's Console implementation, the last statement is
+return ""  "" + aThing.toString() + ""\n"";
+
+So to answer your question, Console API in FF calls toString() on the argument only if the argument type is not one of  {undefined,null,object,set,map} types. It doesn't always call toString() or valueOf() methods. I didn't check the implementation of Chrome, so I won't comment on that.
+",javascript
+what is correct by common sense int blabla  25599999999999997 or roundblabla255,"Recently I found this interesting thing in webkit sources, related to color conversions (hsl to rgb):
+http://osxr.org/android/source/external/webkit/Source/WebCore/platform/graphics/Color.cpp#0111
+const double scaleFactor = nextafter(256.0, 0.0); // it's here something like 255.99999999999997
+// .. some code skipped
+return makeRGBA(static_cast<int>(calcSomethingFrom0To1(blablabla) * scaleFactor), 
+
+Same I found here: http://www.filewatcher.com/p/kdegraphics-4.6.0.tar.bz2.5101406/kdegraphics-4.6.0/kolourpaint/imagelib/effects/kpEffectHSV.cpp.html
+(int)(value * 255.999999)
+
+Is it correct to use such technique at all? Why dont' use something straight like round(blabla * 255)?
+Is it features of C/C++? As I see strictly speaking is will return not always correct results, in 27 cases of 100. See spreadsheet at https://docs.google.com/spreadsheets/d/1AbGnRgSp_5FCKAeNrELPJ5j9zON9HLiHoHC870PwdMc/edit?usp=sharing
+Somebody pls explain — I think it should be something basic.
+","Short answer: (int)(blabla * 255.99999999999997) should be preferred.
+Explanation follows.
+Normally we want to map a real value x in the (closed) interval [0,1]  to an integer value j in the range [0 ...255].
+And we want to do it in a ""fair"" way, so that, if the reals are uniformly distributed in the range, the discrete values will be approximately equiprobable: each of the 256 discrete values should get ""the same share"" (1/256) from the [0,1] interval. That is, we want a mapping like this:
+[0    , 1/256) -> 0
+[1/256, 2/256) -> 1 
+...
+[254/256, 255/256) -> 254
+[255/256, 1]       -> 255
+
+We are not much concerned about the transition points [*], but we do want to cover the full the range [0,1]. How to accomplish that?
+If we simply do j = (int)(x *255): the value 255 would almost never appear (only when x=1); and the rest of the values 0...254 would each get a share of 1/255 of the interval. This would be unfair, regardless of the rounding behaviour at the limit points.
+If we instead do j = (int)(x * 256): this partition would be fair, except for a sngle problem: we would get the value 256 (out of range!) when x=1 [**]
+That's why j = (int)(x * 255.9999...) (where 255.9999... is actually the largest double less than 256) will do.
+An alternative implementation (also reasonable, almost equivalent) would be
+j = (int)(x * 256); 
+if(j == 256)  j = 255;  
+// j = x == 1.0 ? 255 : (int)(x * 256); // alternative
+
+but this would be more clumsy and probably less efficient.
+round() does not help here. For example, j = (int)round(x * 255) would give a 1/255 share to the integers j=1...254 and half that value to the extreme points j=0, j=255.
+
+[*] I mean: we are not extremely interested in what happens in the 'small' neighbourhood of, say, 3/256: rounding might give 2 or 3, it doesn't matter. But we are interested in the extrema: we want to get 0 and 255, for x=0 and x=1respectively.
+[**] The IEEE floating point standard guarantees that there's no rounding ambiguity here: integers admit an exact floating point representation, the product will be exact, and the casting will give always 256. Further, we are guaranteed that 1.0 * z = z.
+",c
+how can i rotate object in pixel grid properly,"I have an 2D grid made from 1D array with with and height property. In that grid I have a box object which I want to rotate by X amount of degrees.
+I have used this formula to rotate each pixel of object in grid:
+newX = floor(cos(angle)*x - sin(angle)*y)
+newY = floor(sin(angle)*x + cos(angle)*y)
+
+It works fine when the box is small but if the box is bigger I get some empty cells. How can I fill empty spaces witch should be filled.
+Here is an example of box with width and height 10 and then rotated by 45 degrees:
+
+","Perform reverse mapping:
+Walk through all pixels of result. You can use bounding box of rotated image and scan its lines.
+For every pixel one get coordinates of corresponding source pixel. If they lie in valid range (source rectangle), then copy source color to result.
+To get reverse mapping formula, just change angle sign (if you have pure rotation without shift)
+oldx = cos(angle)*newx + sin(angle)*newy
+oldy = -sin(angle)*newx + cos(angle)*newy
+
+",javascript
+mapstruct annotation processor does not seem to work in intellij with gradle project,"I'm trying to use Intellij 2017 Ultimate to build/run a Spring Boot application that uses MapStruct.  It is a Gradle project.  My issue is that IntelliJ does not seem to run the MapStruct Annotation Processor.  I realize that I can configure IntelliJ to delegate to the Gradle build process (see this), but I am hoping to simply configure IntelliJ to use APT to generate the necessary classes itself.
+I have enabled APT for my project, but my classes are still not generated.
+build.gradle (applicable snippets):
+ext {
+    mapstructVersion = '1.2.0.Final'
+}
+
+plugins {
+    id 'net.ltgt.apt' version '0.15'
+}
+
+dependencies {
+    // MapStruct support
+    implementation group: 'org.mapstruct', name: 'mapstruct-jdk8', version: mapstructVersion
+    annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: mapstructVersion
+ }
+
+IntelliJ configuration:
+
+Yet, when I do a ./gradle clean followed by a Build->Rebuild Project, my out/production/classes/generated folder is empty.
+Is there something additional that I need to do to enable APT on this project?  Should IntelliJ automatically detect the mapstruct annotation processor in the classpath?
+","Finally it is working fine 👍 with Intellji 2018.1 CE.  we don't need any apt plugins. 
+Here is updated gradle file 
+plugins {
+    id 'java'
+}
+
+repositories {
+       mavenCentral()
+       mavenLocal()
+}
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+
+dependencies {
+      compile group: 'org.mapstruct', name: 'mapstruct-jdk8', version: '1.2.0.Final'
+      compileOnly 'org.mapstruct:mapstruct-processor:1.2.0.Final'
+      annotationProcessor 'org.mapstruct:mapstruct-processor:1.2.0.Final'
+      compileOnly (""org.projectlombok:lombok"")
+      testCompile 'junit:junit:4.12'
+}
+
+Please make sure  following things are configured properly 
+
+Enable Annotations Processors( Preference->Build Execute Deployment ->Compiler->Annotations Processors )
+MapStruct plugin 
+Lombok plugin
+
+",java
+why is the size of the data type different when the value is directly passed to the sizeof operator,"#include <stdio.h>
+int main() {
+    char a = 'A';
+    int b = 90000;
+    float c = 6.5;
+    printf(""%d "",sizeof(6.5));
+    printf(""%d "",sizeof(90000));
+    printf(""%d "",sizeof('A'));
+    printf(""%d "",sizeof(c));
+    printf(""%d "",sizeof(b));
+    printf(""%d"",sizeof(a));
+    return 0;
+}
+
+The output is:
+8 4 4 4 4 1
+
+Why is the output different for the same values?
+","Character constants in C (opposite to C++) have the type int. So this call 
+printf(""%d"",sizeof('A'));
+
+outputs 4. That is sizeof( 'A' ) is equal to sizeof( int ).
+From the C Standard (6.4.4.4 Character constants)
+
+10 An integer character constant has type int....
+
+On the other hand (6.5.3.4  The sizeof and alignof operators)
+
+4 When sizeof is applied to an operand that has type char, unsigned
+  char, or signed char, (or a qualiﬁed version thereof) the result is 1.
+
+So the operand of the sizeof operator in this expression sizeof( 'A' ) has the type int while in this expression sizeof( a ) where a is declared like
+char a = 'A';
+
+the operand has the type char.
+Pay attention to that calls like this
+printf(""%d"",sizeof(6.5));
+
+use incorrect conversion format specifier. You have to write
+printf(""%zu"",sizeof(6.5));
+
+Also in the above call there is used a constant of the type double while in this call
+printf(""%zu"",sizeof(c));
+
+the variable c has the type float.
+You could get the same result for these calls if the first call used a constant of the type float like
+printf(""%zu"",sizeof(6.5f));
+
+",c
+how to wait for a signal for a certain time only in c language,"I am trying to communicate between 2 processes ( parent and child process in linux ) using signals in C programming language.
+The first process does some calculation and provides a data. Then, it sends a signal to the second, which is in a suspended state, waiting for a signal to wake up and collect that data shared by the first process using a shared memory.
+How to make the second process wait for a certain time or let's say a period of time ?
+Within that period, if the first process provides data and sends a signal to the second, everything is OK. Otherwise, if it doesn't receive any signal from the first within that period, it will do another thing.
+How can I make the second process respond to that need ?
+Which algorithms and signals should I use to implement this ?
+","Call to sleep until 10 seconds or signal would be:
+struct timeval t = {10, 0};
+int rc = select(0, NULL, NULL, NULL, &t);
+if (rc == 0) {
+    // timeout
+} else if (errno == EINTR) {
+    // signal
+} else {
+    // some error
+
+",c
+importerror cannot import name 39json_normalize39 from 39pandasiojson39,"python 3.9.2-3
+pandas 2.0.0
+pandas-io           0.0.1
+
+Error: 
+from pandas.io.json import json_normalize
+ImportError: cannot import name 'json_normalize' from 'pandas.io.json' (/home/casaos/.local/lib/python3.9/site-packages/pandas/io/json/__init__.py)
+
+Apparently this was a problem early on in the pre 1x days of pandas, but seems to have resurfaced.
+Suggestions?
+I'm running a script which was  functional previously, but migrating it to a new host.
+It errors out on the line:
+from pandas.io.json import json_normalize
+
+and throws the error
+ImportError: cannot import name 'json_normalize' from 'pandas.io.json' (/home/casaos/.local/lib/python3.9/site-packages/pandas/io/json/__init__.py)
+
+I've attempted to reinstall pandas ('install' option), remove and reinstall, and 'install --force-reinstall' all performed as root so that the base install  of python3 has it installed as opposed to a single user
+","This was indeed the solution simply removing the import line. I'd have liked an attribute to check to determine the pandas version installed easily, but have to settle for a try:except: to determine if the import is needed.
+pandas.io.json.json_normalize was deprecated and removed in the newest version. Use pandas.json_normalize. Also, the tutorial you were following is most probably severely outdated. You are on your own now. –
+Ξένη Γήινος
+Apr 23 at 7:48
+",python
+function numberprototypetolocalestring returns negative 0,"Below code returns negative 0 instead of 0. Is there a way to fix this issue?
+
+
+const x=-0.01;
+console.log(
+  x.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})
+)
+
+
+
+","You can set the signDisplay option to exceptZero or negative:
+
+
+const x = -0.01;
+const y = x.toLocaleString('en-US',{
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+  signDisplay: 'exceptZero'
+});
+
+console.log(y);
+
+
+
+Note that using exceptZero will also add an explicit sign for positive numbers, while using negative will not.
+",javascript
+how to implement strstr without casting away const,"strstr is a C99-conforming function, the type signature of which is the following:
+char *strstr(const char *haystack, const char *needle);
+
+Is it possible to implement this function without casting away a const somewhere?
+For reference, here is Apple's implementation, and here is GNU's implementation. Both cast away the const at the end.
+","You can't implement strstr() without violating const correctness somehow.  A cast is the most straightforward way to do that. You can probably hide the violation somehow (for example you could use memcpy() to copy the pointer value), but there's no point in doing so.
+The problem is that strstr() takes a const char* that points to a string, and returns a non-const char* that points into the same string.
+For example, this program:
+#include <stdio.h>
+#include <string.h>
+int main(void) {
+    const char s[] = ""hello"";
+    char *result = strstr(s, ""hello"");
+    *result = 'H';
+    puts(result);
+}
+
+modifies (or at least attempts to modify) a const-qualified object, without using a pointer cast or any other obviously unsafe construct.
+Back in 1989, the ANSI C committee could have avoided this problem by defining two different functions, say:
+const char *strcstr(const char *haystack, const char *needle);
+      char *strstr (      char *haystack, const char *needle);
+
+one that returns a pointer to a const char given a const arguments, and another that returns  pointer to a modifiable char given a modifiable argument. (C++, which inherits the C standard library, does this by overloading.)
+strstr() is one of several standard string functions that have this problem.
+As Jonathan Leffler points out in a comment, C23 requires strstr() and similar functions to be generic, so for example strstr() returns a char* if its first argument is char*, or const char* if its first argument is const char*. The generic functions are memchr, strchr, strpbrk, strrchr, and strstr.
+",c
+i run into a about rvalue concept problem in c programming language,"I read this sentence in a book: C primer Plus (The sixth edition)
+Since I read the Chinese version, I can only translate the Chinese version of the book as follows.
+
+Rvalue: refers to a value that can be assigned to a modifiable left value and is not itself an lvalue.
+
+Is this true or false? I feel like there's something wrong with that sentence. My opinion is as follows:
+  #include <stdio.h>
+  int main(void) {
+      int a = 3;      ok  beacase 3 is constent
+      int b = 3 + 4;  ok  beacase 3 is expression
+   
+      int c = a;      ?   a is rvalue  
+      /*
+        a is an rvalue, isn't that inconsistent with what we said before and not an    lvalue itself? I hadn't noticed this basic problem before. I wish someone could help me. Ask sb. to do STH.
+      */
+      return 0; 
+}     
+
+a itself should be an lvalue. Isn't that so?
+","
+
+Rvalue: refers to a value that can be assigned to a modifiable left value and is not itself an lvalue.
+
+Is this true or false? I feel like there's something wrong with that
+sentence.
+
+The idea conveyed by the English sentence presented is accurate, though the wording is awkward.  However, you seem to have taken the incorrect idea from it that only rvalues can appear as the right-hand operand of an assignment operation.  Perhaps you're ignoring the ""and is not itself an lvalue"" part?  That's by far the more important criterion.
+
+    int c = a;      ?   a is rvalue  
+    /*
+      a is an rvalue, isn't that inconsistent with what we said before and not an lvalue itself? I hadn't noticed this basic problem
+
+before. I wish someone could help me. Ask sb. to do STH.
+*/
+
+a is an lvalue because it designates an object.  Objects have associated storage.  It is not an rvalue, because, as your definition specifically says, lvalues are not rvalues.
+
+Although the terms ""lvalue"" and ""rvalue"" are derived from the idea of what kinds of expressions can appear on the left and right sides of an assignment, that really doesn't get to the core idea:
+
+An lvalue expression is one that (potentially) designates an object, as I said above.  A variable name, an array subscription expression (array[1]), a structure or union member selection (s.member), and a pointer derference (*p) are all examples.
+
+An rvalue, on the other hand, is an expression that is not an lvalue.  Such an expression does not designate an object, only a value.  Some would insist that it not be a void expression.  Such a value is ephemeral in that it exists only in the context of the full expression in which it appears.  Integer and floating constants; arithmetic, relational, sizeof, and alignof expressions; and function return values are among the common kinds of rvalues in C.
+
+
+Any expression of suitable data type may appear as the right-hand operand of an assignment.  That doesn't speak to whether the expression is an lvalue or an rvalue.
+",c
+how to insert data from a react form to mysql,"I'm trying to develop my first react application. The backend works properly. Anyway I don't know how to insert the entered data in a react form into my database. I tried with axios, but I had many problems. Here is my code:
+Backend:
+router.post('/insert',(req,res) =>{
+
+
+    jsondata = req.body;
+    description = jsondata['description'];
+    distance = jsondata['distance'];
+    hours = jsondata['hours'];
+    minutes = jsondata['minutes'];
+    seconds = jsondata['seconds'];
+
+
+    conn.query('INSERT INTO run (description, distance, hours, minutes, seconds) VALUES (?,?,?,?,?)', [description,distance,hours,minutes,seconds], (err) =>{
+        if(err)
+        res.send(err)
+        if(!err)
+        res.send(""Insert succeded."")
+        
+    })
+})
+
+Frontend:
+import React, {useEffect, useState} from 'react';
+import {Link} from 'react-router-dom';
+function Insert(){
+
+    return(
+
+        <div>
+            <form>
+                <p>Insert the details of your run</p>
+                <input type=""text"" id=""description"" placeholder=""Insert a description of your run""></input>
+                <input type=""text"" id=""description"" placeholder=""Insert a description of your run""></input>
+                <input type=""number"" id=""description"" placeholder=""Insert the distance of your run""></input>
+                <input type=""number"" id=""description"" placeholder=""Insert the hours of your run""></input>
+                <input type=""number"" id=""description"" placeholder=""Insert the minutes of your run""></input>
+                <input type=""number"" id=""description"" placeholder=""Insert the seconds of your run""></input>
+                <button id=""btn"">Submit</button>
+            </form>
+        </div>
+
+    );
+
+
+}
+
+export default Insert;
+
+Thank you so much for your help!
+","on inputs you need to put methods to handle their change, you can store values in useState, example:
+const [name, setName] = useState('');
+
+...
+
+<input type=""text"" value={name} onChange={setName} />
+
+then, handle submit form by adding method call like this
+<form onSubmit={handleOnSubmit}>
+
+where you would gather your input data and sent it with axios, example:
+ handleOnSubmit(e) {
+        e.preventDefault()
+
+        const data = {
+          name: name
+          // other fields...
+
+        }
+
+        axios.post('http://your-url.com', data)
+            .then((res) => {
+                console.log(res.data)
+            }).catch((error) => {
+                console.log(error)
+            });
+    }
+
+
+",javascript
+how to disable interruption with ctrlc in cmdpython,"I have a program that has quite a few functions, each running on a separate thread.
+When the user presses Ctrl+C, only 1 thread crashes with an exception, but because of this, the whole program may not work correctly.
+Of course, I can write this construction in each function:
+try:
+    do_something()
+except KeyboardInterrupt as e:
+    pass
+
+but, as I said, there are many functions, perhaps there is an option not to prescribe this construction in each function?
+Or is it possible to disable Ctrl+C interrupt in cmd settings?
+For example, in the registry. The program creates its own registry key in HKEY_CURRENT_USER\Console\MyProgrammKey
+UPD 1
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+It helped in almost all cases except one: a thread that has an infinite loop with the input() function anyway interrupts.
+UPD 2
+Here is a sample code
+import signal, time
+from threading import Thread
+
+
+def one():
+    while True:
+        inp = input(""INPUT: "")
+
+
+def two():
+    while True:
+        print(""I just printing..."")
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    Thread(target=one).start()
+    Thread(target=two).start()
+
+UPD 3
+Screenshot of exception.
+
+","Ctrl+C will send SIGINT signal to program, so you could define a global signal handler to ignore that SIGINT, something like next:
+test.py:
+import signal, os, time
+
+def handler(signum, frame):
+    pass
+
+signal.signal(signal.SIGINT, handler)
+
+time.sleep(10)
+
+print(""done"")
+
+During the program run, if you input Ctrl+c, the program will ignore it, and continue to run, finally print done:
+$ python3 test.py
+^Cdone
+
+",python
+quotcompilingquot python script,"I'm trying to send a python script I wrote on my Mac to my friends. Problem is, I don't want to send them the code that they can edit. How can I have my script change from an editable text file, to a program that you click to run?
+","There is an equivalent to py2exe called py2app. I never tried it but there is a lot of good comments. It is available on macport and the tutorial seems pretty simple (for simple cases at least :) ).
+",python
+latitude is not scaling the same way as longitude when plot on thunderforest openstreet map,"I use the thunderforest API to plot points on a map. I figured out how to scale my longitude axis so that it fits the map, using this. Basically I know how width my map is in pixel and I know how many degree of longitude correspond to 256 pixel at each zoom level. With that I figure out how wide my map is in degrees of longitude.
+My map is as high as it is wide in pixel (i.e. 1100x1100). So at a zoom level of 14, a width of 1100 pixel corresponds to 0.09453125° longitude. I now assume that a height of 1100 pixel would correspond to 0.09453125° latitude. But this is wrong.
+As you can see in this map the points should be a circle around the Launch point. But they are in more of an elliptical shape.
+
+I found this on the openstreetmap website.
+
+Values listed in the column ""m / pixels"" gives the number of meters per pixel at that zoom level for 256-pixel wide tiles. These values for ""m / pixel"" are calculated with an Earth radius of 6372.7982 km and hold at the Equator; for other latitudes the values must be multiplied by the cosine (approximately assuming a perfect spheric shape of the geoid) of the latitude.
+
+But I couldn't figure what I needed to multiply by cos(latitude). Can someone help me to figure out what to do here?
+My full code:
+# data
+launch_latitude = np.degrees(TOTAL_DATA[0]['TYPE_LATITUDE'][0][0])
+launch_longitude = np.degrees(TOTAL_DATA[0]['TYPE_LONGITUDE'][0][0])
+
+# variabels
+zoom_level = 14 # 0 <= int <= 20
+map_width_pixel = 1100 # max: 2560
+save_fig = True
+plot_name = 'name'
+plot_title = 'NAME'
+
+img_name = f'z{zoom_level}_w{map_width_pixel}_{launch_latitude}N_{launch_longitude}E.png'
+img_path = f'../env/images/{img_name}'
+tile_width_at_zoom_level = {0:360,1:180,2:90,3:45,4:22.5,5:11.25,6:5.625,7:2.813,8:1.406,9:0.703,10:0.352,11:0.176,12:0.088,13:0.044,14:0.022,15:0.011,16:0.005,17:0.003,18:0.001,19:0.0005,20:0.00025}
+map_width_deg = tile_width_at_zoom_level[zoom_level]/256 * map_width_pixel
+padding_long = map_width_deg/2
+padding_lat = map_width_deg/2
+BBox = [launch_longitude - padding_long, launch_longitude + padding_long, launch_latitude - padding_lat, launch_latitude + padding_lat]
+
+# download map, if image doesn't allready exist.
+if not os.path.isfile(img_path):
+    # get URL
+    zoom = zoom_level
+    style = 'Landscape'
+    apikey = '--- API KEY ---'
+    lon, lat = launch_longitude, launch_latitude
+    width, height = map_width_pixel, map_width_pixel
+    URL = f'https://tile.thunderforest.com/static/{style}/{lon},{lat},{zoom}/{width}x{height}.png?apikey={apikey}'
+
+    # save img
+    r = requests.get(URL, stream=True)
+    r.raw.decode_content = True
+    with open(img_path,'wb') as f:
+        shutil.copyfileobj(r.raw, f)
+
+# plot
+fig, ax = plt.subplots(figsize = (18,7))
+map_img = plt.imread(img_path)
+attribution = 'Maps © www.thunderforest.com, Data © www.osm.org/copyright'
+ax.imshow(map_img, zorder=0, extent = BBox, aspect= 'equal')
+ax.scatter(launch_longitude, launch_latitude, zorder=4, marker='^', color='black', label='Launch')
+
+for zorder, raw_data, label in zip([1,2,3], TOTAL_DATA, ['Nominal Flight', 'No Main', 'No Parachute']):
+    land_latitude = [np.degrees(flight[-1]) for flight in raw_data['TYPE_LATITUDE']]
+    land_longitude = [np.degrees(flight[-1]) for flight in raw_data['TYPE_LONGITUDE']]
+    ax.scatter(land_longitude, land_latitude, zorder=zorder, marker='x', label=label)
+
+ax.set_title(f'{plot_title} Dropzone Analysis')
+ax.set_xlim(BBox[0],BBox[1])
+ax.set_ylim(BBox[2],BBox[3])
+ax.set_xlabel('Longitude [WGS84]')
+ax.set_ylabel('Latitude [WGS84]')
+ax.text(x=1, y=0.01, s=attribution, horizontalalignment='right', verticalalignment='bottom', rotation='vertical', fontsize=8, color='gray', alpha=0.9, transform=ax.transAxes)
+ax.legend()
+if save_fig:
+    plt.savefig(f'../results/{plot_name}_dropzone_analysis.pdf')
+plt.show()
+
+
+","Latitude is not scaling the same way as longitude in real life. This has nothing to do with thunderforest or openstreetmap.
+When at North Pole, to travel 180⁰ of latitude, you need to walk 20000 kms south (or north, or west, or where ever you want in a straigth line).
+To travel 180⁰ of longitude, just turn around. If you happen to be a dervish, you can travel thousand of degrees of longitude in a few seconds. It would take a liftetime to do the same with latitude.
+Only at equator (roughly) does latitude and longitude scale the same way.
+To be more accurate, since your screenshot shows the latitude, I can tell you that 1100 pixels correspond to 0.09453125°xcos(39.44) = 0.073 degrees of latitude, where you are if they represent 0.09453125° of longitude.
+See picture:
+
+Along the ""vertical"" circles, that is the meridians (those that pass through both poles), 1 degree of latitude (marked by intersction with ""horizontal"" circles, the parallels) worth always the same distance. Those meridians are just circles split evenly in latitudes sectors.
+Those meridians all have the same diameter (which is Earth diameter).
+So, 1⁰ along a meridian (along a south-north direction) is always 1/360 the circumference of the Earth.
+It is not the same for longitude. Longitude is your position inside one of the ""horizontal"" circles (the parallels). They are also evenly spaced. So 1⁰ along a parallel, aka 1⁰ of longitude, is also 1/360 the circumference of the circle. But not all those circles, not all parallel share the same diameter, hence the do not share the same circumference.
+And if you think at what is the diameter of those circles, that is quite easy. See that flatten image (and pardon my French, litteraly):
+
+You see that the diameter of each parallel is, once projected flat as in the picture, the length of the line. So radius of parallel at latitude 40⁰, is the length of the line marked 40⁰ on this image. And that length is easy to compute. It is the length of the x-axis (aka Equator) times cos(40).
+In your case, you are on a parallel at latitude 39.44 degrees. So diameter of the parallel is cos(39.44) times the diameter of the equator. So circumference of the parallel 39.44 is also cos(39.44) the circumference of the Equator. Since circumference of Equator is (roughly) the circumference of the meridians, you can therefore conclude that circumference of parallel at 39.44 is cos(39.44) the circumference of meridian.
+So an arc (let of 0.09 degrees) of that parallel is also cos(39.44) the size of an arc of 0.09 degrees of the meridian at the same location.
+",python
+maximum call stack size exceeded error,"I am using a Direct Web Remoting (DWR) JavaScript library file and am getting an error only in Safari (desktop and iPad)
+It says 
+
+Maximum call stack size exceeded.
+
+What exactly does this error mean and does it stop processing completely?
+Also any fix for Safari browser (Actually on the iPad Safari, it says 
+
+JS:execution exceeded timeout
+
+which I am assuming is the same call stack issue)
+","It means that somewhere in your code, you are calling a function which in turn calls another function and so forth, until you hit the call stack limit.
+This is almost always because of a recursive function with a base case that isn't being met.
+Viewing the stack
+Consider this code...
+(function a() {
+    a();
+})();
+
+Here is the stack after a handful of calls...
+
+As you can see, the call stack grows until it hits a limit: the browser hardcoded stack size or memory exhaustion.
+In order to fix it, ensure that your recursive function has a base case which is able to be met...
+(function a(x) {
+    // The following condition 
+    // is the base case.
+    if ( ! x) {
+        return;
+    }
+    a(--x);
+})(10);
+
+",javascript
+function prototypes with multidimensional arrays as a parameter,"Brand new to C, I come from a Java background.
+I am having an issue where I can't compile because the compiler wants to know at compile time the size of my array. For example, I want to print my array to the console. It won't allow me to declare a function prototype as such:
+void printRoom(char[][], int, int); //not allowed 
+
+What am I supposed to do instead? Is there not a way around this? Online resources that I have found seem to indicate that I MUST know the  dimensions if I want to use a function prototype. It appears that it also requires that the function header have the size of the array as well.
+void printRoom(char room[][], int height, int width){ // not allowed, missing array bounds
+
+Would a valid solution to this problem just be to say the array is of size 1000*1000 (the maximum array size I can expect)? That seems sloppy to me but I'm pretty sure it would work as long as I stayed within the bounds of what the array size is actually supposed to be.
+I am NOT interested in pointers and malloc at this time. 
+","If the compiler supports variable length arrays then you can declare the function the following way
+void printRoom( int, int, char[*][*]); 
+
+or just
+void printRoom( int, int, char[][*]); 
+
+Here is a demonstrative program
+#include <stdio.h>
+#include <string.h>
+
+void printRoom( int, int, char[*][*]); 
+
+void printRoom( int m, int n, char a[m][n] )
+{
+    for ( int i = 0; i < m; i++ )
+    {
+        printf( ""%3s "", a[i] );
+        putchar( ' ');
+    }
+    printf( ""\n"" );
+}   
+
+int main(void) 
+{
+    const int M = 2;
+    const int N = 10;
+    char a[M][N];
+
+    strcpy( a[0], ""Hello"" ),
+    strcpy( a[1], ""World"" );
+
+    printRoom( M, N, a );
+
+    return 0;
+}
+
+Its output is
+Hello  World 
+
+If the compiler does not support VLAs then the number of columns has to be a constant. For example
+#define N 100
+
+//...
+
+void printRoom(char[][N], int, int); 
+
+",c
+c compiler dependencies on the architecture,"When a C Program is compiled and and executable is created, The exe makes certain assumptions with respect to the compiler. For example when a c program is compiled on a 32 bit system and run on the 64 bit system, what are the attributes that a program will have that won't change with the architecture?
+","C compilers translate C code to machine code. Machine code is different for different types of CPUs. The number of registers, the word size and memory bus size also varies between different architectures.
+Also, the interaction with the operating system is not the same. In an embedded system there might not even be any operating system.
+",c
+compile time error on online compilation,"import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Scanner;
+import java.io.FileNotFoundException;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+public class database {
+    String fileName;
+    Scanner input;
+    String[][] data;
+    List<String> useful_list;
+    List<String> records;
+    ArrayList<Object> handles;
+
+    public database(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void openFile() {
+        try {
+            input = new Scanner(new File(fileName));
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            return;
+        }
+    }
+
+    public void readRecords() {
+        // Read all lines (records) from the file into an ArrayList
+        records = new ArrayList<String>();
+        try {
+            while (input.hasNext())
+                records.add(input.nextLine());
+
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
+
+    }
+
+    public void parseFields() {
+        String delimiter = "",\n"";
+
+        // Create two-dimensional array to hold data (see Deitel, p 313-315)
+        int rows = records.size(); // #rows for array = #lines in file
+        data = new String[rows][]; // create the rows for the array
+        int row = 0;
+
+        for (String record : records) {
+            StringTokenizer tokens = new StringTokenizer(record, delimiter);
+            int cols = tokens.countTokens();
+            data[row] = new String[cols]; // create columns for current row
+            int col = 0;
+            while (tokens.hasMoreTokens()) {
+                data[row][col] = tokens.nextToken().trim();
+
+                col++;
+
+            }
+
+            row++;
+
+        }
+
+    }
+
+    public static void main(String[] args) {
+        String filename = null;
+        String[] values = new String[4];
+        String input = null;
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                System.in));
+
+        try {
+            filename = reader.readLine();
+            input = reader.readLine();
+            values = input.split("","");
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            System.out.println(""Invalid Input"");
+            return;
+        }
+
+        int[] input1;
+        input1 = new int[4];
+
+        try {
+            for (int j = 0; j < values.length; j++) {
+                input1[j] = Integer.parseInt(values[j]);
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            System.out.println(""Invalid Input"");
+            return;
+        }
+
+        if (input1[0] >= 4 || input1[0] <= 0) {
+            System.out.println(""Invalid Input"");
+            return;
+        }
+
+        database file1 = new database(filename);
+        file1.openFile();
+        file1.readRecords();
+        file1.parseFields();
+        file1.search(input1[1]);
+        if (file1.useful_list.size() == 0) {
+            System.out.println(""Data Unavailable"");
+            return;
+        }
+
+        file1.sortarray(input1[0] - 1);
+
+        int width = input1[2];
+        int skip = (input1[3] - 1) * width;
+        Iterator<Object> it = file1.handles.iterator();
+        for (int i = 1; i <= skip; i++) {
+            if (it.hasNext()) {
+                it.next();
+            } else {
+                System.out.println(""Data Unavailable"");
+                return;
+            }
+
+        }
+
+        for (int j = 1; j <= width && it.hasNext(); j++) {
+            String[] a = (String[]) it.next();
+            for (int i = 0; i < a.length; i++)
+                if(i<a.length-1)
+                System.out.print(a[i] + "","");
+                else
+                    System.out.print(a[i]);
+            System.out.println();
+        }
+
+    }
+
+    void sortarray(final int index) {
+        handles = new ArrayList<Object>();
+        for (int i = 0; i < data.length; i++)
+            handles.add(data[i]);
+
+        Collections.sort(handles, new Comparator<Object>() {
+            public int compare(Object o1, Object o2) {
+                String[] a = (String[]) o1;
+                String[] b = (String[]) o2;
+                if (index == 1 || index == 0) {
+                    int left = Integer.parseInt(a[index]);
+                    int right = Integer.parseInt(b[index]);
+                    return Integer.compare(left, right); //Line 165 
+                } else {
+
+                    if (a.length == 0 && b.length == 0)
+                        return 0;
+                    if (a.length == 0 && b.length != 0)
+                        return 1;
+                    if (a.length != 0 && b.length == 0)
+                        return -1;
+                    return a[index].compareTo(b[index]);
+                }
+            }
+
+            public boolean equals(Object o) {
+                return this == o;
+            }
+
+        });
+
+    }
+
+    void search(int searchs) {
+        useful_list = new ArrayList<String>();
+
+        for (int row = 0; row < data.length; row++) {
+
+            if (Integer.parseInt(data[row][0]) == searchs) {
+                // store in array list
+                useful_list.add(data[row][0] + "","" + data[row][1] + "",""
+                        + data[row][2] + "","" + data[row][3]);
+
+            }
+        }
+        if (useful_list.size() == 0) {
+            return;
+        }
+        String delimiter = "",\n"";
+
+        // Create two-dimensional array to hold data (see Deitel, p 313-315)
+        int rows = useful_list.size(); // #rows for array = #lines in file
+        data = new String[rows][]; // create the rows for the array
+        int row1 = 0;
+
+        for (String record : useful_list) {
+            StringTokenizer tokens = new StringTokenizer(record, delimiter);
+            int cols = tokens.countTokens();
+            data[row1] = new String[cols]; // create columns for current row
+            int col1 = 0;
+            while (tokens.hasMoreTokens()) {
+                data[row1][col1] = tokens.nextToken().trim();
+
+                col1++;
+
+            }
+
+            row1++;
+
+        }
+
+    }
+
+}
+
+this code is working fine on eclipse .
+but if i submit it for my online compilation ..
+it shows compile time error.  
+error message
+*database.java 163 cannotfindsymbolsymbol methodcompare int int location class java.lang.Integer return Integer.compare left right ;^1error*
+","Integer.compare(int,int) was introduced in Java 1.7.  I expect you are seeing that error because Java 6 or earlier is used to compile the code.  The docs. themselves (linked above) show how to do it for earlier Java (you should consult them at times like this).
+Integer.valueOf(x).compareTo(Integer.valueOf(y))
+
+",java
+issues interleaving pragma and __attribute__ on gcc,"Background
+Note: This is not important for the question
+I have some macros that act as slightly more general version of attributes, that I attach to functions. Depending on the compiler and compiler version, they will either expand to an attribute (e.g. __attribute__((nonnull))), or a warning (e.g. _Pragma(""message \""nonnull attribute unavailable\"""")). Since the attribute macros can be in any order, this can lead to them being intermixed (e.g. warning attribute attribute warning warning).
+The result is that I can have code like the following:
+Sample
+#pragma message ""one""
+__attribute__((cold))
+#pragma message ""two""
+__attribute__((noreturn))
+#pragma message ""three""
+void test(void);
+
+Issue
+Running clang, this sample code compiles perfectly fine, printing the three messages as expected.
+input.c:1:9: warning: one [-W#pragma-messages]
+#pragma message ""one""
+        ^
+input.c:3:9: warning: two [-W#pragma-messages]
+#pragma message ""two""
+        ^
+input.c:5:9: warning: three [-W#pragma-messages]
+#pragma message ""three""
+        ^
+
+Running gcc however, gives me an error on the second #pragma. If I comment that out, I get an error on the third #pragma.
+input.c:1:9: note: ‘#pragma message: one’
+    1 | #pragma message ""one""
+      |         ^~~~~~~
+input.c:3:9: error: expected identifier or ‘(’ before ‘#pragma’
+    3 | #pragma message ""two""
+      |         ^~~~~~~
+
+input.c:1:9: note: ‘#pragma message: one’
+    1 | #pragma message ""one""
+      |         ^~~~~~~
+input.c:5:9: error: expected identifier or ‘(’ before ‘#pragma’
+    5 | #pragma message ""three""
+      |         ^~~~~~~
+
+With experimentation, it seems that gcc does not accept any #pragma directives after an __attribute__.
+Reproducible Example
+Uncommenting the #pragma causes a reproducible error on GCC v11.4.0
+__attribute__((nonnull))
+// #pragma message ""this is an error""
+void test(void);
+
+Question
+Is there any fix or solution to allow me to intermingle the #pragma and __attribute__ directives on gcc, just like clang allows?
+","I've tried a number of different combinations and they all produce the results you're seeing.
+This could be due to the different ways that gcc and clang do parsing. clang has the preprocessor fully integrated. For gcc, it's a separate pass/program.
+So, AFAICT, no direct solution.
+
+I have some macros that act as slightly more general version of attributes, that I attach to functions. Depending on the compiler and compiler version, they will either expand to an attribute (e.g. __attribute__((nonnull))), or a warning (e.g. _Pragma(""message \""nonnull attribute unavailable\"""")).
+
+You didn't specify how the macros are conditionally generated, but I'll take a guess. You have something similar to  autoconf that probes the system and generates (e.g. config.h).
+There may be a workaround, if you [just] want to warn/error on an unsupported attribute.
+This is a bit of a hack, but ...
+#if HAVE_INLINE
+#define always_inline   always_inline
+#else
+#define always_inline   always_inline_not_supported
+#endif
+
+__attribute__ ((cold))
+__attribute__ ((noreturn))
+__attribute__ ((always_inline))
+void
+test(void *);
+
+Compiling with -DHAVE_INLINE compiles cleanly.
+Compiling without -DHAVE_INLINE produces:
+x.c:11:1: warning: ‘always_inline_not_supported’ attribute directive ignored [-Wattributes]
+ test(void *);
+ ^~~~
+
+It can be even simpler:
+#if !HAVE_INLINE
+#define always_inline   always_inline_not_supported
+#endif
+
+__attribute__ ((cold))
+__attribute__ ((noreturn))
+__attribute__ ((always_inline))
+void
+test(void *);
+
+",c
+calculating n mod m when m is not prime,"I have read a lot of good algos to calculate n! mod m but they were usually valid when m was prime . I wanted to know whether some good algo exists when m is not prime .I would be helpful if someone could write the basic function of the algo too.I have been using 
+long long factMOD(long long n,long long mod)
+{
+    long long res = 1; 
+    while (n > 0)
+    {
+        for (long long i=2, m=n%mod; i<=m; i++)
+        res = (res * i) % mod;
+        if ((n/=mod)%2 > 0) 
+        res = mod - res;
+    }
+    return res;
+}
+
+but getting wrong answer when I try to print factMOD(4,3) even. source of this algo is :
+http://comeoncodeon.wordpress.com/category/algorithm/
+","This is what I've come up with:
+#include <stdio.h>
+#include <stdlib.h>
+
+unsigned long long nfactmod(unsigned long long n, unsigned long long m)
+{
+    unsigned long long i, f;
+    for (i = 1, f = 1; i <= n; i++) {
+        f *= i;
+        if (f > m) {
+            f %= m;
+        }
+    }
+    return f;
+}
+
+int main(int argc, char *argv[])
+{
+    unsigned long long n = strtoull(argv[1], NULL, 10);
+    unsigned long long m = strtoull(argv[2], NULL, 10);
+
+    printf(""%llu\n"", nfactmod(n, m));
+
+    return 0;
+}
+
+and this:
+h2co3-macbook:~ h2co3$ ./mod 1000000 1001001779
+744950559
+h2co3-macbook:~ h2co3$
+
+runs in a fraction of a second.
+",c
+after capture conversion why i got two fresh typevariables with the generic type only having one type parameter,"A simple class is defined:
+class SimpleClass<T> {
+  public T t1;
+  public T t2;
+
+  public SimpleClass(T t1, T t2) {
+    this.t1 = t1;
+    this.t2 = t2;
+  }
+}
+
+test code:
+SimpleClass<?> p = new SimpleClass<String>(""a"", ""b"");
+p.t1 = p.t2;
+
+Compile this code, I got the error message:
+error: incompatible types: CAP#1 cannot be converted to CAP#2
+    p.t1 = p.t2;
+            ^
+  where CAP#1,CAP#2 are fresh type-variables:
+    CAP#1 extends Object from capture of ?
+    CAP#2 extends Object from capture of ?
+
+The declard type of p is SimpleClass<?>, after capture conversion, I thought I got some class like this:
+class SimpleClass_cap#1<CAP#1> {
+  public CAP#1 t1;
+  public CAP#1 t2;
+
+  public SimpleClass(CAP#1 t1, CAP#1 t2) {
+    this.t1 = t1;
+    this.t2 = t2;
+  }
+}
+
+which is based on jls:
+
+Let G name a generic type declaration (§8.1.2, §9.1.2) with n type parameters
+A_1,...,A_n with corresponding bounds U_1,...,U_n.
+There exists a capture conversion from a parameterized type G<T_1,...,T_n> (§4.5) to
+a parameterized type G<S_1,...,S_n>, where, for 1 ≤ i ≤ n :
+• If T_i is a wildcard type argument (§4.5.1) of the form ?, then S_i is a fresh type
+variable whose upper bound is U_i[A_1:=S_1,...,A_n:=S_n] and whose lower bound
+is the null type (§4.1).
+
+My question is: After delcared p as SimpleClass<?>, why I got two fresh type-variables CAP#1 and CAP#2?
+","Capture conversion happens twice in the line p.t1 = p.t2;. Each of the two ps are converted, so each of their types have a fresh type variable. The type of the first p is SimpleClass<CAP1>, and the type of the second p is SimpleClass<CAP2>.
+This is specified in 6.5.6, where it discusses expression names. Let's try to find out the type of p.t1. This is of the form Q.Id, so we go to 6.5.6.2, where this case applies
+
+If Q is an expression name, let T be the type of the expression Q:
+
+So we need to find T, which is the type of p in our case. Let's go to 6.5.6.1 where it talks about simple expression names.
+
+If the expression name appears in an assignment context, invocation context, or casting context, then the type of the expression name is the declared type of the field, local variable, or parameter after capture conversion.
+
+This is where p is converted to SimpleClass<CAP1>.
+Then if you go back to 6.5.6.2 and follow the rest of the section, we can conclude that p.t1 is of type CAP1. And the same thing applies to the right hand side of the assignment.
+",java
+minimizing jar dependency sizes,"an application I have written uses several third party jars. Sometimes only a small portion of the entire 50kB to 1.7mB jar is used - one or two function calls or classes.
+What is the best way to reduce the jar sizes. Should I download the sources and build a jar with just the classes I need? What existing tools can help automate this (ex I briefly looked at http://code.google.com/p/jarjar/)?
+Thank you
+Edit 1:
+I would like to lower the size of my third party 'official' jars like swingx-1.6.jar (1.4 MB), set-3.6 (1.7 MB) glazedlists-1.8.jar (820kB) , etc. so that they only contain the bare minimum classes I need
+Edit 2:
+Minimizing a jar by hand or by using a program like proguard is further complicated if the library uses reflection.
+Injection with google guice does not work anymore after obfuscation with proguard
+The answer by cletus on another post is very good How to determine which classes are used by a Java program?
+","Proguard would be an option.  It can eliminate unused classes and methods.  You can also use it to obfuscate, which can further reduce the size of your final jar.  Be aware that class loading by name is liable to break unless care is taken to keep the affected classes unobfuscated.
+I've found Proguard quite effective - can be a bit cryptic to understand at the outset.  But I don't have any experience with similar to offer a comparison.
+",java
+how to create variablesized array of fixedlength quotstringsquot in c,"I am trying to create an array of fixed-length ""strings"" in C, but have been having a little trouble. The problem I am having is that I am getting a segmentation fault. 
+Here is the objective of my program: I would like to set the array's strings by index using data read from a text file. Here is the gists of my current code (I apologize that I couldn't add my entire code, but it is quite lengthy, and would likely just cause confusion):
+//""n"" is set at run time, and 256 is the length I would like the individual strings to be
+char (*stringArray[n])[256];
+char currentString[256];
+
+//""inputFile"" is a pointer to a FILE object (a .txt file)
+fread(&currentString, 256, 1, inputFile);
+//I would like to set the string at index 0 to the data that was just read in from the inputFile
+strcpy(stringArray[i], &currentString);
+
+","Note that if your string can be 256 characters long, you need its container to be 257 bytes long, in order to add the final \0 null character.
+typedef char FixedLengthString[257];
+FixedLengthString stringArray[N];
+FixedLengthString currentString;
+
+The rest of the code should behave the same, although some casting might be necessary to please functions expecting char* or const char* instead of FixedLengthString (which can be considered a different type depending on compiler flags).
+",c
+using struct member as recursion seed doesn39t terminate when selfreferencing gt1 of itself,"Consider this function: void *r_get_ndim_enum(struct N_dim_array *ctx);. It does some processing with ctx as well as uses a member of ctx as a seed for recursive calls to itself (decrementing until the terminating condition is meet), and at the terminating point, set the member to the original value. Here follows my implementation.
+int inc_i = 0;
+void *r_get_ndim_enum(struct N_dim_array *ctx) {
+    int w,n,np;
+    int *arr; 
+    void **p;
+
+    w = ctx->size;
+    n = ctx->depth;
+    np = ctx->depthpl;
+
+
+    p = calloc(sizeof(void*), n);
+    arr = calloc(sizeof(int), w);
+
+    for(int j=0;j<w;++j)
+        arr[j] = inc_i++;
+
+    if( np == 0 ) {
+        ctx->depthpl = n;
+        return arr;
+    }
+
+    ctx->depthpl -= 1;
+    for(int i=0;i<n;++i)
+        p[i] = r_get_ndim_enum(ctx);
+        
+    return p;
+}
+  
+
+This commented out code terminates, however on the contrary self-calling the function twice leads to no termination, something which doesn't get through my head why. Though I do feel an essence of erroneous code in between somewhere, but can't anchor to the right direction.
+The code in reference is rapid-prototyped, not the actual one I'm using. The original implementation is close to enclosing the self-call under a loop, NULL checking and the free()ing mechanism. My main goal for not using an extra parameter as seed is so the user need not duplicate something already contained in the struct as an extra parameter to the function.
+Please point me to why the second call leads the function not terminating, I can't untangle the trick.
+","Lets assume that ctx->depthpl == 1 (which means np == 1 is also true).
+Then you do the two statements:
+ctx->depthpl -= 1;
+p[0] = r_get_ndim_enum(ctx);
+
+In the recursive call to r_get_ndim_enum you will have ctx->depthpl == 0 which means the recursion will end. But before that you do
+ctx->depthpl = n;
+
+So when the current call returns and you call r_get_ndim_enum again, then you will have ctx->depthpl == n.
+
+A little condensed, and still assuming that ctx->depthpl == 1:
+// Here ctx->depthpl == 1
+ctx->depthpl -= 1;
+// Here ctx->depthpl == 0
+p[0] = r_get_ndim_enum(ctx);
+// Here ctx->depthpl == n !
+p[0] = r_get_ndim_enum(ctx);
+
+If n != 0 then you will have infinite recursion.
+",c
+enumerate all full labeled binary tree,"I'm searching a practical algorithm for enumerating all full labeled binary tree.
+A full binary tree is a tree where all internal nodes has a degree 3, the leaves has degree 1 and the root has a degree 2.
+A labeled tree is a tree where all leaves has a unique label.
+Example:
+    *
+    |\
+    | \
+    *  *
+   /|  |\
+  / |  | \
+ T  C  D  F
+
+","From comments, it is clear that the question is to enumerate rooted unordered labelled full binary trees. As explained in this paper, the number of such trees with n labels is (2n-3)!! where !! is the double factorial function.
+The following python program is based on the recursive proof in the referenced paper; I think the code is straight-forward enough that it will pass as an explanation of the algorithm:
+# A very simple representation for Nodes. Leaves are anything which is not a Node.
+class Node(object):
+  def __init__(self, left, right):
+    self.left = left
+    self.right = right
+
+  def __repr__(self):
+    return '(%s %s)' % (self.left, self.right)
+
+# Given a tree and a label, yields every possible augmentation of the tree by
+# adding a new node with the label as a child ""above"" some existing Node or Leaf.
+def add_leaf(tree, label):
+  yield Node(label, tree)
+  if isinstance(tree, Node):
+    for left in add_leaf(tree.left, label):
+      yield Node(left, tree.right)
+    for right in add_leaf(tree.right, label):
+      yield Node(tree.left, right)
+
+# Given a list of labels, yield each rooted, unordered full binary tree with
+# the specified labels.
+def enum_unordered(labels):
+  if len(labels) == 1:
+    yield labels[0]
+  else:
+    for tree in enum_unordered(labels[1:]):
+      for new_tree in add_leaf(tree, labels[0]):
+        yield new_tree
+
+For n == 4, there are (2*4 - 3)!! == 5!! == 1 * 3 * 5 == 15 trees:
+>>> for tree in enum_unordered((""a"",""b"",""c"",""d"")): print tree
+... 
+(a (b (c d)))
+((a b) (c d))
+(b (a (c d)))
+(b ((a c) d))
+(b (c (a d)))
+(a ((b c) d))
+((a (b c)) d)
+(((a b) c) d)
+((b (a c)) d)
+((b c) (a d))
+(a (c (b d)))
+((a c) (b d))
+(c (a (b d)))
+(c ((a b) d))
+(c (b (a d)))
+
+Another possible interpretation of the question was that it sought an enumeration of rooted ordered full binary trees with a specified list of labels. The number of such trees with n leaves is given by Cn-1, from the Catalan number sequence.
+def enum_ordered(labels):
+  if len(labels) == 1:
+    yield labels[0]
+  else:
+    for i in range(1, len(labels)):
+      for left in enum_ordered(labels[:i]):
+        for right in enum_ordered(labels[i:]):
+          yield Node(left, right)
+
+For 5 labels, we have C5-1 == 14:
+>>> for tree in enum_ordered((""a"",""b"",""c"",""d"", ""e"")): print tree
+... 
+(a (b (c (d e))))
+(a (b ((c d) e)))
+(a ((b c) (d e)))
+(a ((b (c d)) e))
+(a (((b c) d) e))
+((a b) (c (d e)))
+((a b) ((c d) e))
+((a (b c)) (d e))
+(((a b) c) (d e))
+((a (b (c d))) e)
+((a ((b c) d)) e)
+(((a b) (c d)) e)
+(((a (b c)) d) e)
+((((a b) c) d) e)
+
+",python
+how and when to align to cache line size,"In Dmitry Vyukov's excellent bounded mpmc queue written in C++
+See: http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
+He adds some padding variables.  I presume this is to make it align to a cache line for performance.  
+I have some questions.
+
+Why is it done in this way?  
+Is it a portable method that will
+always work 
+In what cases would it be best to use __attribute__
+((aligned (64))) instead. 
+why would padding before a buffer pointer help with performance? isn't just the pointer loaded into the cache so it's really only the size of a pointer?
+static size_t const     cacheline_size = 64;
+typedef char            cacheline_pad_t [cacheline_size];
+
+cacheline_pad_t         pad0_;
+cell_t* const           buffer_;
+size_t const            buffer_mask_;
+cacheline_pad_t         pad1_;
+std::atomic<size_t>     enqueue_pos_;
+cacheline_pad_t         pad2_;
+std::atomic<size_t>     dequeue_pos_;
+cacheline_pad_t         pad3_;
+
+
+Would this concept work under gcc for c code?
+","It's done this way so that different cores modifying different fields won't have to bounce the cache line containing both of them between their caches. In general, for a processor to access some data in memory, the entire cache line containing it must be in that processor's local cache. If it's modifying that data, that cache entry usually must be the only copy in any cache in the system (Exclusive mode in the MESI/MOESI-style cache coherence protocols). When separate cores try to modify different data that happens to live on the same cache line, and thus waste time moving that whole line back and forth, that's known as false sharing.
+In the particular example you give, one core can be enqueueing an entry (reading (shared) buffer_ and writing (exclusive) only enqueue_pos_) while another dequeues (shared buffer_ and exclusive dequeue_pos_) without either core stalling on a cache line owned by the other.
+The padding at the beginning means that buffer_ and buffer_mask_ end up on the same cache line, rather than split across two lines and thus requiring double the memory traffic to access.
+I'm unsure whether the technique is entirely portable. The assumption is that each cacheline_pad_t will itself be aligned to a 64 byte (its size) cache line boundary, and hence whatever follows it will be on the next cache line. So far as I know, the C and C++ language standards only require this of whole structures, so that they can live in arrays nicely, without violating alignment requirements of any of their members. (see comments)
+The attribute approach would be more compiler specific, but might cut the size of this structure in half, since the padding would be limited to rounding up each element to a full cache line. That could be quite beneficial if one had a lot of these.
+The same concept applies in C as well as C++.
+",c
+how do i print in double precision,"I'm completely new to C and I'm trying to complete an assignment. The exercise is to print tan(x) with x incrementing from 0 to pi/2.
+We need to print this in float and double. I wrote a program that seems to work, but I only printed floats, while I expected double.
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+int main()
+{
+    double x;
+    
+    double pi;
+    pi = M_PI;
+     
+    for (x = 0; x<=pi/2; x+= pi/20)
+    {
+        printf(""x = %lf, tan = %lf\n"",x, tan(x));
+        
+    }
+    
+    exit(0);
+}
+
+My question is:
+
+Why do I get floats, while I defined the variables as double and used %lf in the printf function?
+
+What do I need to change to get doubles as output?
+
+
+","
+Why do I get floats, while I defined the variables as double and used %lf in the printf function?
+
+Code is not getting ""floats"", output is simply text.  Even if the argument coded is a float or a double, the output is the text translation of the floating point number - often rounded.
+printf() simply follows the behavior of ""%lf"": print a floating point value with 6 places after the decimal point.  With printf(), ""%lf"" performs exactly like ""%f"".
+printf(""%lf\n%lf\n%f\n%f\n"", 123.45, 123.45f, 123.45, 123.45f);
+// 123.450000
+// 123.449997
+// 123.450000
+// 123.449997
+
+
+What do I need to change to get doubles as output?
+
+Nothing, the output is text, not double.  To see more digits, print with greater precision.
+printf(""%.50f\n%.25f\n"", 123.45, 123.45f);
+// 123.45000000000000284217094304040074348449710000000000
+// 123.4499969482421875000000000
+
+
+how do I manipulate the code so that my output is in float notation?
+
+Try ""%e"", ""%a"" for exponential notation.    For a better idea of how many digits to print: Printf width specifier to maintain precision of floating-point value.
+printf(""%.50e\n%.25e\n"", 123.45, 123.45f);
+printf(""%a\n%a\n"", 123.45, 123.45f);
+
+// 1.23450000000000002842170943040400743484497100000000e+02
+// 1.2344999694824218750000000e+02
+// 0x1.edccccccccccdp+6
+// 0x1.edccccp+6
+
+printf(""%.*e\n%.*e\n"", DBL_DECIMAL_DIG-1, 123.45, FLT_DECIMAL_DIG-1,123.45f);
+// 1.2345000000000000e+02
+// 1.23449997e+02
+
+",c
+how to covert a frame np array to a pytorch tensor,"i need to convert a frame of the video (which is a nparray) to a pytorch tensor, do some particular actions with it and convert it back but i'm struggling
+so, i have a frame returned from video_capture.read() and, as i understood, it's a np array. firstly, i convert it to a tensor and checks if looks correctly (sorry i can't add photos for some reason)
+then i analyze it (no mistakes), try to rotate it and here's a problem.
+
+frame.show() shows the tensor in different colours, looks super wrong
+self.check_tensor(rotated_tensor) after rotation shows just a black screen
+
+can somebody please help me to fix this, i'm so exhausted, chatgpt confuses me even more and don't understand anything... i guess the problem with colours is related to how i convert tensor to pil image, but i tried several changes (commented lines) and nothing hepled.
+also is there a way to avoid converting tensor to pil image before the rotation? can't i just rotate a tensor?
+def tensor_to_image(tensor):
+    tensor = (tensor * 255).byte()
+    tensor = tensor.squeeze(0)
+    tensor = tensor.permute(1, 2, 0)
+    image = Image.fromarray(np.array(tensor).astype(np.uint8))
+    image = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(np.asarray(image))
+    return image
+
+def rotate_tensor(frame_tensor, landmarks):
+    roll = calc_face_angle(landmarks)
+    frame = tf.to_pil_image(frame_tensor.squeeze(0))
+    #frame = tensor_to_image(frame_tensor)
+    frame.show()
+
+    if not np.isnan(roll):
+        rotated_frame = frame.rotate(roll, resample=Image.BICUBIC, expand=True)
+    else:
+        print(""Failed to calculate face angle for rotation"")
+        return frame_tensor
+
+    #rotated_tensor = tf.to_tensor(rotated_frame).unsqueeze(0)
+    
+    transform = transforms.ToTensor() # Используем torchvision для преобразования в тензор
+    rotated_tensor = transform(rotated_frame).unsqueeze(0)
+    return rotated_tensor
+    
+
+def check_tensor(self, frame_tensor):
+    frame_numpy = frame_tensor.squeeze(0).permute(1, 2, 0).byte().numpy()
+    #frame_numpy = cv2.cvtColor(frame_numpy, cv2.COLOR_RGB2BGR)
+
+    cv2.imshow(""Frame"", frame_numpy)
+    cv2.waitKey(0)   
+    cv2.destroyAllWindows() 
+
+
+def analyze_video(self, video_path):
+    video_capture = cv2.VideoCapture(video_path)
+
+    for i in range(1):
+        ret, frame = video_capture.read()
+        if not ret:
+            break
+
+        # преобразуем фрейм в тензор
+        frame_tensor = torch.from_numpy(frame).float()
+        frame_tensor = frame_tensor.permute(2, 0, 1).unsqueeze(0)
+        #frame_tensor = frame_tensor[:, [2, 1, 0], :, :]
+
+        self.check_tensor(frame_tensor)
+
+  
+        orig_prediction = self.analyze_frame(frame_tensor)
+   
+        rotated_tensor = im.rotate_tensor(frame_tensor, orig_prediction.head())
+        self.check_tensor(rotated_tensor)
+
+","
+The reason frame.show() is showing the wrong colors is because OpenCV uses the BGR format while PyTorch and PIL use the RGB format. Your frame is created from OpenCV (BGR format) and then you attempt to display it with PIL (RGB format) without any conversion.
+Usually for image processing, libraries expect values in the range [0, 1] for floats and [0, 255] for integers. The reason self.check_tensor(rotated_tensor) shows a black screen is because the image-to-tensor conversion in rotate_tensor() normalizes the values to the range [0, 1] and when you cast it to an integer in check_tensor() it floors all of the values to 0 since they are all decimals between 0 and 1 so you need to multiply the tensor by 255 after rotating.
+Since your array already has a range [0, 255] you don't want to multiply it by 255 again in tensor_to_image() and if you do OpenCV and PIL will usually mod the values leading to unexpected colors.
+
+def tensor_to_image(tensor):
+    tensor = tensor.byte()
+    tensor = tensor.squeeze(0)
+    tensor = tensor.permute(1, 2, 0)
+    image = Image.fromarray(np.array(tensor).astype(np.uint8))
+    image = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(np.asarray(image))
+    return image
+
+def rotate_tensor(frame_tensor, landmarks):
+    roll = calc_face_angle(landmarks)
+    frame = tensor_to_image(frame_tensor)
+    frame.show()
+
+    if not np.isnan(roll):
+        rotated_frame = frame.rotate(roll, resample=Image.BICUBIC, expand=True)
+    else:
+        print(""Failed to calculate face angle for rotation"")
+        return frame_tensor
+    
+    rotated_frame = cv2.cvtColor(np.asarray(rotated_frame), cv2.COLOR_RGB2BGR)
+    transform = transforms.ToTensor()
+    rotated_tensor = transform(rotated_frame).unsqueeze(0)
+    return rotated_tensor * 255
+
+",python
+coderunner is not working,"I am having some problem with Coderunner. It was running with out any problem but now it is not.As you see in image below.
+Please, can you help me to resolve this problem. Thanks!
+http://yadi.sk/d/tDkp1K8v6aeby
+","Did you uninstall Xcode, or upgrade your OS recently ? Because Coderunner need Command Line Tool to work properly.
+How to install Command Line Tool for Lion and above.
+",c
+what happens if an invalid address is prefetched,"Simple MWE:
+int* ptr = (int*)malloc(64 * sizeof(int));
+_mm_prefetch((const char*)(ptr + 64), _MM_HINT_0);
+
+
+Is this defined or undefined behavior?
+Can this raise a signal and abort the program run?
+
+I'm asking since I can see such prefetching in compiler generated code, where inside a loop prefetching is done without checking the address (stored in rbx):
+400e73:       49 83 c5 40             add    r13,0x40
+400e77:       62 f1 f9 08 28 03       vmovapd zmm0,ZMMWORD PTR [rbx]
+400e7d:       4d 3b ec                cmp    r13,r12
+400e80:       62 d1 f9 08 eb 4d ff    vporq  zmm1,zmm0,ZMMWORD PTR [r13-0x40]
+400e87:       90                      nop
+400e88:       62 d1 78 08 29 4d ff    vmovaps ZMMWORD PTR [r13-0x40],zmm1
+400e8f:       72 03                   jb     400e94 <main+0x244>
+400e91:       49 89 c5                mov    r13,rax
+400e94:       62 f1 78 08 18 53 1d    vprefetch1 [rbx+0x740]
+400e9b:       ff c1                   inc    ecx
+400e9d:       62 f1 78 08 18 4b 02    vprefetch0 [rbx+0x80]
+400ea4:       48 83 c3 40             add    rbx,0x40
+400ea8:       81 f9 00 00 10 00       cmp    ecx,0x100000
+400eae:       72 c3                   jb     400e73 <main+0x223>
+
+","First of all, the compiler doing it or you doing it are very different things in theory. Just because it looks equivalent doesn't make it so, the compiler is allowed to use any dirty hacks that work no matter whether they're expressible or defined in fully standard C.
+Of course prefetching doesn't generate signals*, it would be nearly useless if it did. It can be very slow for some invalid pointers on especially older CPUs (see eg The problem with prefetch), but that's an old article and it doesn't seem to be so bad anymore these days, for example on Intel Rocket Lake prefetching invalid pointers is no big deal. Even if it doesn't fall into that performance pitfall, explicit prefetching isn't free and doesn't necessarily help (many normal access patterns are covered by automatic prefetching for example). So the compiler can safely use it, but it shouldn't indiscriminately use it for everything ever.
+Now using pointer arithmetic to create out of bounds pointers (except just past the end) is UB in theory, but when applied to a pointer it's the kind of UB that will mostly work anyway (with flat memory it's just an addition, the only way it could fail is if the compiler goes out of its way to detect it, and that means it would have to reason about dynamic sizes). Obviously the above case must be supported by compilers claiming to support SSE intrinsics otherwise you couldn't reasonably use prefetching, as demonstrated by this answer (and there's a bunch more extra guarantees they must make on top of the Standard).
+Regarding ""UB? This is hardware, not a language standard"" from the comments: that would be the case if you wrote assembly code. If you're writing C, anything that happens ""in C"" is at least in principle under the jurisdiction of the C standard, and that includes creating a potentially invalid (from C's point of view) pointer, eg further beyond the end of an object than ""one past the end"", which may or may not be also invalid from the point of view of the hardware. What the prefetch intrinsic does is not under the jurisdiction of the C standard, but the (potential) problem occurs outside of that. If there was a prefetch intrinsic with an offset parameter this problem could be side-stepped, but neither Intel-style prefetch intrinsics nor GCC-style __builtin_prefetch take an offset.
+
+* from Intel's SDM asm manual (https://www.felixcloutier.com/x86/prefetchh):
+
+The PREFETCHh instruction is merely a hint and does not affect program behavior.
+
+Signal would affect program behavior, so they cannot be generated.
+Another piece of evidence from the manual is the list of possible exceptions including only #UD (illegal instruction) if a lock prefix is used.  Notably absent are #PF page faults or #GP(0) general-protection faults on non-canonical 64-bit addresses.  (Not correctly sign-extended from 48 or 57-bit).  Those are the hardware exceptions that you would get from normal loads on bad addresses.
+Real Intel CPUs such as Skylake don't fault on either of those types of bad address with prefetch instructions.  (So you can't trigger hard / soft page faults with software prefetch either; soft vs. hard vs. invalid is only determined after the hardware #PF exception is taken.  The CPU will abandon the prefetch after at most a page-walk if there's no valid mapping for the page.)
+",c
+including spring boot endpoint path variable as a metric dimension,"I have api endpoint : /user/{tenant}/create
+I am using spring boot 2 with micrometer for metrics.
+By default @Timer annotation for spring boot 2 endpoint includes the following tags: exception,method, uri, status
+I want to add the passed value for api parameter ""tenant"" as an extra tag for the endpoint
+How do I do that with spring boot 2 and micrometer
+","Use custom WebMvcTagsProvider, e.g.:
+@Bean
+public WebMvcTagsProvider webMvcTagsProvider() {
+    return new WebMvcTagsProvider() {
+        @Override
+        public Iterable<Tag> getTags(HttpServletRequest request, HttpServletResponse response, Object handler, Throwable exception) {
+            return ((Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+                    .entrySet()
+                    .stream()
+                    .map(entry -> new ImmutableTag(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        public Iterable<Tag> getLongRequestTags(HttpServletRequest request, Object handler) {
+            return new ArrayList<>();
+        }
+    };
+}
+
+",java
+update springboot 341 spring security error a filter chain that matches any request has already been configured,"I have two security configurations  in two libs
+First one is for authentication:
+    @Bean
+    @Order(10)
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorizeRequests ->
+                        authorizeRequests
+                                .requestMatchers(createAntRequestMatchers(whitelist))
+                                .permitAll().anyRequest()
+                                .authenticated()
+                )
+                .oauth2ResourceServer( ...)
+        return http.build();
+    }
+
+Second one adds some resource filter:
+    @Bean
+    @Order(100)
+    public SecurityFilterChain filterChain(HttpSecurity http, ResourceFilter resourceFilter) throws Exception {
+        return      http
+                .authorizeHttpRequests(authorizeRequests ->
+                        authorizeRequests
+                                .requestMatchers(createAntRequestMatchers(whitelist))
+                                .permitAll().anyRequest()
+                                .authenticated()
+                ).addFilterAfter(resourceFilter, SessionManagementFilter.class).build();
+    }   
+
+It worked perfect until spring-boot 3.3.?
+After update to spring-boot 3.4.1 spring context don't startet anymore with error message
+A filter chain that matches any request [DefaultSecurityFilterChain defined as 'filterChain' in ... has already been configured, which means that this filter chain ... will never get invoked. Please use HttpSecurity#securityMatcher to ensure that there is only one filter chain configured for 'any request' and that the 'any request' filter chain is published last.
+After I add in each configuration requestMatcher (all requests)
+http.securityMatcher(""/**"").authorizeHttpRequests(...
+
+it works as expected. But if I read spring-security issue comments https://github.com/spring-projects/spring-security/issues/15220
+I have a doubts about my solution.
+What do you mean?
+I adapt my code acording @Roar S. suggestion
+    @Bean
+    @Order(10)
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher(""/**"")
+                .authorizeHttpRequests(authorizeRequests ->
+                        authorizeRequests
+                                .requestMatchers(createAntRequestMatchers(whitelist))
+                                .permitAll().anyRequest()
+                                .authenticated()
+                )
+                .oauth2ResourceServer( ...)
+        return http.build();
+    }
+
+---------
+
+    @Bean
+    @Order(100)
+    public SecurityFilterChain filterChain(HttpSecurity http, ResourceFilter resourceFilter) throws Exception {
+        return http.securityMatcher(""/**"")
+        .addFilterAfter(resourceFilter, SessionManagementFilter.class).build();
+    }   
+
+
+
+It works, but .securityMatcher(""/**"") looks suspicious. And without .securityMatcher(""/**"") it doesn't start
+","Update: OP mentioned in a comment that the first SecurityFilterChain is shared across multiple applications and cannot be modified. Since the issue involves simply adding a filter that needs to execute after the shared SecurityFilterChain, we can address it using FilterRegistrationBean instead of using two security chains. The following code is based on this answer.
+LoggingFilter is the same as in my original answer.
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class FilterConfig {
+
+    @Bean
+    public FilterRegistrationBean<LoggingFilter> afterAuthFilterRegistrationBean(
+            SecurityProperties securityProperties) {
+        
+        var filterRegistrationBean = new FilterRegistrationBean<LoggingFilter>();
+
+        // a filter that extends OncePerRequestFilter
+        filterRegistrationBean.setFilter(new LoggingFilter());
+
+        // this needs to be a number greater than than spring.security.filter.order
+        filterRegistrationBean.setOrder(securityProperties.getFilter().getOrder() + 1);
+        return filterRegistrationBean;
+    }
+}
+
+
+Original answer
+OP has separated security configuration into two chains under the assumption, I believe, that the principal becomes available only after a security chain is fully executed. However, the principal is populated and available after the BearerTokenAuthenticationFilter has completed. Therefore, the two chains in the question can be merged into one.
+This behavior can be verified by adding the following logging filter to the chain with:
+.addFilterAfter(new LoggingFilter(), BearerTokenAuthenticationFilter.class)
+
+Here is the logging filter implementation:
+    private static class LoggingFilter extends OncePerRequestFilter {
+
+        @Override
+        protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                        @NonNull HttpServletResponse response,
+                                        @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null) {
+                LOG.info(""Logged in as: {}"", authentication.getName());
+                LOG.info(""Authorities: {}"",
+                        authentication.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.joining("", ""))
+                );
+            } else {
+                LOG.info(""No user"");
+            }
+
+            filterChain.doFilter(request, response);
+        }
+    }
+
+",java
+storage of bool in c under various compilers and optimization levels,"trivial example program:
+#include <stdio.h>
+main()
+{
+    bool tim = true;
+    bool rob = false;
+    bool mike = true;
+
+    printf(""%d, %d, %d\n"", tim, rob, mike);
+
+}
+
+Using the gcc compiler it appearers, based on looking at the assembly output, that each bool is stored as a bit in individual bytes:
+0x4004fc <main()+8>          movb      $0x1,-0x3(%rbp)
+0x400500 <main()+12>         movb      $0x0,-0x2(%rbp)
+0x400504 <main()+16>         movb      $0x1,-0x1(%rbp)
+
+if, however, one turns optimization on, is there a level of optimization that will cause gcc to store these bools as bits in a byte or would one have to put the bools in a union of some bools and a short int?  Other compilers?  I have tried '-Os' but I must admit I can't make heads or tails of the output disassembly.
+","@Keith Thompson's good answer can explain what happened with the code example in the question. But I'll assume that the compiler doesn't transform the program. According to the standard, a bool (a macro in stdbool.h the same as the keyword _Bool) must have a size of one byte. 
+C99 6.2.6.1 General
+
+Except for bit-fields, objects are composed of contiguous sequences of one or more bytes,
+  the number, order, and encoding of which are either explicitly specified or
+  implementation-defined.
+
+This means that any type(except bit-fields, including bool) of objects must have at least one byte.
+C99 6.3.1.1 Boolean, characters, and integers
+
+The rank of_Bool shall be less than the rank of all other standard integer types.
+
+This means bool's size is no more than a char(which is an integer type). And we also know that the size of an char is guaranteed to be one byte. So the size of bool should be at most one byte.
+Conclusion: the size of bool must be one byte.
+",c
+what exactly is the file keyword in c,"I've started learning some C as a hobby and have blindly used FILE as a declaration for file pointers for quite some time, and I've been wondering. Is this a keyword or special data type for C to handle files with? Does it contain a stream to the file within and other data? Why is it defined as a pointer?
+An example to show what I mean to make it a little more clear:
+FILE* fp; //<-- this
+fp = fopen(""datum.txt"", ""r"");
+
+while(!feof(fp)) {
+   // etc.
+}
+
+","
+is this a keyword or special data type for C to handle files with?
+
+What you are refering to is a typedef'd structure used by the standard io library to hold the appropriate data for use of fopen, and its family of functions.
+
+Why is it defined as a pointer?
+
+With a pointer to a struct, you can then pass it as a parameter to a function. This is for example what fgets or fgetc will accept, in the form of function(FILE* fp)
+The fopen function will return a pointer to a newly created FILE struct, assigning this new pointer to your unused one will cause them to point to the same thing.
+
+Does it contain a stream to the file within and other data? 
+
+The structure definition seems a little more illusive than its description. This is directly taken from my stdio.h, from MinGW32 5.1.4
+typedef struct _iobuf
+{
+    char*   _ptr;
+    int _cnt;
+    char*   _base;
+    int _flag;
+    int _file;
+    int _charbuf;
+    int _bufsiz;
+    char*   _tmpfname;
+} FILE;
+
+Which includes the lovely comment before it:
+
+Some believe that nobody in their right mind should make use of the
+   internals of this structure. 
+
+The contents of this structure appear to change greatly on other implementations, the glibc sources usually have some form of commenting but their structure for this is burried under a lot of code.
+It would make sense to heed the aforementioned warning and just not worry what it does. :)
+",c
+when is a java thread alive,"This is a pretty basic question about the vocabulary of Java threads. 
+I can't see any possible duplicates but there might be.
+What does the word alive refer to in Oracles documentation? 
+Is it when the run() method has not yet completed or is it any other parameter?
+","According to the Javadoc you mentionned:
+
+A thread is alive if it has been started and has not yet died.
+
+A thread ""starts"" when its start() method is invoked and ""dies"" at the end of its  run() method, or when stop() (now deprecated) is invoked. So yes, a thread is ""alive"" when its run() method is still ongoing, but it is also ""alive"" in the time window between the invocation of start() and the implicit invocation of the run() method by the JVM.
+You can also check the Thread.getState() and interesting information about Thread States suggested by @Marou Maroun.
+I am also following his suggestion warning you that a Thread can end prematurely in case an Exception is thrown that propagates beyond run. The Thread would not be alive anymore in that case.
+EDIT: As suggested by @zakkak, the thread can be considered alive even though the run() method did not start yet. In case you want to have proper control on when it will be invoked, use the ScheduledExecutorService, specifically the schedule() method which gives you more precise execution schedule.
+",java
+large file downloads don39t work in firefox browser,"I have a Angular app where users can download some documents(.jpg, .mp4 and .pdf) that they uploaded. Basically the download of the file works in this way: A service is called which returns some information about the file as name, type, size and the content of it in base64.
+This is the download method in Component when the user clicks on the download button:
+
+
+downloadDocument(doc: Document) {
+  this._subDownDocument = this.service.getDocument(doc).subscribe((resp: Document) => {
+    var link = document.createElement(""a"");
+    link.download = resp.fileName;
+    link.target = ""_blank"";
+
+    // Construct the URI
+    link.href = resp.url;//Url is the content of the file in base64
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup the DOM
+    document.body.removeChild(link);
+  });
+}
+
+
+
+It's working perfectly for files up to 12mb. But when files are bigger the download doesn't start, the service brings the file correctly but I don't know why the download doesn't start. No error is shown in the browser console.
+This problem only happens with Firefox because in Google Chrome it works fine. Any idea on how can I solve this?
+","I solved this by installing FileSaver.js. It's used for large files purposes.
+
+
+npm install file-saver --save
+
+
+
+And changed my download method to:
+
+
+downloadDocument(doc: Document) {
+  this._subDownDocument = this.service.getDocument(doc).subscribe((resp: Document) => {
+
+   //Url is the content of the file in base64
+   fileSaver.saveAs(this.b64toBlob(resp.url, resp.type), resp.fileName);
+
+  });
+}
+
+private b64toBlob(dataURI, type) {
+
+  var byteString = atob(dataURI.split(',')[1]);
+  var ab = new ArrayBuffer(byteString.length);
+  var ia = new Uint8Array(ab);
+
+  for (var i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: type });
+}
+
+
+
+",javascript
+how to implement multiple tooltip or label for bargraphs,"I have implemented a react-echarts bargraph with a tooltip on hover of the the graph, and it should show another label on hover of the tooltip, but not working as expected.
+I tried with onMouseover events but it is not working as expected, I wanted a bargraph with a tooltip on hover of the graph and on hover of the tooltip it should show additional details of the graph as another tooltip beside the first one.
+import React, { useState } from ""react"";
+import ReactDOM from ""react-dom"";
+import ReactECharts from ""echarts-for-react"";
+
+const BarChartUpdated = ({ data, label, categories }: any) => {
+  const [tooltipData, setTooltipData] = useState<{
+    x: number;
+    y: number;
+    details: string;
+    isVisible: boolean;
+  } | null>(null);
+
+  const generateColors = (categories: string[]) => {
+    const colorMap: Record<string, string> = {};
+    const colorPalette = [
+      ""#5470C6"",
+      ""#91CC75"",
+      ""#EE6666"",
+      ""#FAC858"",
+      ""#73C0DE"",
+      ""#9A60B4"",
+      ""#EA7CCC"",
+    ];
+    categories.forEach((category, index) => {
+      if (!colorMap[category]) {
+        colorMap[category] = colorPalette[index % colorPalette.length];
+      }
+    });
+
+    return colorMap;
+  };
+
+  const categoryColors = generateColors(categories);
+  const sanitizedData = data.map((value: number) => (isNaN(value) ? 0 : value));
+  const total = sanitizedData.reduce(
+    (sum: number, value: number) => sum + value,
+    0,
+  );
+
+  const option = {
+    title: {
+      text: label,
+    },
+    tooltip: {
+      trigger: ""axis"",
+      formatter: (params: any) => {
+        return params
+          .map(
+            (item: any) =>
+              `<b>${item.name}</b></br> Count: ${item.value > 0 ? item.value : 0}`,
+          )
+          .join(""<br/>"");
+      },
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: { show: true, title: ""Save as Image"" },
+        dataZoom: { show: true, title: ""Zoom"" },
+      },
+    },
+    xAxis: {
+      type: ""category"",
+      data: categories,
+    },
+    yAxis: {
+      type: ""value"",
+    },
+    series: [
+      {
+        type: ""bar"",
+        data: data.map((value: number, index: number) => ({
+          value,
+          itemStyle: {
+            color: categoryColors[categories[index]],
+          },
+          label: {
+            show: true,
+            position: ""top"",
+            formatter:
+              total <= 0 ? ""0%"" : `${Math.ceil((value / total) * 100)}%`,
+          },
+        })),
+      },
+    ],
+    grid: {
+      left: ""3%"",
+      right: ""4%"",
+      bottom: ""3%"",
+      containLabel: true,
+    },
+  };
+
+  const handleMouseOver = (event: any) => {
+    if (event && event.data) {
+      const { name, value } = event.data;
+      const { offsetX, offsetY } = event.event; 
+      setTooltipData({
+        x: offsetX,
+        y: offsetY,
+        details: `More details for ${name}: Count ${value}`,
+        isVisible: true,
+      });
+    }
+  };
+
+
+  const handleMouseOut = () => {
+    setTooltipData((prev) => (prev ? { ...prev, isVisible: false } : null));
+  };
+
+  const handleTooltipMouseEnter = () => {
+    setTooltipData((prev) => (prev ? { ...prev, isVisible: true } : null));
+  };
+
+  const handleTooltipMouseLeave = () => {
+    setTooltipData(null);
+  };
+
+  return (
+    <>
+      <ReactECharts
+        option={option}
+        style={{ height: 400, width: ""100%"" }}
+        onEvents={{
+          mouseover: handleMouseOver,
+          mouseout: handleMouseOut,
+        }}
+      />
+      {tooltipData &&
+        ReactDOM.createPortal(
+          tooltipData.isVisible && (
+            <div
+              onMouseEnter={handleTooltipMouseEnter}
+              onMouseLeave={handleTooltipMouseLeave}
+              style={{
+                position: ""fixed"",
+                top: tooltipData.y,
+                left: tooltipData.x,
+                transform: ""translate(-50%, -100%)"",
+                background: ""white"",
+                border: ""1px solid #ccc"",
+                padding: ""10px"",
+                borderRadius: ""4px"",
+                boxShadow: ""0 2px 4px rgba(0,0,0,0.2)"",
+                zIndex: 1000,
+              }}
+            >
+              {tooltipData.details}
+            </div>
+          ),
+          document.body,
+        )}
+    </>
+  );
+};
+
+export default BarChartUpdated;
+
+","You can attach the mouseover event directly to a div used in the tooltip formatter.
+Example:
+tooltip: {
+    enterable: true,
+    formatter: function() {
+        return '<div onmouseover=""alert(\'test\')"">some text</div>';
+    },
+},
+
+",javascript
+check if a string is palindrome in c,"i've a question about this code i'm writing for an exercise. I've to check if a string is palindrome. I can't change the declaration of the function.The function only return 1 when all the letters are the same (like ""aaaa"") but if i charge the sentence with other palindrome (like ""anna"") the function return me 0 , i can't figure out why this appening.Thank you!
+char* cargar (char*);
+int pali (char*);
+
+int main()
+{ 
+   char*texto=NULL;
+   texto=cargar(texto);
+   int res=pali(texto);
+   if(res==1){printf(""\nPalindrome"");}
+   else printf(""\nNot palindrome"");
+
+   return 0;
+}
+
+char* cargar (char*texto)
+{
+   char letra;
+   int i=0;
+   texto=malloc(sizeof(char));
+   letra=getche();
+   *(texto+i)=letra;
+   while(letra!='\r'){
+      i++;
+      texto=realloc(texto,(i+1)*sizeof(char));
+      letra=getche();
+      *(texto+i)=letra;}
+   *(texto+i)='\0';      
+   return texto;
+}
+
+int pali (char* texto)
+{
+   int i;
+   for(i=0;*(texto+i)!='\0';i++){
+   }i--;
+   if(i==0||i==1){return 1;}
+
+   if(*texto==*(texto+i)){
+      return pali(++texto);
+   }
+   else return 0;
+}
+
+","Your function to determine whether a string is a palindrome is not well thought out.
+Let's say you have a string s of length l. The characters in the string are laid out as:
+Indices: 0    1    2    3            l-4  l-3  l-2  l-1
+         +----+----+----+----+- ... -+----+----+----+----+
+         |    |    |    |    |  ...  |    |    |    |    |   
+         +----+----+----+----+- ... -+----+----+----+----+
+
+If the string is a palindrome, 
+s[0] = s[l-1]
+s[1] = s[l-2]
+
+...
+
+You can stop checking when the index of the LHS is greater or equal to the
+index of the RHS.
+To translate that into code,
+int is_palindrome(char const* s)
+{
+   size_t len = strlen(s);
+   if ( len == 0 ) // An empty string a palindrome
+   {
+      return 1;
+   }
+
+   size_t i = 0;
+   size_t j = len-1;
+   for ( ; i < j; ++i, --j )
+   {
+      if ( s[i] != s[j] )
+      {
+         // the string is not a palindrome.
+         return 0;
+      }
+   }
+
+   // If we don't return from inside the for loop,
+   // the string is a palindrome.
+   return 1;
+}
+
+",c
+antlr or alternative decoupling parsing from evaluation,"I have a relatively simple DSL that I would like to handle more robustly than a bunch of manually-coded java.util.regex.Pattern statements + parsing logic.
+The most-quoted tool seems to be ANTLR. I'm not familiar with it and am willing to give it a try. However I get a little leery when I look at the examples (e.g. the ANTLR expression evaluator example, or Martin Fowler's HelloAntlr, or this other Q on stackoverflow). The reason for this is that the grammar files seem like they are a hodgepodge of grammar definitions interspersed with fragments of the implementation language (e.g. Java) that are imperative in nature.
+What I would really prefer is to separate out the imperative / evaluation part of the parser. Is there a way to use ANTLR (or some other tool) to define a grammar & produce a set of Java source files so that it compiles into classes that I can use to parse input into a structure w/o acting upon that structure?
+for example, if I wanted to use expression evaluation with just the + and * and () operators, and I had the input
+
+3 * (4 + 7 * 6) * (3 + 7 * (4 + 2))
+
+then what I would like to do is write a grammar to convert that to a hierarchical structure like
+Product
+  Term(3)
+  Sum
+     Term(4)
+     Product
+        Term(7)
+        Term(6)
+  Sum
+     Term(3)
+     Product
+        Term(7)
+        Sum
+            Term(4)
+            Term(2)
+
+where I can use classes like
+interface Expression<T> {
+    public T evaluate();
+}
+
+class Term implements Expression<Double> {
+    final private double value;
+    @Override public Double evaluate() { return value; }
+}
+
+class Product implements Expression<Double> {
+    final private List<Expression<Double>> terms;
+    @Override public Double evaluate() {
+        double result = 1;
+        for (Expression<Double> ex : terms)
+            result *= ex.evaluate();
+        return result;
+    }
+}
+
+class Sum implements Expression<Double> {
+    final private List<Expression<Double>> terms;
+    @Override public Double evaluate() {
+        double result = 0;
+        for (Expression<Double> ex : terms)
+            result += ex.evaluate();
+        return result;
+    }
+}
+
+and use ANTLR to construct the structure. Is there a way to do this? I would really rather pursue this approach, as it lets me (and other software engineers) edit and visualize complete Java classes without having to have those classes fragmented into weird pieces in ANTLR grammar files.
+Is there a way to do this?
+
+clarification: I want to spend as much of my effort as possible in two ways: defining the grammar itself, and in ANTLR-independent Java (e.g. my Product/Sum/Term classes). I want to minimize the amount of time/experience I have to spend learning ANTLR syntax, quirks and API. I don't know how to create and manipulate an AST from ANTLR grammar. Because this is only a small part of a large Java project, it's not just me, it's anyone in my team that has to review or maintain my code.
+(I don't mean to sound impertinent: I'm willing to make the investment of time and energy to use a tool, but only if the tool becomes a useful tool and does not continue to become a stumbling block.)
+","
+Jason S wrote:
+Is there a way to do this?
+
+Yes.
+First define your grammar (I took your example of an expression parser with only the + and * operators and ()):
+grammar Exp;
+
+// parser rules
+parse
+  :  additionExp
+  ;
+
+additionExp
+  :  multiplyExp (Add multiplyExp)*
+  ;
+
+multiplyExp
+  :  atomExp (Mult atomExp)* 
+  ;
+
+atomExp
+  :  Number
+  |  LParen additionExp RParen
+  ;
+
+// lexer rules
+Add    : '+' ;
+Mult   : '*' ;
+LParen : '(' ;
+RParen : ')' ;   
+Number : ('0'..'9')+ ('.' ('0'..'9')+)? ;
+Spaces : (' ' | '\t' | '\r'| '\n') {$channel=HIDDEN;} ;
+
+If you want to let ANTLR generate a proper AST from the grammar above, you must put the following at the top of your grammar (under the grammar declaration):
+options { 
+  output=AST; 
+}
+
+and you must indicate what the root of each of your parser rules should be. This can be done in two ways:
+
+by using rewrite rules;
+or by placing one of the ""inline tree-operators"" ^ and ! after the tokens:
+
+
+^ means: make this token the root;
+! means: exclude this token from the AST.
+
+Now your grammar could look like this:
+grammar Exp;
+
+options { 
+  output=AST; 
+}
+
+// parser rules
+parse
+  :  additionExp
+  ;
+
+additionExp
+  :  multiplyExp (Add^ multiplyExp)*
+  ;
+
+multiplyExp
+  :  atomExp (Mult^ atomExp)* 
+  ;
+
+atomExp
+  :  Number
+  |  LParen! additionExp RParen!
+  ;
+
+// lexer rules
+Add    : '+' ;
+Mult   : '*' ;
+LParen : '(' ;
+RParen : ')' ;   
+Number : ('0'..'9')+ ('.' ('0'..'9')+)? ;
+Spaces : (' ' | '\t' | '\r'| '\n') {$channel=HIDDEN;} ;
+
+As you can see, I made the Add and Mult roots, and excluded the parenthesis.
+Now generate a lexer & parser from the grammar:
+java -cp antlr-3.2.jar org.antlr.Tool Exp.g 
+
+create a little test class:
+import org.antlr.runtime.*;
+import org.antlr.runtime.tree.*;
+import java.util.*;
+
+public class Main {
+    
+    private static void preOrder(CommonTree tree, int depth) {
+        for(int i = 0; i < depth; i++) {
+            System.out.print(""- "");
+        }
+        System.out.println(""> ""+tree + "" :: "" + ExpParser.tokenNames[tree.getType()]);
+        List children = tree.getChildren();
+        if(children == null) return;
+        for(Object o : children) {
+            preOrder((CommonTree)o, depth+1);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        ANTLRStringStream in = new ANTLRStringStream(""3 * (4 + 7 * 6) * (3 + 7 * (4 + 2))"");
+        ExpLexer lexer = new ExpLexer(in);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        ExpParser parser = new ExpParser(tokens);
+        CommonTree tree = (CommonTree)parser.parse().getTree();
+        preOrder(tree, 0);
+    }
+}
+
+compile everything:
+javac -cp antlr-3.2.jar *.java
+
+and run the Main class:
+// *nix/Mac OS
+java -cp .:antlr-3.2.jar Main
+
+// Windows
+java -cp .;antlr-3.2.jar Main
+
+which produces the following:
+> * :: Mult
+- > * :: Mult
+- - > 3 :: Number
+- - > + :: Add
+- - - > 4 :: Number
+- - - > * :: Mult
+- - - - > 7 :: Number
+- - - - > 6 :: Number
+- > + :: Add
+- - > 3 :: Number
+- - > * :: Mult
+- - - > 7 :: Number
+- - - > + :: Add
+- - - - > 4 :: Number
+- - - - > 2 :: Number
+
+As you can see, the parse rule (method) returns a CommonTree object you can use to create your own walker/visitor leaving the grammar as is.
+",java
+how to implement nested loops using spring webflux,"have implemented below logic in spring webflux application and fetchResult(resultKeys) is invoking before even generating resultKeys, which is required to call the fetchResult method. so how to convert below nested loops to spring webflux so that fetchResult() would be called after generating resultKeys.
+    Map<MKey, Match> matchesByCom = intermediateObject.getMatchDetails();
+        Set<String> resultKeys = new HashSet<>();
+        intermediateObject.getNames().forEach(name -> {
+            final Set<String> distinctIdsFinal = intermediateObject.getNameToIdMapping().get(name);
+
+            matchesByCom.keySet().parallelStream().filter(mKey -> mKey.getName().equals(name))
+                    .forEach(mKey -> {
+                        if (CollectionUtils.isEmpty(distinctIdsFinal)
+                                || (CollectionUtils.isEmpty(requestDTO.getLIds()))) {
+                            resultKeys.add(name + mKey.getCom());
+
+                        }
+
+                        if (CollectionUtils.isNotEmpty(distinctIdsFinal)) {
+                            distinctIdsFinal.forEach(Id -> {
+                                resultKeys.add(name + mKey.getCom() + ""_"" +Id);
+
+                            });
+                        }
+
+                    });
+        });
+
+            resultIdSetMono = fetchResult(resultKeys)
+
+
+","You could try something like this to achieve what you want
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+public Mono<Result> processIntermediateObject(IntermediateObject intermediateObject, RequestDTO requestDTO) {
+    // Start with a Flux from the names
+    return Flux.fromIterable(intermediateObject.getNames())
+        .flatMap(name -> {
+            // Fetch distinct IDs for the name
+            Set<String> distinctIdsFinal = intermediateObject.getNameToIdMapping().getOrDefault(name, Collections.emptySet());
+
+            // Filter matches by name and process them
+            return Flux.fromIterable(intermediateObject.getMatchDetails().keySet())
+                .filter(mKey -> mKey.getName().equals(name))
+                .flatMap(mKey -> {
+                    // Add keys based on conditions
+                    if (CollectionUtils.isEmpty(distinctIdsFinal) || CollectionUtils.isEmpty(requestDTO.getLIds())) {
+                        return Mono.just(name + mKey.getCom());
+                    }
+
+                    if (CollectionUtils.isNotEmpty(distinctIdsFinal)) {
+                        return Flux.fromIterable(distinctIdsFinal)
+                            .map(Id -> name + mKey.getCom() + ""_"" + Id);
+                    }
+
+                    return Mono.empty(); // No keys to add
+                });
+        })
+        .collect(Collectors.toSet()) // Collect all generated keys into a Set
+        .flatMap(resultKeys -> {
+            // Call fetchResult with the fully populated set of keys
+            return fetchResult(resultKeys);
+        });
+}
+
+",java
+how to delete all files in a folder but not delete the folder using nix standard libraries,"I am trying to create a program that deletes the contents of the /tmp folder, I am using C/C++ on linux.
+system(""exec rm -r /tmp"")
+
+deletes everything in the folder but it deletes the folder too which I dont want.
+Is there any way to do this by some sort of bash script, called via system(); or is there a direct way i can do this in C/C++?
+My question is similar to this one, but im not on OS X... how to delete all files in a folder, but not the folder itself?
+","In C/C++, you could do:
+system(""exec rm -r /tmp/*"")
+
+In Bash, you could do:
+rm -r /tmp/*
+
+This will delete everything inside /tmp, but not /tmp itself.
+",c
+nullpointerexception for springboot autowired component in interceptor,"I have a component that's the main job is to return a Jedis instance, and it looks like the following:
+@Component
+public class JedisConfig {
+
+    private Jedis jedis;
+
+    public JedisConfig() {
+        jedis = new Jedis(""localhost"", 6379);
+    }
+
+    public Jedis getJedis() {return jedis;}
+}
+
+I then use the Jedis instance to do some stuff in my interceptor's preHandler:
+public class AuthInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private JedisConfig jc;
+
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        Jedis jedis = jc.getJedis();
+        
+        // do some other stuff with jedis below
+    }
+}
+
+
+But I get a NullPointerException when calling jc.getJedis() and I don't understand why it's happening.
+On a related note, I did pretty much the exact same thing in a unit test and it runs fine:
+@Autowired
+private JedisConfig jc;
+
+@Test
+public void testJedis(){
+    Jedis jedis = jc.getJedis();
+
+    jedis.set(""user"", ""role"");
+    assertThat(jedis.get(""user""),is(""role""));
+}
+
+Here's How I added the interceptor to the registry:
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AuthInterceptor())
+                .addPathPatterns(""/user/roleChange"");
+    }
+}
+
+If anyone knows how to fix this please let me know. Thank you so much!
+","The AuthInterceptor is not a Spring bean, and the JedisConfig is not autowired and is null. As long as the interceptor is used in the @Configuration class, you can perform autowiring there and encapsulating the JedisConfig interceptor.
+@RequiredArgsConstructor // either use Lombok or write the constructor by yourself
+public class AuthInterceptor implements HandlerInterceptor {
+
+    private final JedisConfig jc;
+}
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private JedisConfig jc;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AuthInterceptor(jc))
+                .addPathPatterns(""/user/roleChange"");
+    }
+}
+
+
+Alternatively, you can treat the AuthInterceptor as a component and autowire it in the WebConfig class:
+@Component
+public class AuthInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private JedisConfig jc;
+
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        Jedis jedis = jc.getJedis();
+        
+        ...
+    }
+}
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Autowire
+    private AuthInterceptor authInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns(""/user/roleChange"");
+    }
+}
+
+",java
+api integration test code generation from swagger spec,"​Hi everyone,
+My list of API resources/endpoints has really grown over the months and I have foolishly neglected writing integration tests for most of these APIs. The list of APIs continues to grow and consequently, I have a strong need for integration test code generation.
+Luckily, all of my APIs are described in a v2.0 swagger.json spec, and I've found a few frameworks/modules for generating test code:
+​https://www.npmjs.com/package/swagger-test
+​https://github.com/apigee-127/swagger-test-templates
+​https://github.com/apigee-127/swagger-testing
+My question to the community is, which framework/module for api integration test code generation have you found to be the overall best? Two important notes in my case:
+
+Integration test code generated must be written in node.js
+I have lots of different APIs which require different JSON request data, and I would need to generate/mock and insert said JSON data into the outgoing test HTTP messages. 
+The tests need to send HTTP messages to an external host running the API application (i.e. NOT localhost).
+
+Thanks in advance for any and all help/insight!
+Best,
+Chris
+UPDATE: After some research and trial/error, I've found that https://github.com/apigee-127/swagger-test-templates is the most robust and full-featured option. If anyone has any opinions on this module, please share!
+","I decided to go with the oatts module:
+https://github.com/google/oatts
+https://google.github.io/oatts/
+This seemed to be a much more evolved version of the swagger-test-templates module, and it was self advertised as such :)
+I was able to successfully generate quite a bit of quality test code using the oatts module.
+Best,
+Chris
+",javascript
+create countdown in rowview titanium,"I am a beginner in Appcelerator Titanium APP development. From the inspiration of this link I am trying to create a countdown timer to be work in TableRowView as each row have its own time set. And I customize this class to show Hours with minutes and seconds.
+I created the following code in each TableRowView to execute countdown in list on the fly.
+Code 1
+my_timer[timer_index] = new countDown(parseInt(timer_index), parseInt(15), parseInt(50),
+function() {
+    remainingTime.text = ''+my_timer[timer_index].time.h + "" : "" + my_timer[timer_index].time.m + "" : "" + my_timer              [timer_index].time.s;
+}, function() {
+    //alert(""The time is up!"");
+    }
+);
+
+my_timer[timer_index++].start();
+my_time used to push all the instances of countdown timer for each row.
+The data is coming from XHR, therefore I created an array literal to hold all instances like in the snippet of code. 
+Problem: when I try to run my app with this code, it shows me an exception saying something like ""time.h is undefined"". However, I defined time.h as you can see in code.
+Furthermore, I can use this class for multiple countdowns by using single array
+for example:
+my_timer[0] = new countDown(2,5,5,function(){
+    somelabel1.text = my_timer[0].time.h+"":""+my_timer[0].time.m+"":""+my_timer[0].time.s;
+})
+my_timer[1] = new countDown(2,5,5,function(){
+    somelabel1.text = my_timer[1].time.h+"":""+my_timer[1].time.m+"":""+my_timer[1].time.s;
+})
+
+the above code works perfectly and it has no error. But if I try to use this class in loop and pass index number rather than hard-coded values like in Code 1, it shows exception as I stated above.
+Any help will be highly appreciable.
+Thank you in advance.
+
+","I just solved this problem by customizing CountDown Class
+var countDown = function(h, m, s, _instance_index, fn_tick, fn_end) {
+        return {
+            total_sec : h * 60 * 60 + m * 60 + s,
+            timer : this.timer,
+            instance_index : _instance_index,
+            set : function(h, m, s) {
+                this.total_sec = parseInt(heart) * 60 * 60 + parseInt(e) * 60 + parseInt(s);
+                this.time = {
+                    h : h,
+                    m : m,
+                    s : s
+                };
+                return this;
+            },
+            start : function() {
+                var self = this;
+                this.timer = setInterval(function() {
+                    ///alert('running');
+                    if (self.total_sec) {
+                        self.total_sec--;
+                        var hour = parseInt(self.total_sec / (60 * 60));
+                        var min = (self.total_sec - (parseInt(hour * (60 * 60))) - (self.total_sec % 60)) / 60;
+
+                        self.time = {
+                            h : parseInt(self.total_sec / (60 * 60)),
+                            m : parseInt(min),
+                            s : (self.total_sec % 60)
+                        };
+                        fn_tick(self.time.h + "":"" + self.time.m + "":"" + self.time.s, self.instance_index);
+                    } else {
+                        self.stop();
+                        fn_end();
+                    }
+                }, 1000);
+                return this;
+            },
+            stop : function() {
+                clearInterval(this.timer);
+                this.time = {
+                    h : 0,
+                    m : 0,
+                    s : 0
+                };
+                this.total_sec = 0;
+                return this;
+            }
+        };
+    };
+
+And call this class by using the following code:
+ my_timer[items_json.Record.NEW[i].ASSIGN_QUEST_ID] = new countDown(parseInt(n[0]), parseInt(n[1]), parseInt(n[2]), items_json.Record.NEW[i].ASSIGN_QUEST_ID, function(curr_time, instance_index) {
+                                        questTime[instance_index].text = 'TIME LEFT ' + curr_time;
+            
+                                    }, function() {
+                                        //alert(""The time is up!"");
+                                    });
+                                    my_timer[items_json.Record.NEW[i].ASSIGN_QUEST_ID].start();
+
+",javascript
+the project is using an incompatible version agp 821 of the android gradle plugin latest supported version is agp 820alpha14,"I'm encountering an issue with Android Gradle Plugin (AGP) version in my project. Currently, I am using AGP 8.2.1, but its seems to be incompatible. The error message says that the latest supported version is AGP 8.2.0-alpha14.
+[Error] Incompatible AGP Version: The project is using AGP 8.2.1, but the latest supported version is AGP 8.2.0-alpha14.
+
+
+Tried syncing gradle
+","Solved by downgrading gradle version in the libs.versions.toml file, in my case, I downgraded it to ""8.1.0"".
+Thanks.
+",java
+converting unsigned int whole number to binary in c,"I am using the division approach to converting an unsigned int whole number to binary. I have the following code. However, I do not get any output from the program after compiling and executing (I just get new line escape).
+#include <stdio.h>
+
+/*
+unsigned int is 0 or greater than 0 
+convert unsigned int into binary.
+*/
+const int ARRAY_SIZE = 100;
+
+void reverseCharArray(char *x, int len) {
+    for (int end = len - 1, beg = 0; beg < end; end--, beg++) {
+        char temp = x[beg];
+        x[beg] = x[end];
+        x[end] = temp;
+    }
+
+}
+
+void convertWholeNumberToBinary(unsigned int x, char *result) {
+    int i = 0;
+    while (x != 0) {
+        result[i] = x % 2;
+        x = x / 2;
+        i++;
+    }
+    reverseCharArray(result, ARRAY_SIZE);
+}
+
+int main() {
+    char result[ARRAY_SIZE];
+    convertWholeNumberToBinary(294, result); 
+    // 100100110
+    printf(""%s\n"", result);
+    return 0;
+}
+
+The desired output is ""100100110"" when the input is 294. I expected stdout to show ""100100110"". I know I am missing something but I can't wrap my head around it at the moment.
+","You're making a few mistakes, but the big one is when you reverse your char array. You're passing ARRAY_SIZE but the array hasn't been fully filled because we can't enter a 99-bit integer, so there are still indeterminate values at the end of the array which get swapped to the front of it.  If the last character at the end of the array just happens to be a '\0' you now have a null-terminated empty string to print.
+Instead, you want to pass i, which indicates the actual length of the string at the end of the loop.
+You're also adding either 1 or 0 to the string, rather than the char equivalent.
+Thirdly, you're not initializing your char array in main so its contents are indeterminate. Now, since your other functions don't explicitly null terminate the string, you run into undefined behavior territory when printing it as a string. Simple solution: initialize that char array with """", which may not work if this is compiled with a C (vs. C++) compiler.
+Alternatively simply insert the null terminator in convertWholeNumberToBinary.
+#include <stdio.h>
+
+const int ARRAY_SIZE = 100;
+
+void reverseCharArray(char *x, int len) {
+    for (int end = len - 1, beg = 0; beg < end; end--, beg++) {
+        char temp = x[beg];
+        x[beg] = x[end];
+        x[end] = temp;
+    }
+}
+
+void convertWholeNumberToBinary(unsigned int x, char *result) {
+    int i = 0;
+    while (x != 0) {
+        result[i++] = '0' + (x % 2);
+        x /= 2;
+    }
+
+    result[i] = '\0';
+    reverseCharArray(result, i);
+}
+
+int main() {
+    char result[ARRAY_SIZE];
+    convertWholeNumberToBinary(294, result); 
+    printf(""%s\n"", result);
+    return 0;
+}
+
+",c
+how to verify the timer2 overflow frequency in avr atmega328p,"I have configured the timer2 of ATmega328P in normal mode and overflow at 10000Hz. My code is given below. I was trying to verify the frequency. So I just toggle a pin PB5 on every overflow interrupt.Hence it will give the overflow frequency.
+#define F_CPU 16000000
+#define TIMER2_PRESCALAR 8                //RV8A12, Added 08-Nov-22
+#define TIMER2_CLOCK (F_CPU / TIMER2_PRESCALAR)
+
+uint8_t Timer2_count=0;     
+unsigned int sample_freq;
+
+ISR(TIMER2_OVF_vect)
+{
+ TCNT2=Timer2_count;
+ PORTB ^= (1<<PORTB5);
+}
+
+
+void timer2_init()
+{
+ TCCR2A = 0x00;    // normal mode
+ TCNT2=Timer2_count;
+ TIMSK2=0x01;
+ TCCR2B = 0x02;                //set prescaler 8 or devide by 8
+}
+
+void timer2_stop()
+{
+  TCCR2B=0x00;
+}
+
+
+void setup()
+{
+  // put your setup code here, to run once:
+
+  sei();
+  Serial.begin(115200);
+  Serial.print(""\nSTARTING..."");
+  delay(5000);
+  DDRB |= (1<<PORTB5);
+
+  sample_freq=10000;
+  Timer2_count = 256 - (TIMER2_CLOCK / sample_freq);  
+
+  timer2_init();
+}
+
+void loop()
+{
+  // put your main code here, to run repeatedly:
+}
+
+Then I connected a oscilloscope on PB5 pin and I observed wrong result. The frequency shows around 159Hz.
+Edit :
+I have made the pin PB5 as output then checked the DSO. it was showing 4.9407Khz that is sampling frequency is 9.881Khz instead of expected freq 10Khz. Made control registers modification in one command.
+","The Issue was solved by reducing the Timer frequency. I have changed the prescalar of 8 to 64. The Issue was with the TCNT update command in the ISR. It was not updating before timer count to next tick. When Timer frequency is reduced, it get sufficient time to update the TCNT before it count to next tick.
+",c
+leak sanitizer  how to trace nondynamic unknown modules,"Example: Java source Foo.java:
+public class Foo {
+    public static void main(String[] args) {}
+};
+
+I run it on Ubuntu 24.04 docker with address sanitizer (contains leak sanitizer) preloaded, plus an interceptor for dlopen/dlclose according to github issue. Java compiler & launcher are from openjdk-8-jdk package.
+javac Foo.java
+LD_PRELOAD=""/usr/lib/llvm-17/lib/clang/17/lib/linux/libclang_rt.asan-x86_64.so:/root/libinterceptor.so"" java Foo
+
+The interceptor code is
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#include <link.h>
+#include <stdio.h>
+#include <string.h>
+
+int dlclose(void *handle) {
+    printf(""Intercepted a dlclose call, handle %ld\n"", (intptr_t)handle);
+    return 0;
+}
+
+void* dlopen(const char* filename, int flags){
+    typedef void* (*dlopen_t)(const char*, int);
+    dlopen_t original_dlopen = (dlopen_t)dlsym(RTLD_NEXT, ""dlopen"");
+
+    flags |= RTLD_NODELETE;
+    void *ret = original_dlopen(filename, flags);
+    printf(""Intercepted a dlopen call for %s, handle %ld, injecting RTLD_NODELETE\n"", filename, (intptr_t)ret);
+    return ret;
+}
+
+Many (false positive) memory leaks are reported. This is fine, they're most likely due to garbage collection and inability of leak sanitizer to understand what's happening there. I'm not asking what to do with them, I know I should ignore them as they're false positives, I'm using them to demonstrate the issue at hand. Part of the lsan error output:
+Direct leak of 120 byte(s) in 1 object(s) allocated from:
+    #0 0x7f3d1c0fb372 in malloc (/usr/lib/llvm-17/lib/clang/17/lib/linux/libclang_rt.asan-x86_64.so+0xfb372) (BuildId: 91f375f2a48c6b133a56d8cc059d017ae5de4982)
+    #1 0x7f3d17f8c7b4  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x98c7b4) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #2 0x7f3d178d29bd  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x2d29bd) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #3 0x7f3d178d2a7a  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x2d2a7a) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #4 0x7f3d17af07a9  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x4f07a9) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #5 0x7f3d17a5ac4d  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x45ac4d) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #6 0x7f3d17a5c3ca  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x45c3ca) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #7 0x7f3d17a6323a  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x46323a) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #8 0x7f3d180c3a34  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0xac3a34) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #9 0x7f3d180c4680  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0xac4680) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #10 0x7f3d180c64c4  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0xac64c4) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #11 0x7f3d17af25d7  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x4f25d7) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #12 0x7f3d17af36b9  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x4f36b9) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #13 0x7f3d17e59707  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x859707) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #14 0x7f3d17e5b308  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x85b308) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #15 0x7f3d17ca99cb  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x6a99cb) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #16 0x7f3d07a24dc7  (<unknown module>)
+    #17 0x7f3d07a080f5  (<unknown module>)
+    #18 0x7f3d07a004e6  (<unknown module>)
+    #19 0x7f3d17cb2884  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x6b2884) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #20 0x7f3d17d2e75e  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x72e75e) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #21 0x7f3d17d2efbf  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x72efbf) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #22 0x7f3d1bac6c8a in JNU_NewStringPlatform (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libjava.so+0x1dc8a) (BuildId: 95ab745b31a25f66a623ffeaf6822cdc641c5fab)
+    #23 0x7f3d1babf2cb in Java_java_lang_System_initProperties (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libjava.so+0x162cb) (BuildId: 95ab745b31a25f66a623ffeaf6822cdc641c5fab)
+    #24 0x7f3d07a185e6  (<unknown module>)
+    #25 0x7f3d07a07e3f  (<unknown module>)
+    #26 0x7f3d07a004e6  (<unknown module>)
+    #27 0x7f3d17cb2884  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x6b2884) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #28 0x7f3d17cb115e  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x6b115e) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+    #29 0x7f3d17cb179f  (/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so+0x6b179f) (BuildId: d38655f827ac6a65fdbe1898b1278717fdb89a4e)
+
+Here's the issue: quite a lot of those leak reports have <unknown module>s in stack trace. My question is how to turn them into known libraries so that I could trace what happens. I'm not really asking specifically about Java, this is just an example where I encountered it - but it might turn out specific to Java launcher or other programs.
+If the <unknown module>s were caused by dynamic loading or unloading, then intercepting dlopen or dlclose should be sufficient. However, the only standard output I'm getting is
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so, handle 89747636617344, injecting RTLD_NODELETE
+Intercepted a dlopen call for librt.so.1, handle 89747636681856, injecting RTLD_NODELETE
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libverify.so, handle 89747636684928, injecting RTLD_NODELETE
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libjava.so, handle 89747636686464, injecting RTLD_NODELETE
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libzip.so, handle 89747636688000, injecting RTLD_NODELETE
+Intercepted a dlopen call for (null), handle 139900452795104, injecting RTLD_NODELETE
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libzip.so, handle 89747636688000, injecting RTLD_NODELETE
+Intercepted a dlopen call for /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/libnio.so, handle 89747636689536, injecting RTLD_NODELETE
+
+There are no dlclose lines and none of the handles (converted to hex, not counting main program's for nullptr filename) match the range of addresses that appear in <unknown module>s - perhaps something to do with ASLR. Most importantly, <unknown module>s still appear in lsan error output, so either this approach is unable to prevent unloading, or the issue isn't caused by dynamic loading/unloading.
+How can I find out which libraries correspond to <unknown module>s?
+","The JVM JIT-compiled code and certain internal applications might be showing up as <unknown module>, so the easiest way to confirm this is to map the raw addresses against actual loaded libraries. The typical approach is to check /proc/[pid]/maps (or use something like pmap) during runtime and see which regions match up with those reported addresses.
+You could also try enabling more verbose ASan/LSan options:
+export ASAN_SYMBOLIZER_PATH to point to LLVM-symbolizer and set ASAN_OPTIONS=symbolize=1,print_module_map=2 (and similarly for LSAN_OPTIONS) so the sanitizer spits out more detailed library mappings that might otherwise be missed. If it still shows <unknown module>, it's likely JIT code or something the JVM allocated in a private mapping that doesn't have a corresponding file-backed library. Sometimes you can force the JVM to preserve more frame pointers or generate more debuggable code (using -XX:+PreserveFramePointer and -XX:+UnlockDiagnosticsVMOptions -XX:+DebugNonSafepoints so the sanitizer can unwind and label those stack frames better.
+",c
+c program  valgrind reports an error in writing to a file but the data is in the file and can be read back,"I am new to C programming. I am trying to write a C struct to a file and read it back. I am using valgrind to check for memory leaks and potential errors. I get a set of valgrind errors when I run the program and no memory leaks. The program also accurately writes the data to the file and reads the data back from the file. I created a separate test program (testRead) to test reading back the file after the test program for writing the file (testUsers) is run, and the data is read back correctly. I also can verify the data is correct on disk using hexdump. What do the valgrind errors mean - what are the uninitiated bytes referenced in the error message?
+The error returned by running: valgrind -s --track-origins=yes --leak-check=full --show-leak-kinds=all ./testUsers
+==1155442== HEAP SUMMARY:
+==1155442==     in use at exit: 0 bytes in 0 blocks
+==1155442==   total heap usage: 11 allocs, 11 frees, 10,448 bytes allocated
+==1155442== 
+==1155442== All heap blocks were freed -- no leaks are possible
+==1155442== 
+==1155442== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==1155442== 
+==1155442== 1 errors in context 1 of 1:
+==1155442== Syscall param write(buf) points to uninitialised byte(s)
+==1155442==    at 0x4989887: write (write.c:26)
+==1155442==    by 0x48FFEEC: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1180)
+==1155442==    by 0x49019E0: new_do_write (fileops.c:448)
+==1155442==    by 0x49019E0: _IO_new_do_write (fileops.c:425)
+==1155442==    by 0x49019E0: _IO_do_write@@GLIBC_2.2.5 (fileops.c:422)
+==1155442==    by 0x4900FD7: _IO_file_close_it@@GLIBC_2.2.5 (fileops.c:135)
+==1155442==    by 0x48F3D8E: fclose@@GLIBC_2.2.5 (iofclose.c:53)
+==1155442==    by 0x10991E: saveToFile (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==    by 0x109D0E: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==  Address 0x4aa17f6 is 6 bytes inside a block of size 4,096 alloc'd
+==1155442==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1155442==    by 0x48F3BA3: _IO_file_doallocate (filedoalloc.c:101)
+==1155442==    by 0x4902CDF: _IO_doallocbuf (genops.c:347)
+==1155442==    by 0x4901F5F: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:744)
+==1155442==    by 0x49006D4: _IO_new_file_xsputn (fileops.c:1243)
+==1155442==    by 0x49006D4: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==1155442==    by 0x48F4FD6: fwrite (iofwrite.c:39)
+==1155442==    by 0x1098A5: saveToFile (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==    by 0x109D0E: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==  Uninitialised value was created by a heap allocation
+==1155442==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1155442==    by 0x1095F6: findUser (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==    by 0x1094F4: createUser (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==    by 0x1093DE: initDB (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+==1155442==    by 0x109AFF: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users-binary_save/testUsers)
+
+users.h
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define MAX_USERS 3
+#define MAX_USER_NAME_SIZE 20
+
+#define PERMISSION_LAUNCH 4
+#define PERMISSION_EDIT_USER 2
+#define PERMISSION_EDIT_LAUNCHER 1
+
+typedef struct {
+  char user_name[20];
+  char password[20];
+  int permissions;
+  int index;
+} User;
+
+typedef struct {
+    int code;
+    char *message;
+    char* payload;
+} Error;
+
+extern char* user_names[MAX_USERS][MAX_USER_NAME_SIZE];
+
+Error create_error(int code, char *message);
+
+Error createUser(char* user_name, char* password, int permissions);
+
+User* findUser(char * user_name);
+
+void printUsers();
+
+Error initDB();
+
+void deleteUsers();
+
+Error saveToFile();
+
+Error readFromFile();
+
+users.c
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include ""users.h""
+
+/* An array of pointers to the User structs created */
+static User* users_storage[MAX_USERS];
+
+/* The number of users in the users_storage array */
+int user_counter = 0;
+
+/* File name for saving the users_storage to disk */
+const char* USER_FILE_NAME = ""users.dat""; 
+
+/*
+A struct to return error messages to the UI as needed for errors that come up.
+There are no different error codes, just 0 for success and -1 for an error. The UI
+Would check the error code and then display the error message.
+*/
+Error create_error(int code, char *message) {
+    Error err;
+    err.code = code;
+    err.message = message;
+    err.payload = ""Nothing to see here."";
+    return err;
+}
+
+/*
+Null out the users_storage and add the ""admin"" user to the users_storage
+*/
+Error initDB() {
+    Error result = create_error(0, ""Success"");
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (users_storage[i] != NULL) {
+            free(users_storage[i]);
+        }
+        users_storage[i] = NULL;
+    }
+    int permissions = PERMISSION_LAUNCH + PERMISSION_EDIT_USER + PERMISSION_EDIT_LAUNCHER;
+    result = createUser(""admin"", ""password"", permissions);
+    return result;
+}
+
+/*
+Create a new User. 
+- Checks for invalid permissions; it must be between 1 and 7
+- Checks for duplicate users using the user name
+- Creates a new user and adds it to the users_storage
+- Increments the user_counter
+- If the users_storage is full (ie there are MAX_USERS in the users_storage), then an error is returned 
+  with a message for the UI that a user must be deleted before a new one can be created.
+*/
+Error createUser(char* user_name, char* password, int permissions) {
+    int user_permissions = 0;
+    Error result = create_error(0, ""Success"");
+    if (permissions < 0 || permissions > 7) {
+        result.code = -1;
+        result.message = ""Invalid permissions. Permissions must be between 0 and 7. Permissions set to 1."";
+        user_permissions = 1;
+    }
+    else {
+        user_permissions = permissions;
+    }
+
+    User* duplicate = findUser(user_name);
+    if (duplicate != NULL) {
+        result.message = ""Duplicate user"";
+        result.code = -1;
+        return result;
+    }
+
+    User* user = findUser(NULL);
+    if (user != NULL) {
+        strcpy(user->user_name, user_name);
+        strcpy(user->password, password);
+        user->permissions = user_permissions;
+        user_counter++;
+        return result;
+    }
+    else {
+        result.message = ""Out of user memory. Delete a user before creating another one."";
+        result.code = -1;
+        return result;
+    }
+}
+
+
+/*
+Finds a user by user name. 
+- Returns NULL if the user does not exist
+- Returns the User struct if the user is found
+*/
+User* findUser(char* user_name) {
+    for (int i = 0; i < MAX_USERS; i++) {
+        User * user = users_storage[i];
+        if (user == NULL && user_name == NULL) {
+            // found and empty user slot
+            User * user = malloc(sizeof(User));
+            user->index = i;
+            users_storage[i] = user;
+            return user;
+        }
+        if (user != NULL && user_name != NULL) {
+            if (strcmp(user->user_name, user_name) == 0) {
+                return user;
+            }
+        }
+    }
+    return NULL;
+}
+
+/*
+Convenience function to print out the contents of the users_storage in a human
+readable format for debugging.
+*/
+void printUsers() {
+  for (int i = 0; i < MAX_USERS; i++) {
+    User* user = users_storage[i];
+    if (user != NULL) {
+        printf(""%i, %s, %s, %i, %i\n"", i, user->user_name, user->password, user->permissions, user->index);
+    }
+    else {
+        printf(""%i, NULL\n"", i);
+    }
+  }
+}
+
+/*
+Used by readFromFile to clear the users_storage.
+*/
+void deleteUsers() {
+    for (int i=0; i<MAX_USERS; i++) {
+        if (users_storage[i] != NULL) {
+            User* user = users_storage[i];
+            printf(""deleteUsers user_name=%s\n"", user->user_name);
+            free(user);
+            users_storage[i] = NULL;
+        }
+    }
+}
+
+/*
+Write the users_storage to a binary file
+*/
+Error saveToFile() {
+    Error result = create_error(0, ""Success"");
+    FILE *file = fopen(USER_FILE_NAME, ""wb"");
+    if (file == NULL) {
+        result.message = ""Error opening file"";
+        result.code = -1;
+        return result;
+    }
+    size_t element_count = 0;
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (users_storage[i] != NULL) {
+            User* user = users_storage[i];
+            //printf(""user_name=%s, password=%s, permissions=%i, index=%i\n"", user->user_name, user->password, user->permissions, user->index);
+            fwrite(user, sizeof(User), 1, file);
+            if (ferror(file)) {
+                perror(""Error writing to file"");
+                result.message = ""Error writing to file"";
+                result.code = -1;
+                fclose(file);
+                return result;
+            } 
+            element_count++;
+        }
+    }
+    fclose(file);
+    result.payload = ""User data saved in a file"";
+    return result;
+}
+
+/*
+Read the users_storage from a binary file
+*/
+Error readFromFile() {
+    Error result = create_error(0, ""Success"");
+    FILE *file = fopen(USER_FILE_NAME, ""rb"");
+    if (file == NULL) {
+        result.message = ""Error opening file"";
+        result.code = -1;
+        return result;
+    }
+    User user;
+    deleteUsers();
+    size_t read_size;
+    int i = 0;
+    int users_created = 0;
+    while(1) {
+        read_size = fread(&user, sizeof(User), 1, file);
+        if (read_size == 0) {
+            break;
+        }
+        else {
+            createUser(user.user_name, user.password, user.permissions);
+            i++;
+            users_created++;
+        }
+    } 
+    fclose(file);
+    result.payload = ""User data read from file."";
+    return result;
+}
+
+testUsers.c
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include ""users.h""
+
+int main() {
+  printf(""InitDB: "");
+  Error result = initDB();
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  //create a user with bad permissions
+  printf(""\ncreate a user ron with bad permissions (9): "");
+  result = createUser(""ron"", ""password"", 9);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+ 
+  // create a user
+  printf(""\ncreate john: "");
+  result = createUser(""john"", ""pw0"", 4);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  // create the same user again
+  printf(""\ncreate john: "");
+  result = createUser(""john"", ""pw0"", 4);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  // create another user when out of users
+  // Need to set MAX_USERS to 4 to trip this error condition
+  printf(""\ncreate mark: "");
+  result = createUser(""mark"", ""pw0"", 4);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  printf(""\nSaving the file: \n"");
+  result = saveToFile();
+  printf(""%i, %s, %s\n"",result.code, result.message, result.payload);
+  printUsers();
+
+  printf(""\nReading the file: \n"");
+  result = readFromFile();
+  printf(""%i, %s, %s\n"",result.code, result.message, result.payload);
+  printUsers();
+
+  printf(""\nDeleting all the users\n"");
+  deleteUsers();
+
+  return(0);
+}
+
+testRead.c
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include ""users.h""
+
+int main() {
+  printf(""\nReading the file: \n"");
+  Error result = readFromFile();
+  printf(""%i, %s, %s\n"",result.code, result.message, result.payload);
+  printUsers();
+
+  printf(""\nRemove all the users from memory\n"");
+  deleteUsers();
+
+  return(0);
+}
+
+Makefile
+usermake: users.c testUsers.c
+    gcc -o -g -O0 -o testUsers users.c testUsers.c -I .
+    gcc -o -g -O0 -o testRead users.c testRead.c -I .
+
+","When you use malloc to allocate space for a User object, the allocated bytes are uninitialized.  When you later write to the username and password fields using strcpy, this doesn't write all elements of the array.  This leave any remaining array elements uninitialized.
+When you then write the struct to disk, you're writing the entire struct, including the uninitialized elements of the username and password arrays.  This is what valgring is catching.
+What you can do here is use calloc instead of malloc to allocate the space.  This will initialize all bytes of the returned memory to 0 and prevent any reading of uninitialized bytes.
+Unrelated to this, it doesn't make sense for the findUser function to be creating a new User object.  That should be the responsibility of the createUser function.  The findUser function should only find a user.
+",c

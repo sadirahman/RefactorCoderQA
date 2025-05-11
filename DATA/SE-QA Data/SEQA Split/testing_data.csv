@@ -1,0 +1,3923 @@
+instruction,input,output,Categories
+how to reload page on closing a bootstrap 3 modal,"My aim is to get the page to reload when a Bootstrap modal is closed. The user can close the modal by clicking on the close button or icon or by clicking away from the modal.
+My code so far is pretty standard. Taken from:
+http://getbootstrap.com/javascript/#modals
+
+
+<script src=""https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js""></script>
+<!-- Latest compiled and minified CSS -->
+<link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"" integrity=""sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"" crossorigin=""anonymous"">
+
+<!-- Optional theme -->
+<link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css"" integrity=""sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ"" crossorigin=""anonymous"">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src=""https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"" integrity=""sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"" crossorigin=""anonymous""></script>
+
+<button class=""btn btn-primary btn-lg"" data-toggle=""modal"" data-target=""#myModal"">
+      Launch
+    </button>
+
+<div class=""modal fade"" id=""myModal"" tabindex=""-1"" role=""dialog"" aria-labelledby=""myModalLabel"" aria-hidden=""true"">
+  <div class=""modal-dialog"">
+    <div class=""modal-content"">
+      <div class=""modal-header"">
+        <button type=""button"" class=""close"" data-dismiss=""modal"" aria-hidden=""true"">&times;</button>
+        <h4 class=""modal-title"" id=""myModalLabel"">My title</h4>
+      </div>
+      <div class=""modal-body"">
+        My content
+      </div>
+      <div class=""modal-footer"">
+        <button type=""button"" class=""btn btn-default"" data-dismiss=""modal"">Close</button>
+        <button type=""button"" class=""btn btn-primary"">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+How can I get the page to reload after a modal is closed?
+Update: Wow, fantastic fast response from everybody. Thank you
+","You can bind the event to reload page on click of close:
+$('#myModal').on('hidden.bs.modal', function () {
+ location.reload();
+})
+
+Demo
+",javascript
+java  regex pattern matching days hours minutes seconds,"I have a text file with a lot of data and some of that is time with combination of days, hours, minutes and seconds. Examples are listed below.
+Examples:
+
+2 days, 3 hours, 24 minutes, 16 seconds
+1 days, 4 minutes, 3 seconds
+4 hours, 17 minutes, 56 seconds
+4 hours, 17 seconds
+2 hours, 3 minutes
+3 minutes, 15 seconds
+45 seconds
+
+I am trying to replace all mention of times to a generic string like ""TimeString"". I have written my own regex, but it's not working as expected
+\\d( days)?(, \\d)?( hours)?(, \\d)?( minutes)?(, \\d)?( seconds)?
+For this, all numbers are getting replaced along with times. For example, if something says ""26 orders"", it will be replaced as ""TimeString orders"" which should not happen
+","You can use
+\d+\s*(?:day|hour|minute|second)s?(?:\s*,\s*\d+\s*(?:day|hour|minute|second)s?)*
+
+See the regex demo
+Details:
+
+\d+\s*(?:day|hour|minute|second)s? - one or more digits, zero or more whitespaces, day or hour or minute or second and then an optional s char
+(?:\s*,\s*\d+\s*(?:day|hour|minute|second)s?)* - zero or more sequences of a comma enclosed with zero or more whitespaces and then the same pattern as above.
+
+",java
+merging cells in excel using apache poi,"Is there any other way to merge cells in Excel using Apache POI library?
+I was trying using the following, but its not working
+// selecting the region in Worksheet for merging data
+CellRangeAddress region = CellRangeAddress.valueOf(""A"" + rowNo + "":D""
+            + rowNo);
+
+// merging the region
+sheet1.addMergedRegion(region);
+
+","You can use sheet.addMergedRegion(rowFrom,rowTo,colFrom,colTo);
+example sheet.addMergedRegion(new CellRangeAddress(1,1,1,4)); will merge from B2 to E2. Remember it is zero based indexing (ex. POI version 3.12).
+for detail refer BusyDeveloper's Guide
+",java
+struct tag alias,"Is there a way to alias a struct tag? As in, I have a struct foo and want to alias it to struct bar. I tried typedef struct foo struct bar, typedef struct foo bar, etc... but it doesn't work of course because foo and bar are not type names but tags.
+Is there a way to do this without defining actual type names for my structures (I would like to keep them as tags as I am partial to prefixing them with struct - please, no religious wars over this).
+My guess is tags must be unique and so it isn't possible directly but I curiously could not find a reference online (all I find are, unsurprisingly, discussions about what typedef struct means and when/why to use it, which again isn't what I'm looking for).
+","You can use #define bar foo to achieve what you want. Don't know if it's good enough for you, but it works, as it does in the following example:
+#include <stdio.h>
+
+struct foo {
+    int a;
+};
+
+#define bar foo
+
+int main( ) {
+
+    struct bar x;
+
+    x.a = 10;
+    printf( ""%d"", x.a );
+
+    putchar( 10 );
+    return 0;
+}
+
+It has one downside I can tell, which is that right now you can define, let's say, an integer with the identifier name foo, but attempting to do so with the name bar will again result in a variable with the identifier name foo, since that's how #define works.
+",c
+how to reference a json list using an api,"I would to refer to the pressure field in the List using the getPressure function
+{
+    ""cod"": ""200"",
+    ""message"": 0,
+    ""cnt"": 40,
+    ""list"": [
+        {
+            ""dt"": 1612558800,
+            ""main"": {
+                ""temp"": -3.29,
+                ""feels_like"": -6.55,
+                ""temp_min"": -3.29,
+                ""temp_max"": -3.16,
+                ""pressure"": 1021,
+
+
+
+
+ public String getPressure() {
+            JsonArray weatherArray = obj.getJsonArray(""main"");
+            JsonObject weatherObject = weatherArray.getJsonObject(0);
+            return weatherObject.getString(""pressure"");
+        }
+
+How to write correctly getPressure functions to get the pressure value from the list?
+","Try this:
+    public String getPressure() {
+       JsonArray weatherArray = obj.getJsonArray(""list""); // list: []
+       JsonObject weatherObject = weatherArray.getJsonObject(0); // first element of list
+       JsonObject mainObject = weatherObject.getJsonObject(""main""); // get main object
+       return mainObject.getString(""pressure""); // get Pressure of Main Object
+    }
+
+",java
+c code  i don39t understand the valgrind error quotconditional jump or move depends on uninitialised valuesquot,"I have two files with some C functions called users.h and users.c. I have a test file called testUsers.c. I am using valgrind to find memory leaks and errors. I am getting a lot of ""Conditional jump or move depends on unitialised value(s)"" errors. I don't see the uninitialized values.
+For example:
+users.h:
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define MAX_USERS 10
+#define MAX_USER_NAME_SIZE 20
+
+#define PERMISSION_LAUNCH 4
+#define PERMISSION_EDIT_USER 2
+#define PERMISSION_EDIT_LAUNCHER 1
+
+struct User {
+  char user_name[20];
+  char password[20];
+  int permissions;
+  int index;
+};
+
+typedef struct {
+    int code;
+    char *message;
+    char* payload;
+} Error;
+
+extern char* user_names[MAX_USERS][MAX_USER_NAME_SIZE];
+
+Error create_error(int code, char *message);
+
+Error createUser(char* user_name, char* password, int permissions);
+
+struct User* findUser(char * user_name);
+
+void printUsers();
+
+Error initDB();
+
+users.c:
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include ""users.h""
+
+/* An array of pointers to the User structs created */
+static struct User* users_storage[MAX_USERS];
+
+/* The number of users in the users_storage array */
+int user_counter = 0;
+
+
+/*
+A struct to return error messages to the UI as needed for errors that come up.
+There are no different error codes, just 0 for success and -1 for an error. The UI
+Would check the error code and then display the error message.
+*/
+Error create_error(int code, char *message) {
+    Error err;
+    err.code = code;
+    err.message = message;
+    err.payload = ""Nothing to see here."";
+    return err;
+}
+
+/*
+Null out the users_storage and add the ""admin"" user to the users_storage
+*/
+Error initDB() {
+    Error result = create_error(0, ""Success"");
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (users_storage[i] != NULL) {
+            free(users_storage[i]);
+        }
+        users_storage[i] = NULL;
+    }
+    result = createUser(""admin"", ""password"", PERMISSION_LAUNCH + PERMISSION_EDIT_USER + PERMISSION_EDIT_LAUNCHER);
+    return result;
+}
+
+/*
+Create a new User. 
+- Checks for invalid permissions; it must be between 1 and 7
+- Checks for duplicate users using the user name
+- Creates a new user and adds it to the users_storage
+- Increments the user_counter
+- If the users_storage is full (ie there are MAX_USERS in the users_storage), then an error is returned 
+  with a message to the UI that a user must be deleted before a new one can be created.
+*/
+Error createUser(char* user_name, char* password, int permissions) {
+    int user_permissions = 0;
+    Error result = create_error(0, ""Success"");
+    if (permissions < 0 || permissions > 7) {
+        char error_message[100] = {0};
+        sprintf(error_message, ""Invalid permissions: %i. Permissions must be between 0 and 7. Permissions set to 1."", permissions);
+        result.code = -1;
+        result.message = error_message;
+        user_permissions = 1;
+    }
+    else {
+        user_permissions = permissions;
+    }
+
+    struct User* duplicate = findUser(user_name);
+    if (duplicate != NULL) {
+        result.message = ""Duplicate user"";
+        result.code = -1;
+        return result;
+    }
+
+    struct User* user = findUser(NULL);
+    if (user != NULL) {
+        strcpy(user->user_name, user_name);
+        strcpy(user->password, password);
+        user->permissions = user_permissions;
+        user_counter++;
+        return result;
+    }
+    else {
+        result.message = ""Out of user memory. Delete a user before creating another one."";
+        result.code = -1;
+        return result;
+    }
+}
+
+
+/*
+Finds a user by user name. 
+- Returns NULL if the user does not exist
+- Returns the User struct if the user is found
+- Note: if a user has been previously deleted, then there is a ""hole"" in the users_storage.
+        findUser will find that ""hole"" before the end of the users_storage, so holes
+        left by deleted users are filled with new users. 
+*/
+struct User* findUser(char* user_name) {
+    for (int i = 0; i < MAX_USERS; i++) {
+        struct User * user = users_storage[i];
+        if (user == NULL && user_name == NULL) {
+            // found and empty user slot
+            struct User * user = malloc(sizeof(struct User));
+            user->index = i;
+            users_storage[i] = user;
+            return user;
+        }
+        if (user != NULL && user_name != NULL) {
+            if (strcmp(user->user_name, user_name) == 0) {
+                return user;
+            }
+        }
+    }
+    return NULL;
+}
+
+/*
+Convenience function to print out the contents of the users_storage in a human
+readable format for debugging.
+*/
+void printUsers() {
+  for (int i = 0; i < MAX_USERS; i++) {
+    struct User* user = users_storage[i];
+    if (user != NULL) {
+        printf(""%i, %s, %s, %i, %i\n"", i, user->user_name, user->password, user->permissions, user->index);
+    }
+    else {
+        printf(""%i, NULL\n"", i);
+    }
+  }
+}
+
+The testUser.c code:
+#include <stdlib.h>
+#include ""users.h""
+
+int main() {
+  printf(""InitDB: "");
+  Error result = initDB();
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  //create a user with bad permissions
+  printf(""\ncreate a user ron with bad permissions (9): "");
+  result = createUser(""ron"", ""password"", 9);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+ 
+  // create a user
+  printf(""\ncreate john: "");
+  result = createUser(""john"", ""pw0"", 4);
+  printf(""%i, %s\n"",result.code, result.message);
+  printUsers();
+
+  return(0);
+}
+
+Makefile:
+usermake: users.c testUsers.c
+    gcc -o -g -O0 -o testUsers users.c testUsers.c -I .
+
+output from valgrind -s --track-origins=yes --leak-check=full --show-leak-kinds=all ./testUsers
+InitDB: 0, Success
+0, admin, password, 7, 0
+1, NULL
+2, NULL
+3, NULL
+4, NULL
+5, NULL
+6, NULL
+7, NULL
+8, NULL
+9, NULL
+
+==624208== Conditional jump or move depends on uninitialised value(s)
+==624208==    at 0x484ED19: strlen (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==624208==    by 0x48EBD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==624208==    by 0x48D579E: printf (printf.c:33)
+==624208==    by 0x10AE29: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208==  Uninitialised value was created by a stack allocation
+==624208==    at 0x109160: ??? (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208== 
+==624208== Conditional jump or move depends on uninitialised value(s)
+==624208==    at 0x484ED28: strlen (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==624208==    by 0x48EBD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==624208==    by 0x48D579E: printf (printf.c:33)
+==624208==    by 0x10AE29: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208==  Uninitialised value was created by a stack allocation
+==624208==    at 0x109160: ??? (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208== 
+==624208== Conditional jump or move depends on uninitialised value(s)
+==624208==    at 0x4900737: _IO_new_file_xsputn (fileops.c:1218)
+==624208==    by 0x4900737: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==624208==    by 0x48EC00B: outstring_func (vfprintf-internal.c:239)
+==624208==    by 0x48EC00B: __vfprintf_internal (vfprintf-internal.c:1517)
+==624208==    by 0x48D579E: printf (printf.c:33)
+==624208==    by 0x10AE29: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208==  Uninitialised value was created by a stack allocation
+==624208==    at 0x109160: ??? (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208== 
+==624208== Syscall param write(buf) points to uninitialised byte(s)
+==624208==    at 0x4989887: write (write.c:26)
+==624208==    by 0x48FFEEC: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1180)
+==624208==    by 0x49019E0: new_do_write (fileops.c:448)
+==624208==    by 0x49019E0: _IO_new_do_write (fileops.c:425)
+==624208==    by 0x49019E0: _IO_do_write@@GLIBC_2.2.5 (fileops.c:422)
+==624208==    by 0x49006D4: _IO_new_file_xsputn (fileops.c:1243)
+==624208==    by 0x49006D4: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==624208==    by 0x48EAFC9: outstring_func (vfprintf-internal.c:239)
+==624208==    by 0x48EAFC9: __vfprintf_internal (vfprintf-internal.c:1593)
+==624208==    by 0x48D579E: printf (printf.c:33)
+==624208==    by 0x10AE29: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208==  Address 0x4aa1070 is 48 bytes inside a block of size 1,024 alloc'd
+==624208==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==624208==    by 0x48F3BA3: _IO_file_doallocate (filedoalloc.c:101)
+==624208==    by 0x4902CDF: _IO_doallocbuf (genops.c:347)
+==624208==    by 0x4901F5F: _IO_file_overflow@@GLIBC_2.2.5 (fileops.c:744)
+==624208==    by 0x49006D4: _IO_new_file_xsputn (fileops.c:1243)
+==624208==    by 0x49006D4: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==624208==    by 0x48EA14C: outstring_func (vfprintf-internal.c:239)
+==624208==    by 0x48EA14C: __vfprintf_internal (vfprintf-internal.c:1263)
+==624208==    by 0x48D579E: printf (printf.c:33)
+==624208==    by 0x10AD89: main (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208==  Uninitialised value was created by a stack allocation
+==624208==    at 0x109160: ??? (in /home/mark/ESP32-Projects/esp32-launcher/sandbox/users/testUsers)
+==624208== 
+create a user ron with bad permissions (9): -1, Invalid permissions: 9. Permissions must be between 0 and 7. Permissions set to 1.
+0, admin, password, 7, 0
+1, ron, password, 1, 1
+2, NULL
+3, NULL
+4, NULL
+5, NULL
+6, NULL
+7, NULL
+8, NULL
+9, NULL
+
+create john: 0, Success
+0, admin, password, 7, 0
+1, ron, password, 1, 1
+2, john, pw0, 4, 2
+3, NULL
+4, NULL
+5, NULL
+6, NULL
+7, NULL
+8, NULL
+9, NULL
+
+What I don't understand. If I remove the section in testUsers.c that starts with the comment //create a user with bad permissions and go right to the section that starts with
+// create a user, valgrind does not complain. The error only occurs if I leave in the section that starts with //create a user with bad permissions.
+The ""additonal code"" that runs in Error createUser(char* user_name, char* password, int permissions) when trying to create a user with invalid permissions starts with the if clause below:
+ Error result = create_error(0, ""Success"");
+ int user_permissions = 0;
+ if (permissions < 0 || permissions > 7) {
+        char error_message[100] = {0};
+        sprintf(error_message, ""Invalid permissions: %i. Permissions must be between 0 and 7. Permissions set to 1."", permissions);
+        result.code = -1;
+        result.message = error_message;
+        user_permissions = 1;
+ }
+ else {
+        user_permissions = permissions;
+ }
+
+I don't see any un-initialized variables in that section of code. What am I missing? I am also confused by valgrind producing its error message in between two function calls in testUsers.c.
+","In createUser you have:
+    if (permissions < 0 || permissions > 7) {
+        char error_message[100] = {0};
+        sprintf(error_message, ""Invalid permissions: %i. Permissions must be between 0 and 7. Permissions set to 1."", permissions);
+        result.code = -1;
+        result.message = error_message;
+        user_permissions = 1;
+    }
+
+The lifetime of the array error_message is only the block in which it is defined.  You set the pointer result.message to point to this array, but that means that after exiting this block, you cannot use that pointer to access the array anymore.
+If you want the array to survive outside the block, you need to allocate it a different way, such as via malloc:
+char *error_message = malloc(100);
+sprintf(error_message, ""Invalid permissions: %i. Permissions must be between 0 and 7. Permissions set to 1."", permissions);
+result.message = error_message;
+
+Now result.message is usable until you free() it (which you must make sure to do when you no longer need it).
+(If your system provides the non-standard asprintf function, you might consider using it, as it will make sure the buffer is of the correct size for the data being formatted into it.)
+You wrote in a comment
+
+I put the error_message in the Error struct
+
+You put a pointer to error_message in the Error struct.  That doesn't make error_message live any longer than it otherwise would.
+
+and testUser.c prints out the error message from the Error struct, so I thought it was working and correct C code.
+
+As a new C programmer, you'll need to learn that you cannot reason like ""it works in my test, therefore it's correct"".  Many types of erroneous C code cause undefined behavior; although they are wrong, the compiler is not required to ensure that they fail in all cases.  So it often happens that such code will appear to work correctly in simple tests, but it is entirely possible that it will fail unexpectedly in later tests, even if nothing else has changed.
+This is why tools like valgrind are so valuable; they perform more stringent checking, so that they can find such errors even when they don't appear in other tests.  So you've already learned the other important lesson, which is to make use of such tools as much as possible.  Its error message here is a little bit misleading, but it did correctly identify that the string does not (necessarily) contain what you thought it did.
+",c
+error http 504 when load image form url with picasso android library,"I want to load image from URL with picasso android library and show it to view but I get an error only in android 7.0 Nougat.
+The URL of the image uses HTTPS. In my other project with the same image URL I didn't get the error if I run in real device 7.0 nougat, but it still error if I run in emulator 7.0 Nougat.
+I try to other URL image from different domain and I didn't get the error too.
+how do I fix it?
+Picasso.get().load(""My_URL_Image"")
+                .resize(200,200)
+                .centerInside()
+                .placeholder(R.drawable.ic_default)
+                .error(R.drawable.ic_default)
+                .into(holder.imageView, object : Callback{
+                    override fun onSuccess() {}
+
+                    override fun onError(e: Exception?) {
+                        e?.printStackTrace()
+                    }
+
+                })
+
+W/System.err: com.squareup.picasso.NetworkRequestHandler$ResponseException: HTTP 504
+W/System.err:     at com.squareup.picasso.NetworkRequestHandler.load(NetworkRequestHandler.java:51)
+W/System.err:     at com.squareup.picasso.BitmapHunter.hunt(BitmapHunter.java:219)
+W/System.err:     at com.squareup.picasso.BitmapHunter.run(BitmapHunter.java:175)
+        at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:428)
+        at java.util.concurrent.FutureTask.run(FutureTask.java:237)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1133)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:607)
+        at java.lang.Thread.run(Thread.java:761)
+        at com.squareup.picasso.Utils$PicassoThread.run(Utils.java:354)
+
+","Thanks for help me guys, I found my solution for this case, I delete FirebaseFirestore.getInstance() on my home activity because I no longer use firebase at home page. I'm not sure why but if I not delete that code in my home page, application running normal in real device android 7.0 Nougat but still error in emulator 7.0 Nougat.
+",java
+google maps api set the center of map to different coordinates after rendering,"I want to change the center of google map after some time interval so that it can focus on certain areas of the whole continent having markers showing restaurants branches. I have successfully rendered the map with markers. What i am having problem is changing the center looping through a list of latitude and longitude. I am trying to do something like this.
+var lat[];
+        var lang[];
+
+            function moveToLocation(){
+                var center = new google.maps.LatLng(lat, lng);
+                map.panTo(center);
+            }
+
+             setInterval(moveToLocation, 3000);  
+
+","From this related question: Google maps dynamically zooming in different locations
+proof of concept fiddle
+code snippet:
+
+
+var map;
+
+function initialize() {
+  map = new google.maps.Map(
+    document.getElementById(""map_canvas""), {
+      center: new google.maps.LatLng(37.4419, -122.1419),
+      zoom: 8,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    });
+
+  var places = [
+    [52, -1],
+    [52, -2],
+    [53, -3],
+    [53, -5],
+    [54, -4],
+    [54, -6]
+  ];
+
+  var index = 0;
+  zoomInterval = setInterval(function() {
+    var lat = places[index][0];
+    var lng = places[index][1];
+    index = (index + 1) % places.length;
+    map.setCenter(new google.maps.LatLng(lat, lng));
+
+  }, 5000);
+
+
+}
+google.maps.event.addDomListener(window, ""load"", initialize);
+html,
+body,
+#map_canvas {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0px
+}
+<script src=""https://maps.googleapis.com/maps/api/js?key=AIzaSyCkUOdZ5y7hMm0yrcCQoCvLwzdM6M8s5qk""></script>
+<div id=""map_canvas""></div>
+
+
+
+",javascript
+trying to make word search program in c,"Given an input dictionary read in from a file to use for all test cases, and several word search grids, i want to identify all words from the dictionary that appear in each word search grid.
+I have read in the dictionary.txt file and I believe it can read in any grid of letters, I am having trouble trying to find the words in the grid that appear in the dictionary.txt file. I decided to use a recursive binary search on the string of characters going in all directions but it is a bit complicated for me. 
+My program runs until it gets to the word searching function where it tries to find the words in the grid and it'll crash but I dont know why and not sure if i am on the right track.
+here is the piece i think is wrong,
+int binsearch(char** dictionary, char** puzzle, int low, int high){
+
+int mid;
+
+if(low == 0 && high == 0){
+    return 0;
+}
+
+mid = (low+high)/2 ;
+
+if(strcmp(*puzzle,dictionary[mid]) == 0){
+        //found a match
+    return 1;
+}
+
+else if(strcmp(*puzzle,dictionary[mid]) > 0){
+        //check upper half
+    return binsearch(dictionary,puzzle,mid+1,high);
+}
+
+else if(strcmp(*puzzle,dictionary[mid]) < 0){
+    //check lower half
+    return binsearch(dictionary,puzzle,low,mid-1);
+}
+else return 0;
+
+}
+
+char wordSearch(char** dictionary, char** puzzle, int row, int col){
+
+int i, X, Y, dir = 0;
+char* wordsfound[20]= {'\0'};
+for (X=0;X<row+1;X++){
+    for(Y=0;Y<col;Y++){
+        for(dir=0;dir<DX_SIZE;dir++) //check every direction
+            for(i=0;i<19;i++){
+                //will continue in direction DX,DY starting at x,y
+                int nextX = X + DX[dir] * i;
+                int nextY = Y + DY[dir] * i;
+                if(nextX < 0 || nextX >= row) break; //keep in bounds
+                if(nextY < 0 || nextY >= col) break;
+                //store the string of letters
+                *wordsfound[i] = (puzzle[nextX][nextY]);
+                if(i>2){ //minimum word is 3
+                //if the string of letters is actually a word, print
+                    int bin = binsearch(dictionary,wordsfound,1,listlength);
+                    if(bin){
+                        printf(""%s\n"",wordsfound);
+                    }
+                }
+            }
+    }
+}
+
+}
+
+but here is my entire code
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define listlength 149256
+#define maxWordLen 19
+
+
+char** getWords(int rows, int cols);
+void freeArray(char** array, int rows);
+char** makeGridArray(int rows, int cols);
+int binsearch(char** dictionary, char** puzzle, int low, int high);
+char wordSearch(char** dictionary, char** puzzle, int row, int col);
+const int DX_SIZE = 8;
+const int DX[] = {-1,-1,-1,0,0,1,1,1};
+const int DY[] = {-1,0,1,-1,1,-1,0,1};
+
+int main(){
+
+    //read in dictionary
+    int i,j,x=0, numCases, gridRow, gridCol;
+    char** words = getWords(listlength, maxWordLen);
+
+    //Get number of cases.
+
+    printf(""enter number of cases:\n"");
+    scanf(""%d"", &numCases);
+
+    //process each case.
+
+    while(x < numCases){
+
+        scanf(""%d%d"",&gridRow,&gridCol);
+
+        //make word search grid
+        char** grid = makeGridArray(gridRow+1, gridCol);
+
+        /* for testing if grid is storing properly
+
+        for(i=0; i<gridRow+1;i++){
+            printf(""%s\n"",grid[i]);
+        }
+
+        */
+        printf(""Words Found Grid #%d:"",x+1);
+        wordSearch(words, grid, gridRow+1, gridCol);
+        x++;
+        freeArray(grid,gridRow+1);
+    }
+    freeArray(words, listlength);
+
+}
+
+
+char** getWords(int rows, int cols){
+
+    int i;
+
+    //allocate top level of pointers.
+    char** words = malloc(sizeof(char*)*rows);
+
+    //allocate each individual array
+    for(i=0; i<rows; i++){
+        words[i] = malloc(sizeof(char)*cols+1);
+    }
+
+    //read dictionary.txt
+    FILE *dictionary = fopen(""dictionary.txt"", ""r"");
+    for(i=0; i<rows; i++){
+        fgets(words[i], cols+1,dictionary);
+    }
+
+    fclose(dictionary);
+    return words;
+}
+
+char** makeGridArray(int rows, int cols){
+
+    //allocate top level of pointers.
+    char** grid = malloc(sizeof(char*)*rows);
+    int i,j;
+
+    //allocate each individual array
+    for(i=0; i<rows;i++){
+        grid[i] = malloc(sizeof(char)*cols+1);
+    }
+    //read in user input grid
+    for(i=0;i<rows;i++){
+        gets(grid[i]);
+    }
+    return grid;
+}
+
+int binsearch(char** dictionary, char** puzzle, int low, int high){
+
+    int mid;
+
+    if(low == 0 && high == 0){
+        return 0;
+    }
+
+    mid = (low+high)/2 ;
+
+    if(strcmp(*puzzle,dictionary[mid]) == 0){
+            //found a match
+        return 1;
+    }
+
+    else if(strcmp(*puzzle,dictionary[mid]) > 0){
+            //check upper half
+        return binsearch(dictionary,puzzle,mid+1,high);
+    }
+
+    else if(strcmp(*puzzle,dictionary[mid]) < 0){
+        //check lower half
+        return binsearch(dictionary,puzzle,low,mid-1);
+    }
+    else return 0;
+
+}
+
+char wordSearch(char** dictionary, char** puzzle, int row, int col){
+
+    int i, X, Y, dir = 0;
+    char* wordsfound[20]= {'\0'};
+    for (X=0;X<row+1;X++){
+        for(Y=0;Y<col;Y++){
+            for(dir=0;dir<DX_SIZE;dir++) //check every direction
+                for(i=0;i<19;i++){
+                    //will continue in direction DX,DY starting at x,y
+                    int nextX = X + DX[dir] * i;
+                    int nextY = Y + DY[dir] * i;
+                    if(nextX < 0 || nextX >= row) break; //keep in bounds
+                    if(nextY < 0 || nextY >= col) break;
+                    //store the string of letters
+                    *wordsfound[i] = (puzzle[nextX][nextY]);
+                    if(i>2){ //minimum word is 3
+                    //if the string of letters is actually a word, print
+                        int bin = binsearch(dictionary,wordsfound,1,listlength);
+                        if(bin){
+                            printf(""%s\n"",wordsfound);
+                        }
+                    }
+                }
+        }
+    }
+
+}
+
+
+void freeArray(char** array, int rows){
+    //free arrays
+    int i;
+    for(i=0; i<rows; i++){
+        free(array[i]);
+    }
+    free(array);
+}
+
+","Here:
+    char* wordsfound[20]= {'\0'};
+    for (X=0;X<row+1;X++){
+        for(Y=0;Y<col;Y++){
+            for(dir=0;dir<DX_SIZE;dir++) //check every direction
+                for(i=0;i<19;i++){
+                    ...
+                    *wordsfound[i] = (puzzle[nextX][nextY]);
+
+Should be:
+    char wordsfound[20]= {'\0'};                    /* not 20 pointers! */
+    for (X=0;X<row+1;X++){
+        for(Y=0;Y<col;Y++){
+            for(dir=0;dir<DX_SIZE;dir++) //check every direction
+                for(i=0;i<19;i++){
+                    ...
+                    wordsfound[i] = (puzzle[nextX][nextY]);   /* no '*' */
+                    wordsfound[i+1] = '\0';           /* end the string */
+
+Also, in your binsearch function when you go to check the upper half or the lower half, you need to make sure that mid+1 and mid-1 respectively are still valid indexes into the array.  If you access elements that are outside the array bounds, bad things are waiting to bite you.
+For example, if low = 0 and high = 1:
+mid = (low+high)/2 ;       /* this is zero */
+
+so you compare with the array element 0 and decide you need to look in the lower half, now you call with low as mid-1 which is -1.  Oh noes!
+",c
+how can i load linux kernel modules from c code,"I have an application that has both two external kernel modules and a user space daemon. I want to load the modules from the daemon code, written in C, at startup, and unload them on clean exit. Can I load them in a cleaner way than doing system(""modprobe module""); and unload them using the corresponding rmmod?
+","init_module / remove_module minimal runnable example
+It was tested on a QEMU + Buildroot VM and Ubuntu 16.04 (Xenial Xerus) host with this simple parameter printer module.
+We use the init_module / finit_module and remove_module Linux system calls.
+The Linux kernel offers two system calls for module insertion:
+
+init_module
+finit_module
+
+and:
+man init_module
+
+documents that:
+
+The finit_module() system call is like init_module(), but reads the module to be loaded from the file descriptor fd.  It is useful when the authenticity of a kernel module can be determined from its location in the filesystem; in cases where that is possible, the overhead of using cryptographically signed modules to determine the authenticity of a module can be avoided.  The param_values  argument is as for init_module().
+
+finit is newer and was added only in v3.8. More rationale: Loading modules from file descriptors
+glibc does not seem to provide a C wrapper for them, so we just create our own with syscall.
+File insmod.c
+#define _GNU_SOURCE
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+#define init_module(module_image, len, param_values) syscall(__NR_init_module, module_image, len, param_values)
+#define finit_module(fd, param_values, flags) syscall(__NR_finit_module, fd, param_values, flags)
+
+int main(int argc, char **argv) {
+    const char *params;
+    int fd, use_finit;
+    size_t image_size;
+    struct stat st;
+    void *image;
+
+    /* CLI handling. */
+    if (argc < 2) {
+        puts(""Usage ./prog mymodule.ko [args="""" [use_finit=0]"");
+        return EXIT_FAILURE;
+    }
+    if (argc < 3) {
+        params = """";
+    } else {
+        params = argv[2];
+    }
+    if (argc < 4) {
+        use_finit = 0;
+    } else {
+        use_finit = (argv[3][0] != '0');
+    }
+
+    /* Action. */
+    fd = open(argv[1], O_RDONLY);
+    if (use_finit) {
+        puts(""finit"");
+        if (finit_module(fd, params, 0) != 0) {
+            perror(""finit_module"");
+            return EXIT_FAILURE;
+        }
+        close(fd);
+    } else {
+        puts(""init"");
+        fstat(fd, &st);
+        image_size = st.st_size;
+        image = malloc(image_size);
+        read(fd, image, image_size);
+        close(fd);
+        if (init_module(image, image_size, params) != 0) {
+            perror(""init_module"");
+            return EXIT_FAILURE;
+        }
+        free(image);
+    }
+    return EXIT_SUCCESS;
+}
+
+GitHub upstream.
+File rmmod.c
+#define _GNU_SOURCE
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+#define delete_module(name, flags) syscall(__NR_delete_module, name, flags)
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        puts(""Usage ./prog mymodule"");
+        return EXIT_FAILURE;
+    }
+    if (delete_module(argv[1], O_NONBLOCK) != 0) {
+        perror(""delete_module"");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+GitHub upstream.
+BusyBox source interpretation
+BusyBox provides insmod, and since it is designed for minimalism, we can try to deduce how it is done from there.
+On version 1.24.2, the entry point is at modutils/insmod.c function insmod_main.
+The IF_FEATURE_2_4_MODULES is optional support for older Linux kernel 2.4 modules, so we can just ignore it for now.
+That just forwards to modutils.c function bb_init_module.
+bb_init_module attempts two things:
+
+mmap the file to memory through try_to_mmap_module.
+This always sets image_size to the size of the .ko file as a side effect.
+
+if that fails, malloc  the file to memory with xmalloc_open_zipped_read_close.
+This function optionally unzips the file first if it is a zip, and just mallocs it otherwise.
+I don't understand why this zipping business is done, since we can't even rely on it because the try_to_mmap_module does not seem to unzip things.
+
+
+Finally comes the call:
+init_module(image, image_size, options);
+
+where image is the executable that was put into memory, and options are just """" if we call insmod file.elf without further arguments.
+init_module is provided above by:
+#ifdef __UCLIBC__
+extern int init_module(void *module, unsigned long len, const char *options);
+extern int delete_module(const char *module, unsigned int flags);
+#else
+# include <sys/syscall.h>
+# define init_module(mod, len, opts) syscall(__NR_init_module, mod, len, opts)
+# define delete_module(mod, flags) syscall(__NR_delete_module, mod, flags)
+#endif
+
+ulibc is an embedded libc implementation, and it seems to provide init_module.
+If it is not present, I think glibc is assumed, but as man init_module says:
+
+The init_module() system call is not supported by glibc.  No declaration is provided in glibc headers, but, through a quirk of history, glibc does export an ABI for
+this system call.  Therefore, in order to employ this system call, it is sufficient to manually declare the interface in your code; alternatively,  you  can  invoke
+the system call using syscall(2).
+
+BusyBox wisely follows that advice and uses syscall, which glibc provides, and which offers a C API for system calls.
+",c
+parsing dhcpdconf with textx,"I'm using https://github.com/igordejanovic/textX to parse dhcpd.conf file (no,  https://pypi.org/project/iscconf/ does not work for me, it crashes on my dhcpd.conf file), specifically extract hosts with fixed addresses.
+Records are like:
+    host example1 {
+    option host-name ""example1"";
+    ddns-hostname ""example1"";
+    fixed-address 192.168.1.181;
+    }
+
+    host example2 {
+    hardware ethernet aa:bb:ff:20:fa:13;
+    fixed-address 192.168.1.191;
+    option host-name ""example2"";
+    ddns-hostname ""example2"";
+    }
+
+Code:
+def get_hosts(s):
+    grammar = """"""
+    config: hosts*=host ;
+
+    host: 'host' hostname=ID '{'
+        (
+            ('hardware ethernet' hardware_ethernet=/[0-9a-fA-F:]+/';')?
+
+            'fixed-address' fixed_address=/([0-9]{1,3}\.){3}[0-9]{1,3}/';'
+
+            ('option host-name' option_host_name=STRING';')?
+
+            ('ddns-hostname' ddns_hostname=STRING';')?
+        )#
+    '}'
+    ;
+    """"""
+    mm = metamodel_from_str(grammar)
+    model = mm.model_from_str(s)
+    for host in model.hosts:
+        print host.hostname, host.fixed_address
+
+Now, I cannot parse entire dhcpd.conf with this grammar (obviously, I get syntax errors since there are so many other elements in the file that grammar does not account for); on the other hand, I do not want to construct complete grammar for this file, as I need only extraction of specific type of host records. 
+I can certainly extract just the host records using regular expressions and parse them separately, but I wonder if there is some way to make textX extract only host records out of the file and ignore the rest of the content?
+","textX author here. I'm not a frequent visitor of SO :). You can play around with regex matches and regex lookaheads to consume unwanted content. Here is a complete example that correctly handles intermediate text even if there is keyword host. Rule config first consume a char if there is not a word host ahead, and this repeats due to zero or more operator. When we get a word host we try do match host rule one or more times and collect all host objects, if the rule didn't succeed at least one (notice the usage of +=) we consume word host and repeat the process. This can probably be done better (more performant) but you get the idea. When doing this kind of stuff it's good to know that textX by default consume whitespaces but you can turn this off either globaly or per-rule using noskipws (see the docs).
+from textx import metamodel_from_str
+
+
+def test_get_hosts():
+    grammar = r""""""
+    config: ( /(?!host)./ | hosts+=host | 'host' )* ;
+
+    host: 'host' hostname=ID '{'
+        (
+            ('hardware ethernet' hardware_ethernet=/[0-9a-fA-F:]+/';')?
+            'fixed-address' fixed_address=/([0-9]{1,3}\.){3}[0-9]{1,3}/';'
+            ('option host-name' option_host_name=STRING';')?
+            ('ddns-hostname' ddns_hostname=STRING';')?
+        )#
+    '}'
+    ;
+    """"""
+    conf_file = r""""""
+    host example1 {
+    option host-name ""example1"";
+    ddns-hostname ""example1"";
+    fixed-address 192.168.1.181;
+    }
+
+    some arbitrary content in between
+    with word host but that fails to match host config.
+
+    host example2 {
+    hardware ethernet aa:bb:ff:20:fa:13;
+    fixed-address 192.168.1.191;
+    option host-name ""example2"";
+    ddns-hostname ""example2"";
+    }
+    """"""
+    mm = metamodel_from_str(grammar)
+    model = mm.model_from_str(conf_file)
+    assert len(model.hosts) == 2
+    for host in model.hosts:
+        print(host.hostname, host.fixed_address)
+
+
+if __name__ == ""__main__"":
+    test_get_hosts()
+
+Edit: Here are two more ideas for config rule:
+A simple one:
+config: ( hosts+=host | /./ )* ;
+
+And (probably) a more performant that consume as much as it can using regex engine before trying host:
+config: ( /(?s:.*?(?=host))/ hosts*=host | 'host' )*
+        /(?s).*/;
+
+",python
+how do i know if i am using arm using windows api,"How do I check if the system on which my program is running on is an arm based or not using c/c++?
+","Here's what you are looking for,
+#include <stdio.h>
+#include <windows.h>
+
+int main(void)
+{
+
+    SYSTEM_INFO SystemInfo;
+    GetSystemInfo(&SystemInfo);
+
+    if(SystemInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM)
+    {
+        // System's processor is ARM based
+    }
+
+    return 0;
+}
+
+Edit: As Anders suggested, use GetNativeSystemInfo for better and accurate results.
+",c
+maven jaxws plugin  skip execution,"I'm using the JAX-WS maven plugin (org.jvnet.jax-ws-commons:jaxws-maven-plugin version 2.2) to generate classes from a bunch of WSDL files in my project, and as the WSDLs never really change I would like to disable this code generation by default, and only enable it for a particular maven profile I've created. The <configuration> element of this plugin supports a <skip> element, but setting this to true seems to do nothing. Am I doing something wrong here? Or is this a known bug, and is there something else I could do to avoid this code generation?
+My plugin configuration looks like this:
+     <plugin>
+        <groupId>org.jvnet.jax-ws-commons</groupId>
+        <artifactId>jaxws-maven-plugin</artifactId>
+        <version>2.2</version>
+
+        <executions>
+          <execution>
+            <id>import-wsdld</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>wsimport</goal>
+            </goals>
+            <configuration>
+              <wsdlFiles>
+                <wsdlFile>MyWSDL.wsdl</wsdlFile>
+              </wsdlFiles>
+            </configuration>
+          </execution>
+        </executions>
+
+        <configuration>
+          <skip>true</skip>
+          <packageName>com.my.package</packageName>
+          <wsdlDirectory>src/main/resources/wsdl</wsdlDirectory>
+          <keep>true</keep>
+          <xnocompile>true</xnocompile>
+          <sourceDestDir>src/main/java</sourceDestDir>
+          <verbose>false</verbose>
+        </configuration>
+
+        <!-- Necessary to revert back to 2.1.7 -->
+        <dependencies>
+          <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-tools</artifactId>
+            <version>2.1.7</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.jvnet.staxex</groupId>
+                <artifactId>stax-ex</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.jvnet.staxex</groupId>
+            <artifactId>stax-ex</artifactId>
+            <version>1.2</version>
+            <exclusions>
+              <exclusion>
+                <groupId>javax.xml.stream</groupId>
+                <artifactId>stax-api</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+","Well, just do it (I mean plugin declaration with all its stuff) in <profile> block. I wouldn't rely on some magic plugin-specific solutions. Just use what Maven offers out-of-the-box and create <profile> with your <plugin> stuff.
+",java
+how to add total amount from list of lists using the java stream api,"I have a class:
+public class Customer{
+private List<Order> orders;
+private String name;
+...
+}
+
+public class Order{
+private long orderId;
+private String customerId;
+private double amount;
+...
+}
+
+
+public class CustomerService{
+
+@Autowired
+private CustomerRepository customerRepo;
+
+List<Customer> custList = customerRepo.findAllCustomers();
+
+double amount = custList.stream().map(c -> {
+return c.getOrders().stream().mapToDouble(o -> o.getAmount()).sum()}).findAny().get();
+
+}
+
+So I tried as like above in CustomerService. But the amount returned is only for the first item in the list. So in the same way how can I write to get the total amount of all the orders for that customer?
+Any suggestions/input will be helpful.
+Note: Sorry for any compile errors. I cannot copy my code and so I need to write in the question instead.
+","You use flatMap():
+double total = custList.stream()
+        .flatMap(c -> c.getOrders().stream())
+        .mapToDouble(Order::getAmount)
+        .sum();
+
+Also note the use of method reference to get the amount from the order.
+",java
+order of operation in java,"I have trouble tracing and understanding how Java (and Javascript) is handling the following code:
+// Java
+int   i = 0;
+int[] a = {10, 20, 30, 40, 50, 60};
+
+a[++i] = a[i++] = a[++i] = ++i;
+System.out.println(Arrays.toString(a));
+// [10, 4, 30, 4, 50, 60]
+
+
+
+let   i = 0;
+const a = [10, 20, 30, 40, 50, 60];
+
+a[++i] = a[i++] = a[++i] = ++i;
+console.log( JSON.stringify(a));  // [10, 4, 30, 4, 50, 60]
+
+
+
+When run, the output is [10, 4, 30, 4, 50, 60].
+We can even simplify this example:
+int   i = 0;
+int[] a = {10, 20};
+
+a[i] = ++i;
+System.out.println(Arrays.toString(a));
+// [1, 20]
+
+
+
+let   i = 0;
+const a = [10, 20];
+
+a[i] = ++i;
+console.log( JSON.stringify(a) );  // [1, 20]
+
+
+
+I expected this to output [10, 1] because right-hand-side first. But the output is [1, 20], but how?
+","
+I expected this to output [10, 1] because right-hand-side first
+
+No, in both languages the left hand side of the = is evaluated first, and then the right is.
+See 15.26.1. Simple Assignment Operator = from the JLS on the evaluation order of = when the LHS is an array access expression in Java (my emphasis):
+
+If the left-hand operand is an array access expression (§15.10.3),
+possibly enclosed in one or more pairs of parentheses, then:
+
+First, the array reference subexpression of the left-hand operand
+array access expression is evaluated...
+
+Otherwise, the index subexpression of the left-hand operand array
+access expression is evaluated. If this evaluation completes abruptly,
+then the assignment expression completes abruptly for the same reason
+and the right-hand operand is not evaluated and no assignment occurs.
+
+Otherwise, the right-hand operand is evaluated.
+
+
+
+The ECMAScript spec (what JavaScript follows) also has runtime semantics for evaluating the left-hand side first in section 13.15.2:
+
+
+If LeftHandSideExpression is neither an ObjectLiteral nor an
+ArrayLiteral, then
+a. Let lref be ? Evaluation of
+LeftHandSideExpression.
+
+
+
+
+So in both snippets (in both languages), a[++i] and a[i] is evaluated first, giving a[1] for a[++i] and a[0] for a[i] as the indexes to be updated.
+",java
+check for environment variable in another process,"In Windows, is there a way to check for the existence of an environment variable for another process?  Just need to check existence, not necessarily get value.
+I need to do this from code.
+","If you know the virtual address at which the environment is stored, you can use OpenProcess and ReadProcessMemory to read the environment out of the other process.  However, to find the virtual address, you'll need to poke around in the Thread Information Block of one of the process' threads.
+To get that, you'll need to call GetThreadContext() after calling SuspendThread().  But in order to call those, you need a thread handle, which you can get by calling CreateToolhelp32Snapshot with the TH32CS_SNAPTHREAD flag to create a snapshot of the process, Thread32First to get the thread ID of the first thread in the process, and OpenThread to get a handle to the thread.
+",c
+typeerror propsrender is not a function react hook form,"I am passing methods as a prop in this form I am making with react-hook-form.
+Its giving me (TypeError: props.render is not a function) when Controller is added in from react-hook-form. I cannot find any solutions online so any help is appreciated.
+
+
+import { useForm, FormProvider } from 'react-hook-form';
+import FormInput from './CustomTextField';
+
+const AddressForm = () => {
+  const methods = useForm();
+
+  return (
+    <>
+      
+      <FormProvider {...methods}>
+        <form onSubmit=' '>
+          <Grid container spacing={3}>
+            <FormInput required name='firstName' label='First name' />
+          </Grid>
+        </form>
+      </FormProvider>
+    </>
+  );
+};
+
+
+
+
+
+import { useFormContext, Controller } from 'react-hook-form';
+
+
+const FormInput = ({ name, label, required }) => {
+  const { control } = useFormContext();
+  
+
+  return (
+    <>
+      <Controller
+        as={TextField}
+        name={name}
+        control={control}
+        label={label}
+        fullWidth
+        required={required}
+        
+      />
+    <>
+  );
+};
+
+export default FormInput;
+
+
+
+","This problem is arising either because you update your react-hook-form or new to react-hook-form
+You just need to use render prop in Controller component
+  <Controller
+        render={({ field }) => (
+          <input
+            onChange={(e) => field.onChange(transform.output(e))}
+            value={transform.input(field.value)}
+          />
+        )}
+      />
+
+or if you are using a third party Form library
+import { Input, Select, MenuItem } from ""@material-ui/core"";
+   <Controller
+            render={({ field }) => (
+              <Select {...field}>
+                <MenuItem value={10}>Ten</MenuItem>
+                <MenuItem value={20}>Twenty</MenuItem>
+              </Select>
+            )}
+            control={control}
+            name=""select""
+            defaultValue={10}
+          />
+
+",javascript
+universal key code across operating systems,"I'm programming a listener that based on the key pressed by the user, must act in a certain manner.
+I need to be able to determine if a user press the I key or M key. I'm doing it like this:
+// If pressed the 'i' key
+if ( evt.getKeyCode() == 73) {
+    //
+}
+...
+
+I look out here and with the sample applet determine that the I key is recognized as a 73 code.
+That works.
+But I'm working on Mac OS X, and I don't know if once I try to run this app on another OS or just JVM, It won't work.
+Is the 73 a universal key code? Is there a certain way to program this so it can run and determine the key pressed, on Windows?
+Thank you!
+","Just complementing Paul Brinkley's answer.  
+
+Is the 73 a universal key code?
+
+Yes, it is the ASCII code of the upper case letter, 'I' in that case. See the javadoc for KeyEvent.VK_A 
+Attention
+despite this coincidence, it's better not to do something like getKeyCode() == 'A' - it may fail in future implementations. 
+",java
+what is the difference between sprintf_s and snprintf,"I encountered this question while writing a program that requires the sprintf function.
+In some cases, using the sprintf function can lead to memory overflow and pose a security risk. So, you can use the snprintf or sprintf_s functions, which are used to avoid these risks.
+But the definitions of these two functions are the same. So, why do these two functions exist instead of just one?
+int sprintf_s(char *_DstBuf, size_t _DstSize, const char *_Format, ...);
+int snprintf(char *__restrict__ __stream, size_t __n, const char *__restrict__ __format, ...);
+
+In the beginning, I thought that the sprintf_s function was unique to the Windows library, and I also thought that the snprintf function was unique to POSIX. But, in fact, both of these functions are included in the <stdio.h> library.
+","There are a number of differences between the snprintf and sprintf_s functions, notably in their return values and how they handle errors.
+Return Values (barring errors):
+
+snprintf returns the number of characters which would have been written to the buffer if the ""size"" argument were ignored.
+
+sprintf_s returns the number of characters actually written.
+
+
+Additional Checks:
+The sprintf_s function also performs checks that snprintf does not, including. The call fails (and returns zero) if any of the following are true:
+
+The %n format specifier is given.
+Any of the arguments corresponding to a %s format specifier are null pointers.
+The given ""size"" argument is zero.
+
+",c
+printf inside cuda __global__ function,"I am currently writing a matrix multiplication on a GPU and would like to debug my code, but since I can not use printf inside a device function, is there something else I can do to see what is going on inside that function. This my current function:
+__global__ void MatrixMulKernel(Matrix Ad, Matrix Bd, Matrix Xd){
+
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
+
+    int bx = blockIdx.x;
+    int by = blockIdx.y;
+
+    float sum = 0;
+
+    for( int k = 0; k < Ad.width ; ++k){
+        float Melement = Ad.elements[ty * Ad.width + k];
+        float Nelement = Bd.elements[k * Bd.width + tx];
+        sum += Melement * Nelement;
+    }
+
+    Xd.elements[ty * Xd.width + tx] = sum;
+}
+
+I would love to know if Ad and Bd is what I think it is, and see if that function is actually being called.
+","CUDA now supports printfs directly in the kernel.
+NVIDIA's docs online, Formatted Output section.
+
+Formatted output is only supported by devices of compute capability 2.x and higher.
+int printf(const char *format[, arg, ...]);
+
+
+For past versions' docs, see this page.
+",c
+preventing console window from closing on visual studio cc console application,"I've used Visual Studio for years, but this is the first time I've done any 'Console Application' development.
+When I run my application the console window pops up, the program output appears and then the window closes as the application exits.
+Is there a way to either keep it open until I have checked the output, or view the results after the window has closed?
+","Starting from Visual Studio 2017 (15.9.4) there is an option:
+Tools->Options->Debugging->Automatically close the console
+
+The corresponding fragment from the Visual Studio documentation:
+
+Automatically close the console when debugging stops:
+Tells Visual Studio to close the console at the end of a debugging session.
+
+",c
+mockingstubbing hal_uart_receive for the stm32,"How do I mock/stub HAL_UART_Receive(&huart5, &temp, 1, BLUETOOTH_RX_TIMEOUT) for the stm32 using the CMock and unity framework?
+","To mock the UART driver, you should add something like this to your unit test source file. This is an example for an STM32L4 MCU, so the filename might be different if you are using a different variant.
+#include ""mock_stm32l4xx_hal_uart.h""
+
+Then you can mock HAL_UART_Receive() with things like:
+HAL_UART_Receive_ExpectAndReturn(&huart5, &temp, 1, BLUETOOTH_RX_TIMEOUT, HAL_OK);
+
+Or you could stub it with something like:
+HAL_UART_Receive_AddCallback(your_stub_function);
+
+So imagine that you had some function that you wanted to test like this:
+foo.c
+int some_function(void)
+{
+    int result;
+
+    if (HAL_UART_Receive(&huart5, &temp, 1, BLUETOOTH_RX_TIMEOUT) == HAL_OK)
+        result = 0;
+    else
+        result = 1;
+
+    return result;
+}
+
+You might test it like so:
+test_foo.c
+#include ""unity.h""
+#include ""mock_stm32l4xx_hal_uart.h""
+
+void test_some_function_success(void)
+{
+    uint8_t dummy_buffer[1];
+
+    // We expect HAL_UART_Receive() to be called with these arguments
+    // If it is called, we will mock it and return HAL_OK to the code under test
+    HAL_UART_Receive_ExpectAndReturn(&huart5, dummy_buffer, 1, BLUETOOTH_RX_TIMEOUT, HAL_OK);
+
+    // However, we don't care what the pData argument is
+    HAL_UART_Receive_IgnoreArg_pData();
+
+    // Now call the function to test.
+    // If it doesn't call HAL_UART_Receive() the test will fail
+    int result = some_function();
+
+    // Our function should return 0 since the result was HAL_OK
+    TEST_ASSERT_EQUAL(0, result);
+}
+
+void test_some_function_fails(void)
+{
+    uint8_t dummy_buffer[1];
+
+    // We expect HAL_UART_Receive() to be called with these arguments
+    // If it is called, we will mock it and return HAL_ERROR to the code under test
+    HAL_UART_Receive_ExpectAndReturn(&huart5, dummy_buffer, 1, BLUETOOTH_RX_TIMEOUT, HAL_ERROR);
+
+    // However, we don't care what the pData argument is
+    HAL_UART_Receive_IgnoreArg_pData();
+
+    // Now call the function to test.
+    // If it doesn't call HAL_UART_Receive() the test will fail
+    int result = some_function();
+
+    // Our function should return 1 since the HAL function failed
+    TEST_ASSERT_EQUAL(1, result);
+}
+
+",c
+get date of first day of week based on localdatenow in java 8,"I would like the get the date of the first day of the week based on LocalDate.now(). The following was possible with JodaTime, but seems to be removed from the new Date API in Java 8.
+LocalDate now = LocalDate.now();
+System.out.println(now.withDayOfWeek(DateTimeConstants.MONDAY));
+
+I can not call 'withDayOfWeek()', because it does not exist.
+So my question is: How to get the date of the first day of the week based on some LocalDate? 
+","Note that the expression System.out.println(now.with(DayOfWeek.MONDAY)) is locale-independent as it uses ISO-8601, therefore it always jumps backwards to last Monday (or stays on Monday in case date points to Monday already). 
+As such in US or some other countries - where week starts on Sunday - it may not work as you would expect - now.with(DayOfWeek.MONDAY) will not jump forward to Monday, in case date points to Sunday.
+In case you need to address these concerns, it is better to use the localized field WeekFields.dayOfWeek():
+LocalDate now = LocalDate.now();
+TemporalField fieldISO = WeekFields.of(Locale.FRANCE).dayOfWeek();
+System.out.println(now.with(fieldISO, 1)); // 2015-02-09 (Monday)
+
+TemporalField fieldUS = WeekFields.of(Locale.US).dayOfWeek();
+System.out.println(now.with(fieldUS, 1)); // 2015-02-08 (Sunday)
+
+Another example due to comments below:
+LocalDate ld = LocalDate.of(2017, 8, 18); // Friday as original date
+
+System.out.println(
+    ld.with(DayOfWeek.SUNDAY)); // 2017-08-20 (2 days later according to ISO)
+
+// Now let's again set the date to Sunday, but this time in a localized way...
+// the method dayOfWeek() uses localized numbering (Sunday = 1 in US and = 7 in France)
+
+System.out.println(ld.with(WeekFields.of(Locale.US).dayOfWeek(), 1L)); // 2017-08-13
+System.out.println(ld.with(WeekFields.of(Locale.FRANCE).dayOfWeek(), 7L)); // 2017-08-20
+
+The US-example makes pretty clear that someone residing in US would expect to go to last and not to next Sunday because Sunday is considered as first day of week in US. The simple ISO-based expression with(DayOfWeek.SUNDAY) ignores this localization issue.
+",java
+out of order execution  can it bypass control statements,"Regarding OOO, lets assume I have one process only (with one thread) that runs this code:
+void foo() {
+
+    if (x == 0) {
+        return;
+    }
+
+    y->data = 5;
+
+}
+
+Now, lets assume I know that y is valid only if x is not zero.
+from hardware perspective, can the CPU execute y->data = 5 before reading x?
+It may cause the CPU to access a NULL/garbage pointer and crashs.
+And if not, what is the reason for this?
+because if/while/for/goto are control statements and the CPU will not fetch ahead instructions when it sees a control statement?
+A I remember, OOO should be 100% transparent to one thread executing its instructions.
+","Depends on how you look at it.
+
+From the user's perspective, no.
+From the CPU's perspective, yes.
+
+From the user's perspective, the behavior of the program must be ""as if"" it was run sequentially.
+In other words, there is no visible difference between being run sequentially and being run with OOE. (aside from maybe performance)
+From the CPU's perspective, yes it actually can bypass the if-statement and execute y->data = 5;. But this is because of branch prediction rather than OOE.
+
+On a modern processor, it is possible for the thread to mispredict the branch:
+if (x == 0) {
+    return;
+}
+
+and actually try to execute y->data = 5;...
+If this happens and y is a bad pointer, it will get hardware exception, but that exception is withheld since the execution is still in speculation mode.
+Once the thread realizes that it has mispredicted the branch, it will throw away everything past the branch (including the exception).
+So in the end, there is nothing to worry. Even if the processor tries to do something it can't, it won't affect the sequential behavior.
+In other words, a modern processor will clean up after itself if it makes a mess that isn't your fault.
+
+Things get uglier when you have multiple threads, but that's outside the scope of this question.
+",c
+mingw compiler for windows using gcc c99 vs gnu99,"I am using the MinGW compiler for Windows. I am making some programs in C. Most of the articles I read up on this seem to be outdated... last I read C99 was incomplete in the GCC is this still true? My real question is cross platform compatibility between setting C99 and GNU99... should I avoid using GNU99 setting and it's extensions and just stick with C99? I am new to this MinGW compiler set as I have always used Visual Studio and decided to try something new... right now I am compiling with these settings... 
+-march=native -O3 -std=gnu99
+
+Is there any recommended compiler commands I should enter for making C programs and also for making C++ programs with this compiler?
+I want to make a simple program that is compatible with Windows, Mac, & Linux but first most Windows.
+","With respect to C, Visual Studio until recently did not support C99 at all.
+With respect to gcc you can find a detailed detailed writeup on which standard they support and the nooks and crannies involved. They also have a nice list of extensions they support. You need to be a little careful with gcc and extensions because just specifying which standard you want to use is not enough to generate a warning or error when you are using an extension. For example you might be surprised that using:
+gcc -std=c90 -W -Wall
+
+allows you to use variable length arrays without a warning. In order to generate a warning you need to add -pedantic:
+gcc -std=c90 -W -Wall -pedantic
+
+and then this will generate a warning similar to this:
+warning: ISO C90 forbids variable length array ‘array’ [-Wvla]
+
+",c
+d3  create dynamic quotborderquot rectangle around svg group,"I have an SVG group with a rect inside of it, and would like the rect to act as a border for the group...
+<g>
+  <rect></rect>
+</g>
+
+but the group is dynamic and its content changes. I am attempting to resize the rect in my update function as such
+.attr(""x"", function(d) { return this.parentNode.getBBox().x })
+.attr(""y"", function(d) { return this.parentNode.getBBox().y })
+.attr(""width"", function(d) { return this.parentNode.getBBox().width })
+.attr(""height"", function(d) { return this.parentNode.getBBox().height })
+
+But what seems to happen is that it expands relatively fine, but then cannot shrink properly since the group's bounding box width is now the same as the expanded rect's width (the rect's width is the group's width, but the group's width is now the rect's width).
+Is there any way to get a rectangle inside an SVG group to properly resize and act as a border?
+","The simplest, cross-browser compatible way is to implement a border is to use a rect exactly as I did, but place it outside of the group, as mentioned by @Duopixel in his comment. As it is still positioned by the bounding box, it will have the correct width, height, x, and y.
+<rect></rect>
+<g></g>
+
+",javascript
+fast exponential implementation in c  based on 2nd degree polynomial,"I made a fast approximation of the exponential function (e^x) based on a 2nd-degree polynomial. However, the program doesn't give reasonable numbers if x<0.0 .
+The code is like this:
+// Compile with: gcc -std=c99 fastexp.c -o fastexp
+
+#include <stdio.h>
+#include <math.h>
+
+#define ALPHA 0.50617024f
+#define ALPHAc 0.49382976f
+#define INV_LN2 1.4426950408889634f
+
+float fast2pxm1_m(float x) { // 0.0 <= x <= 1.0
+  return x*(ALPHA+ALPHAc*x);
+}
+
+float fast2px(float x) {
+  float m, mp;
+  float e;
+
+  m = modff(x, &e);
+  mp = fast2pxm1_m(m) + 1.0f;
+  
+  return ldexpf(mp, e);
+}
+
+float fastexp(float x) {  // exportable
+  return fast2px(x*INV_LN2);
+}
+
+int main(int argc, char *argv[]) {
+  float x;
+
+  for (int i = -10; i <= 10; i++) {
+     x= (float) i/10.0*2;
+     printf(""%.8f => %.8f\n"",x,fastexp(x));
+  }
+  return 0;
+}
+
+
+The results of the function fastexp are not good for x<0.0: its evolution along x is erroneous, with local minima in several places (x). See the results of the program:
+-2.00000000 => 0.23474069
+-1.79999995 => 0.21845233
+-1.60000002 => 0.22272082
+-1.39999998 => 0.24754614
+-1.20000005 => 0.44696173
+-1.00000000 => 0.43635058
+-0.80000001 => 0.46685311
+-0.60000002 => 0.93187356
+-0.40000001 => 0.87235498
+-0.20000000 => 0.89506382
+0.00000000 => 1.00000000
+0.20000000 => 1.18716359
+0.40000001 => 1.45655441
+0.60000002 => 1.80817270
+0.80000001 => 2.17952919
+1.00000000 => 2.64171839
+1.20000005 => 3.26836252
+1.39999998 => 4.04080629
+1.60000002 => 4.81200027
+1.79999995 => 5.91210270
+2.00000000 => 7.34111547
+
+EDIT:
+The constants below give a better approximation:
+#define ALPHA 0.6563658616549711f               
+#define ALPHAc 0.34363413834502887f             
+
+","The polynomial you're using in fast2pxm1_m approximates the function pow(2, x) - 1, but it does this well only in the range [0, 1], as evidenced by the comment // 0.0 <= x <= 1.0.
+The value you're passing to that function is the return value from modff which has the same sign as the input (and therefore is in the range (-1, 1)), so the result is inaccurate for negative inputs.
+One way to fix this is to modify the output of modff so that the fractional part is always non-negative:
+m = modff(x, &e);
+if (m < 0.0f) {
+    m += 1.0f; // fractional part
+    e -= 1.0f; // integral part
+}
+
+This gives more reasonable outputs:
+     x         fastexp(x)       exp(x)
+----------------------------------------
+-2.00000000 => 0.13306235     0.13533528
+-1.79999995 => 0.16054048     0.16529890
+-1.60000002 => 0.19829696     0.20189651
+-1.39999998 => 0.24633193     0.24659697
+-1.20000005 => 0.29292828     0.30119420
+-1.00000000 => 0.35886729     0.36787944
+-0.80000001 => 0.44536310     0.44932896
+-0.60000002 => 0.53846931     0.54881162
+-0.40000001 => 0.65119916     0.67032004
+-0.20000000 => 0.80504274     0.81873075
+ 0.00000000 => 1.00000000     1.00000000
+ 0.20000000 => 1.18716359     1.22140276
+ 0.40000001 => 1.45655441     1.49182471
+ 0.60000002 => 1.80817270     1.82211884
+ 0.80000001 => 2.17952919     2.22554096
+ 1.00000000 => 2.64171839     2.71828183
+ 1.20000005 => 3.26836252     3.32011708
+ 1.39999998 => 4.04080629     4.05519987
+ 1.60000002 => 4.81200027     4.95303254
+ 1.79999995 => 5.91210270     6.04964718
+ 2.00000000 => 7.34111547     7.38905610
+
+",c
+printf wprintf s s ls char and wchar errors not announced by a compiler warning,"I have tried the following code:
+wprintf(L""1 %s\n"",""some string""); //Good
+wprintf(L""2 %s\n"",L""some string""); //Not good -> print only first character of the string
+printf(""3 %s\n"",""some string""); //Good
+//printf(""4 %s\n"",L""some string""); //Doesn't compile
+printf(""\n"");
+wprintf(L""1 %S\n"",""some string""); //Not good -> print some funny stuff
+wprintf(L""2 %S\n"",L""some string""); //Good
+//printf(""3 %S\n"",""some string""); //Doesn't compile
+printf(""4 %S\n"",L""some string"");  //Good
+
+And I get the following output:
+1 some string
+2 s
+3 some string
+
+1 g1 %s
+
+2 some string
+4 some string
+
+So: it seems that both wprintf and printf are able to print correctly both a char* and a wchar*, but only if the exact specifier is used. If the wrong specifier is used, you might not get a compiling error (nor warning!) and end up with wrong behavior. Do you experience the same behaviour?
+Note: This was tested under Windows, compiled with MinGW and g++ 4.7.2 (I will check gcc later)
+Edit: I also tried %ls (result is in the comments)
+printf(""\n"");
+wprintf(L""1 %ls\n"",""some string""); //Not good -> print funny stuff
+wprintf(L""2 %ls\n"",L""some string""); //Good
+// printf(""3 %ls\n"",""some string""); //Doesn't compile
+printf(""4 %ls\n"",L""some string"");  //Good
+
+","I suspect GCC (mingw) has custom code to disable the checks for the wide printf functions on Windows. This is because Microsoft's own implementation (MSVCRT) is badly wrong and has %s and %ls backwards for the wide printf functions; since GCC can't be sure whether you will be linking with MS's broken implementation or some corrected one, the least-obtrusive thing it can do is just shut off the warning.
+",c
+count exact 5 minutes from date,"I faced up with problem to calculate exact 5 minutes from time. Here the scenario, from the server response I get dateTime in format YYYY-MM-DD HH:mm:ss after that I show up local timer on page which counts 5 minutes after that time. I do it with momentjs.
+
+
+var output = document.getElementById('out');_x000D_
+_x000D_
+var fromCount = '2017-02-22 00:23:50';_x000D_
+var toMins = moment(fromCount).add(5, 'minutes');_x000D_
+var toMinsCount = setInterval(function(){_x000D_
+  var now = moment();_x000D_
+  var diff = moment(toMins - now).format('mm:ss');_x000D_
+  if(diff==='00:00'){_x000D_
+    clearInterval(toMinsCount);_x000D_
+    // something more here_x000D_
+    output.innerText = 'times up change fromCount data time';_x000D_
+  }_x000D_
+  if(now>toMins){_x000D_
+    clearInterval(toMinsCount);_x000D_
+    output.innerText = 'change fromCount data time';_x000D_
+  } else {_x000D_
+    output.innerText = diff;_x000D_
+  }_x000D_
+},1000);
+<script src=""https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js""></script>_x000D_
+_x000D_
+<div id=""out""></div>
+
+
+
+Everything works nice BUT, sometimes when I add 5 minutes to date counter starts count from 5:13 or bit higher, it occurs when for example data from count = '2017-02-22 00:30:50' and now date = '2017-02-22 00:30:15'. So how can I avoid this problem and show local counter exact 5:00 minutes?
+I need to count it from servers time because my counter depends on special event. And I should show for each user came to page same time from the moment server has catch. In local way each user will see it's own 5 min timer.
+","Ok, here the solution that fits my needs.
+function count5min(value) {
+    $http.get('https://testfate.ru/time').then(function (resp) {
+      // getting dateTime fromServer
+
+      var realTime, toMins, diff;
+
+      realTime = moment(resp.data.time).valueOf();
+      diff = moment().valueOf() - realTime;
+
+      var beforeStart = moment(value);
+
+      toMins = moment(beforeStart).add(5, 'minutes');
+
+      var toMinsCount = setInterval(function () {
+        var now = moment().subtract(diff, 'milliseconds');
+        var difference = moment(toMins - now).format('mm:ss');
+        if (difference === '00:00') {
+          clearInterval(toMinsCount);
+        }
+        if (now > toMins) {
+          clearInterval(toMinsCount);
+        } else {
+          $(el).find('.short-timer').text(difference);
+        }
+      }, 1000);
+
+    }, function (err) {
+      console.error(err);
+    });
+  }
+
+So what I do is, getting time from server, found difference between local time and server time in ms, then in interval function subtract this difference from local time. Works like a charm for me. My friend suggest this idea to me.
+",javascript
+time complexity of returning power set leetcode 78 subsets,"Why the time complexity of generating power set of given array is O(n * 2^n). The solution which I created or even the solution which is shared on leetcode runs 2^n times. 1 loop to generate 1 subset.
+I tested the run count as well and it is always meeting 2^n. The solution is given below and the leetcode also mentions the time complexity of their solution as  O(n * 2^n). Cant figure out how it is possible.
+class Solution {
+
+    private List<List<Integer>> output = new ArrayList();
+    private int n;
+    private int runStatus=0;
+
+    public void backtrack(int first, ArrayList<Integer> curr, int[] nums) {
+        // Add the current subset to the output
+        output.add(new ArrayList(curr));
+        // Generate subsets starting from the current index
+        for (int i = first; i < n; ++i) {
+            curr.add(nums[i]);
+            System.out.println(""runstatus is : ""+(runStatus++));
+            backtrack(i + 1, curr, nums);
+            curr.remove(curr.size() - 1);
+        }
+    }
+
+    public List<List<Integer>> subsets(int[] nums) {
+        n = nums.length;
+        ArrayList<Integer> currCombo = new ArrayList<Integer>();
+        backtrack(0, currCombo, nums); // One call generates all subsets
+        return output;
+    }
+}
+
+Now, if you track how many times the ""System.out.println(""runstatus is : ""+(runStatus++));"" has run, it will always be O(2^n).
+Please throw some light on this, what I am interpreting incorrectly?
+","The factor 𝑛 comes from this operation:
+new ArrayList(curr)
+
+This doesn't run in constant time. This initialises a new ArrayList with values taken from cur. This means it takes time relative to the size of the ArrayList. The average size is 𝑛/2, hence the time complexity for the complete algorithm is O(𝑛2𝑛).
+",java
+run python program until specific time,"I want to run my program in jupyter notebook and this program stops at specific time(for example 18:00). I wrote program by while loop and incremental index, but it's better to write it with time parameter.
+I run mentioned program for 7 hours each day. It must run nonstop.
+while(i<500000):
+    execute algorithm
+    i+=1
+
+But I'd like to run my program like bellow:
+while(not 18:00 clock):
+    execute algorithm
+
+","import datetime
+
+while datetime.datetime.now().hour < 18:
+    do stuff...
+
+or
+if datetime.datetime.now().hour >= 18:
+    return
+
+",python
+identifying dead code in large code repository,"I have a large C code base, with >100 binaries, >3000 files and > 30 libraries. There is a lot of dead code that was accumulated and I'm looking for ways to identify and remove that code. The code is simple - no complex macros and (very little) automatically generated code (lex/bison/...).
+To identify ""static"" dead code (and variables) gcc does a good job (using -Wunused-* options identifies all unused static variables, static functions, ...). My challenge is with non-static global functions and variables (and the code base has lot of them!)
+I've lot of mileage using 'nm' across all the objects files, practically create a list of all defined global symbols (types 'T', 'D' and 'B' for code, data and uninitialized). I then removed every 'U' symbols. That process identified all unreferenced global. At this point, I have to manually make each symbol static, compile with gcc -Werror -Wunused, and see if it raises any error.
+# Omitting some details for brevity.
+nm --undefined-only lib1.a lib2.a ... obj1 obj2.o obj3.o | sort > refs.txt
+nm --extern-only --defined-only lib1.a lib2.a ... obj1 obj2.o obj3.o  | sort > defs.txt
+join -12 -23 -v2 refs.txt defs.txt
+
+My question - is it possible to use ""nm"" (or other object analysis tool like objdump) to identify which global symbols in object file are also used inside the same object. This will speed up the dead code elimination by separating dead code in global function from global functions that are actually used (but may become static).
+Alternatively, is there any other existing tool that will do the job?
+","I suggest to use GNU ld's dead symbol removal functionality for this.
+For this you need to compile your code with -fdata-sections -ffunction-sections and then link with -Wl,--gc-sections -Wl,--print-gc-sections flags. It will print information about functions which have been removed.
+Here is an example for sample program
+/usr/bin/ld: removing unused section '.text.foo' in file '/tmp/ccXZWJ2X.o'
+
+(.text.foo is section generated for unused function foo).
+As a side note, if you use these options there may be no need to manually sanitize your codebase (apart from making it cleaner) because the toolchain will remove dead code automatically.
+",c
+seeing the output of my program,"I am having a problem with a program of mine, as I cannot see the output display.  Using a Dev C++ compiler to compile my C program, I debug it to see the output.  However my program immediately terminates, so I can't see the output properly. 
+I ended my program with return 0, and Aldo tried getch(), but even with both endings my program terminates quick.   
+I want to know if my program endings are wrong, and if so what is the correct way to end a program?
+","you need the window stop to view the output, is it right?
+if yes, include this library
+#include <stdlib.h>
+
+then add this line at the end of code:
+system(""PAUSE"");
+
+e.g
+#include <stdlib.h>
+#include <stdio.h>
+
+int main()
+{
+/* do/print some thing*/
+system(""PAUSE"");
+
+}
+
+",c
+why use jle instead of jl,"I wrote the following program:
+#include <stdio.h>
+
+int main()
+{
+    int i = 0;
+    for (; i < 4; i++)
+    {
+        printf(""%i"",i);
+    }
+
+    return 0;
+} 
+
+I compiled it using gcc test.c -o test.o, then disassembled it using objdump -d -Mintel test.o. The assembly code I got (at least the relevant part) is the following:
+0804840c <main>:
+ 804840c:   55                      push   ebp
+ 804840d:   89 e5                   mov    ebp,esp
+ 804840f:   83 e4 f0                and    esp,0xfffffff0
+ 8048412:   83 ec 20                sub    esp,0x20
+ 8048415:   c7 44 24 1c 00 00 00    mov    DWORD PTR [esp+0x1c],0x0
+ 804841c:   00 
+ 804841d:   eb 19                   jmp    8048438 <main+0x2c>           
+ 804841f:   8b 44 24 1c             mov    eax,DWORD PTR [esp+0x1c]
+ 8048423:   89 44 24 04             mov    DWORD PTR [esp+0x4],eax
+ 8048427:   c7 04 24 e8 84 04 08    mov    DWORD PTR [esp],0x80484e8
+ 804842e:   e8 bd fe ff ff          call   80482f0 <printf@plt>
+ 8048433:   83 44 24 1c 01          add    DWORD PTR [esp+0x1c],0x1
+ 8048438:   83 7c 24 1c 03          cmp    DWORD PTR [esp+0x1c],0x3
+ 804843d:   7e e0                   jle    804841f <main+0x13>
+ 804843f:   b8 00 00 00 00          mov    eax,0x0
+ 8048444:   c9                      leave  
+ 8048445:   c3                      ret
+
+I noticed that, although my compare operation was i < 4, the assembly code is (after disassembly) i <= 3. Why does that happen? Why would it use JLE instead of JL?
+","Loops that count upwards, and have constant limit, are very common. The compiler has two options to implement the check for loop termination - JLE and JL. While the two ways seem absolutely equivalent, consider the following.
+As you can see in the disassembly listing, the constant (3 in your case) is encoded in 1 byte. If your loop counted to 256 instead of 4, it would be impossible to use such an efficient encoding for the CMP instruction, and the compiler would have to use a ""larger"" encoding. So JLE provides a marginal improvement in code density (which is ultimately good for performance because of caching).
+",c
+understanding inaddr_any for socket programming,"I am trying to program some sockets and so, on the server side, I use htonl(INADDR_ANY). To the extent I understood, it seems to me that this function generates a random IP (am I correct ?). In fact, I want to bind my socket with my localhost. But if I run this 
+printf(""%d"",htonl(INADDR_ANY));
+
+I get 0 as a return value. Could someone bring some explanation ?
+","
+bind() of INADDR_ANY does NOT ""generate a random IP"". It binds the socket to all available interfaces. 
+For a server, you typically want to bind to all interfaces - not just ""localhost"". 
+If you wish to bind your socket to localhost only, the syntax would be my_sockaddress.sin_addr.s_addr = inet_addr(""127.0.0.1"");, then call bind(my_socket, (SOCKADDR *) &my_sockaddr, ...). 
+As it happens, INADDR_ANY is a constant that happens to equal ""zero"":
+http://www.castaglia.org/proftpd/doc/devel-guide/src/include/inet.h.html
+# define INADDR_ANY ((unsigned long int) 0x00000000)
+...
+# define INADDR_NONE    0xffffffff
+...
+# define INPORT_ANY 0
+...
+
+If you're not already familiar with it, I urge you to check out Beej's Guide to Sockets Programming:
+http://beej.us/guide/bgnet/
+
+Since people are still reading this, an additional note:
+
+man (7) ip:
+When a process wants to receive new incoming packets or connections,
+  it should bind a socket to a local interface address using bind(2).
+In this case, only one IP socket may be bound to any given local
+  (address, port) pair.  When INADDR_ANY is specified in the bind call,
+  the socket will be bound to all local interfaces.  
+When listen(2) is called on an unbound socket, the socket is
+  automatically bound to a random free port with the local address set
+  to INADDR_ANY.  
+When connect(2) is called on an unbound socket, the socket is
+  automatically bound to a random free port or to a usable shared port
+  with the local address set to INADDR_ANY...
+There are several special addresses: INADDR_LOOPBACK (127.0.0.1)
+  always refers to the local host via the loopback device; INADDR_ANY
+  (0.0.0.0) means any address for binding...
+
+Also:
+
+bind() — Bind a name to a
+  socket:
+If the (sin_addr.s_addr) field is set to the constant INADDR_ANY, as
+  defined in netinet/in.h, the caller is requesting that the socket be
+  bound to all network interfaces on the host. Subsequently, UDP packets
+  and TCP connections from all interfaces (which match the bound name)
+  are routed to the application. This becomes important when a server
+  offers a service to multiple networks. By leaving the address
+  unspecified, the server can accept all UDP packets and TCP connection
+  requests made for its port, regardless of the network interface on
+  which the requests arrived.
+
+",c
+which variable typessizes are atomic on stm32 microcontrollers,"Here are the data types on STM32 microcontrollers: http://www.keil.com/support/man/docs/armcc/armcc_chr1359125009502.htm.
+These microcontrollers use 32-bit ARM core processors.
+Which data types have automatic atomic read and atomic write access?
+I'm pretty sure all 32-bit data types do (since the processor is 32-bits), and all 64-bit data types do NOT (since it would take at least 2 processor operations to read or write a 64-bit word), but what about bool (1 byte), and uint16_t/int16_t (2 bytes)?
+Context: I'm sharing variables between multiple threads (single core, but multiple threads, or ""tasks"" as they are called, in FreeRTOS) on the STM32 and need to know if I need to enforce atomic access by turning off interrupts, using mutexes, etc.
+UPDATE:
+Refering to this sample code:
+volatile bool shared_bool;
+volatile uint8_t shared u8;
+volatile uint16_t shared_u16;
+volatile uint32_t shared_u32;
+volatile uint64_t shared_u64;
+volatile float shared_f; // 32-bits
+volatile double shared_d; // 64-bits
+
+// Task (thread) 1
+while (true)
+{
+    // Write to the values in this thread.
+    //
+    // What I write to each variable will vary. Since other threads are reading
+    // these values, I need to ensure my *writes* are atomic, or else I must
+    // use a mutex to prevent another thread from reading a variable in the
+    // middle of this thread's writing.
+    shared_bool = true;
+    shared_u8 = 129;
+    shared_u16 = 10108;
+    shared_u32 = 130890;
+    shared_f = 1083.108;
+    shared_d = 382.10830;
+}
+
+// Task (thread) 2
+while (true)
+{
+    // Read from the values in this thread.
+    //
+    // What thread 1 writes into these values can change at any time, so I need
+    // to ensure my *reads* are atomic, or else I'll need to use a mutex to
+    // prevent the other thread from writing to a variable in the midst of
+    // reading it in this thread.
+    if (shared_bool == whatever)
+    {
+        // do something
+    }
+    if (shared_u8 == whatever)
+    {
+        // do something
+    }
+    if (shared_u16 == whatever)
+    {
+        // do something
+    }
+    if (shared_u32 == whatever)
+    {
+        // do something
+    }
+    if (shared_u64 == whatever)
+    {
+        // do something
+    }
+    if (shared_f == whatever)
+    {
+        // do something
+    }
+    if (shared_d == whatever)
+    {
+        // do something
+    }
+}
+
+In the code above, which variables can I do this for without using a mutex? My suspicion is as follows:
+
+volatile bool: safe--no mutex required
+volatile uint8_t: safe--no mutex required
+volatile uint16_t: safe--no mutex required
+volatile uint32_t: safe--no mutex required
+volatile uint64_t: UNSAFE--YOU MUST USE A Critical section or MUTEX!
+volatile float: safe--no mutex required
+volatile double: UNSAFE--YOU MUST USE A Critical section or MUTEX!
+
+Example critical section with FreeRTOS:
+
+https://www.freertos.org/taskENTER_CRITICAL_taskEXIT_CRITICAL.html
+// Force atomic access with these critical section atomic access guards.
+taskENTER_CRITICAL();
+// do the (now guaranteed to be safe) read or write here
+taskEXIT_CRITICAL();
+
+
+Related, but not answering my question:
+
+Atomic operations in ARM
+ARM: Is writing/reading from int atomic?
+(My own question and answer on atomicity in 8-bit AVR [and Arduino] microcontrollers): https://stackoverflow.com/a/39693278/4561887
+https://stm32f4-discovery.net/2015/06/how-to-properly-enabledisable-interrupts-in-arm-cortex-m/
+
+","For the final, definitive answer to this question, jump straight down to the section below titled ""Final answer to my question"".
+The generic answer
+A single read or a single write, but not multiples, and not increment/decrement, is typically (but not guaranteed by the C standard) automatically atomic on a microcontroller so long as the variable size is <= the CPU size, and is naturally aligned.
+Therefore, for an 8-bit mcu, only 8-bit variable types have naturally atomic reads or writes, and on an STM32 32-bit mcu, all 32-bit or smaller variable types have naturally atomic reads or writes.
+So, on STM32, all types <= 4 bytes (all bolded types in the list of 9 rows below) have naturally atomic reads and writes.
+Caveats:
+
+If you have a packed struct or another unaligned variable, don't expect atomicity on any unaligned types.
+This ""natural atomicity"" concept does not exist in the C standard whatsoever, so it's not guaranteed by the C standard. It's just a common feature of microcontrollers. So, pedantically, you can't rely on it in C code, but in practice, you can. So I, and FreeRTOS, and many others, do.
+
+The ARM v7-M Architecture Reference Manual's documentation
+UPDATE 30 Oct. 2018: I was accidentally referencing the (slightly) wrong documents (but which said the exact same thing), so I've fixed them in my answer here. See ""Notes about the 30 Oct. 2018 changes"" at bottom of this answer for details.
+I definitely don't understand every word here, but the ARM v7-M Architecture Reference Manual (Online source; PDF file direct download) (NOT the Technical Reference Manual [TRM], since it doesn't discuss atomicity) validates my assumptions:
+
+So...I think my 7 assumptions at the bottom of my question are all correct. [30 Oct. 2018: Yes, that is correct. See below for details.]
+
+UPDATE 29 Oct. 2018:
+One more little tidbit: FreeRTOS is sure on this
+...and it's used in thousands of safety-critical applications world-wide.
+Richard Barry, FreeRTOS founder, expert, and core developer, states in tasks.c in two different places (ex: here in the official FreeRTOS V11.0.1 release) that:
+/* A critical section is not required because the variables are of type BaseType_t. */
+
+And, for most (all?) 32-bit microcontrollers, such as STM32F4 ARM Cortex-M4 with floating point unit (hence the folder name ARM_CM4F), you can see here in FreeRTOS-Kernel/portable/GCC/ARM_CM4F/portmacro.h that BaseType_t is typedefed as long, and UBaseType_t is typedefed as unsigned long:
+typedef long             BaseType_t;
+typedef unsigned long    UBaseType_t;
+
+...and in the code where the above ""critical section is not required"" comments are, the variables in question are of type UBaseType_t. Furthermore, long for these chips is int32_t (4 bytes), and unsigned long is uint32_t (4 bytes). So, this means that Richard Barry is saying that 4-byte reads and writes are atomic on these 32-bit microcontrollers. This means that he, at least, is 100% sure 4-byte reads and writes are atomic on STM32. He doesn't mention smaller-byte reads, but for 4-byte reads he is conclusively sure. I have to assume that 4-byte variables being the native processor width, and also, word-aligned, is critical to this being true.
+Note that the FreeRTOS version number is found in task.h, here. Here are the two code and comment snippets from tasks.c in FreeRTOS V11.0.1 where he states that a critical section is not required because the variables are of type BaseType_t (or UBaseType_t):
+void vTaskSuspendAll( void )
+{
+    traceENTER_vTaskSuspendAll();
+
+    #if ( configNUMBER_OF_CORES == 1 )
+    {
+        /* A critical section is not required as the variable is of type
+         * BaseType_t.  Please read Richard Barry's reply in the following link to a
+         * post in the FreeRTOS support forum before reporting this as a bug! -
+         * https:// goo.gl/wu4acr */
+
+        /* portSOFTWARE_BARRIER() is only implemented for emulated/simulated ports that
+         * do not otherwise exhibit real time behaviour. */
+        portSOFTWARE_BARRIER();
+
+        /* The scheduler is suspended if uxSchedulerSuspended is non-zero.  An increment
+         * is used to allow calls to vTaskSuspendAll() to nest. */
+        ++uxSchedulerSuspended;
+
+        /* Enforces ordering for ports and optimised compilers that may otherwise place
+         * the above increment elsewhere. */
+        portMEMORY_BARRIER();
+    }
+...
+
+UBaseType_t uxTaskGetNumberOfTasks( void )
+{
+    traceENTER_uxTaskGetNumberOfTasks();
+
+    /* A critical section is not required because the variables are of type
+     * BaseType_t. */
+    traceRETURN_uxTaskGetNumberOfTasks( uxCurrentNumberOfTasks );
+
+    return uxCurrentNumberOfTasks;
+}
+
+The short goo.gl link in the first comment above leads to this full link: FreeRTOS Support Archive: Concerns about the atomicity of vTaskSuspendAll(). The key here is that Richard is relying on each individual 4-byte read or write being naturally atomic on this hardware.
+Final answer to my question: all types <= 4 bytes (all bolded types in the list of 9 rows below) are atomic.
+Furthermore, upon closer inspection of the TRM on p141 as shown in my screenshot above, the key sentences I'd like to point out are:
+
+In ARMv7-M, the single-copy atomic processor accesses are:
+• all byte accesses.
+• all halfword accesses to halfword-aligned locations.
+• all word accesses to word-aligned locations.
+
+And, per this link, the following is true for ""basic data types implemented in ARM C and C++"" (ie: on STM32):
+
+bool/_Bool is ""byte-aligned"" (1-byte-aligned)
+int8_t/uint8_t is ""byte-aligned"" (1-byte-aligned)
+int16_t/uint16_t is ""halfword-aligned"" (2-byte-aligned)
+int32_t/uint32_t is ""word-aligned"" (4-byte-aligned)
+int64_t/uint64_t is ""doubleword-aligned"" (8-byte-aligned) <-- NOT GUARANTEED ATOMIC
+float is ""word-aligned"" (4-byte-aligned)
+double is ""doubleword-aligned"" (8-byte-aligned) <-- NOT GUARANTEED ATOMIC
+long double is ""doubleword-aligned"" (8-byte-aligned) <-- NOT GUARANTEED ATOMIC
+all pointers are ""word-aligned"" (4-byte-aligned)
+
+This means that I now have and understand the evidence I need to conclusively state that all bolded rows just above have automatic atomic read and write access (but NOT increment/decrement of course, which is multiple operations). This is the final answer to my question. The only exception to this atomicity might be in packed structs I think, in which case these otherwise-naturally-aligned data types may not be naturally aligned.
+Also note that when reading the Technical Reference Manual, ""single-copy atomicity"" apparently just means ""single-core-CPU atomicity"", or ""atomicity on a single-CPU-core architecture."" This is in contrast to ""multi-copy atomicity"", which refers to a ""mutliprocessing system"", or multi-core-CPU architecture. Wikipedia states ""multiprocessing is the use of two or more central processing units (CPUs) within a single computer system"" (https://en.wikipedia.org/wiki/Multiprocessing).
+My architecture in question, STM32F767ZI (with ARM Cortex-M7 core), is a single-core architecture, so apparently ""single-copy atomicity"", as I've quoted above from the TRM, applies.
+Further Reading:
+
+ARM: Is writing/reading from int atomic?
+What is the difference between atomic / volatile / synchronized?
+Can variables inside packed structures be read atomically?
+
+Notes about the 30 Oct. 2018 changes:
+
+I had this reference: ARMv7 TRM (Technical Reference Manual). However, this is wrong in 2 ways: 1) This isn't a TRM at all! The TRM is a short (~200 pgs) Technical Reference Manual. This, however, is the ""Architecture Reference Manual"", NOT the TRM. It is a much longer and more generic document, as Architecture reference manuals are on the order of ~1000~2000 pgs it turns out. 2) This is for the ARMv7-A and ARMv7-R processors, but the manual I need for the STM32 mcu in question is for the ARMv7-M processor.
+Here is the correct link to the ARM Cortex-M7 Processor Technical Reference Manual. Online: https://developer.arm.com/docs/ddi0489/latest. PDF: https://static.docs.arm.com/ddi0489/d/DDI0489D_cortex_m7_trm.pdf.
+The correct TRM just above, on p99 (5-36) says, ""For more
+information on atomicity, see the ARM®v7-M Architecture Reference Manual."" So, here is that manual. Online download link: https://developer.arm.com/products/architecture/cpu-architecture/m-profile/docs/ddi0403/latest/armv7-m-architecture-reference-manual. PDF: https://static.docs.arm.com/ddi0489/d/DDI0489D_cortex_m7_trm.pdf. It discusses atomicity on p79-80 (A3-79 to A3-80).
+
+To create atomic access guards (usually by turning off interrupts when reads and writes are not atomic) see:
+
+[my Q&A] What are the various ways to disable and re-enable interrupts in STM32 microcontrollers in order to implement atomic access guards?
+My doAtomicRead() func here which can do atomic reads withOUT turning off interrupts
+
+",c
+new line not registered in docxjs,"I am using the docxjs library. I am trying to add line breaks into the doc im generating but I'm unsure of how to do this. \n character gets ignored. How can i add line breaks to my doc?
+The paragraph I want to add line breaks to:
+new Paragraph( {
+        text: '\n',
+        children: [
+          ...Object.entries( dataItem ).map( ([fieldName, fieldValue]) => new Paragraph( {
+            text: fieldName,
+            children: Object.entries( fieldValue ).map( ([dataSource, dataValue]) => new Paragraph( {
+              text: dataSource,
+              children: Object.values( dataValue ).map( value => new Paragraph(value) )
+            }) )
+          }) ),
+          new Paragraph( {text: '_', children: [new PageBreak()]} )
+        ]
+      } )
+
+","I think that paragraph is equal newline in text. Isn't it?
+doc.addSection({
+    properties: {},
+    children: [
+        new Paragraph({
+            children: [
+                new TextRun(""First line""),
+            ],
+        }),
+        new Paragraph({
+          children: [],  // Just newline without text
+        }),
+        new Paragraph({
+            children: [
+                new TextRun(""Second line""),
+            ],
+        }),
+    ],
+});
+
+",javascript
+custom link on column,"I am working with django-tables2 to display some patient information on a page. I am creating the table like this:
+class PatientListView(tables.Table):
+    name = tables.Column('Practice')
+    patientid = tables.Column()
+    firstname = tables.Column()
+    lastname = tables.Column()
+    dob = tables.Column()
+    addressline1 = tables.Column()
+    addressline2 = tables.Column()
+    city = tables.Column()
+    state = tables.Column()
+    zipcode = tables.Column()
+
+    class Meta:
+        template_name = 'django_tables2/bootstrap.html'
+
+and then I am populating the table in my view with the result of an sql query like this:
+table = PatientListView(patients)
+
+I would like to ideally make each row of the table clickable so clicking anywhere on the table row would take me to a separate url defined by me. I would also settle for having a specific cell to click that would take me to a separate url.
+I have seen the linkify option, but from what I've read of the documentation it looks like linkify does redirects to django model pages, but I am not using models for this database as the database is created and managed by another application, and I am just reading and displaying that information.
+If django-tables2 is not the right solution for this issue I am open to hearing suggestions of other ways I can accomplish my goal.
+","Option 1: turn every column into a link
+You can make a callable that converts the record to the link, and add that to all columns, so:
+def get_link(record):
+    return f'www.example.com/patients/{record.patientid}'
+
+
+class PatientListView(tables.Table):
+    name = tables.Column('Practice', linkify=get_link)
+    patientid = tables.Column(linkify=get_link)
+    firstname = tables.Column(linkify=get_link)
+    lastname = tables.Column(linkify=get_link)
+    dob = tables.Column(linkify=get_link)
+    addressline1 = tables.Column(linkify=get_link)
+    addressline2 = tables.Column(linkify=get_link)
+    city = tables.Column(linkify=get_link)
+    state = tables.Column(linkify=get_link)
+    zipcode = tables.Column(linkify=get_link)
+
+    class Meta:
+        template_name = 'django_tables2/bootstrap.html'
+
+Option 2: make the row clickable
+Another option is to generate a data-href attribute and use JavaScript then to make it behave like a link, with:
+def get_link(record):
+        return f'www.example.com/patients/{record.patientid}'
+
+class PatientListView(tables.Table):
+    name = tables.Column('Practice')
+    patientid = tables.Column()
+    firstname = tables.Column()
+    lastname = tables.Column()
+    dob = tables.Column()
+    addressline1 = tables.Column()
+    addressline2 = tables.Column()
+    city = tables.Column()
+    state = tables.Column()
+    zipcode = tables.Column()
+    
+    class Meta:
+        row_attrs = {'data-href': get_link}
+
+and then add some JavaScript:
+    <script type=""text/javascript"" 
+ src=""http://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js""> 
+    </script>
+
+    $(function() {
+        $('tr[data-href]').on('click', function() {
+            window.location = $(this).data('href');
+        });
+    });
+
+and perhaps style the row with:
+    tr[data-href] {
+        cursor: pointer;
+    }
+
+",python
+what39s the difference between p and p  1 in c,"I have just started learning about pointers in C and was using a pointer p to iterate through the elements of an array.
+My goal was to increment every element by one, but after applying the increment operator, I noticed a rather confusing output. Instead of showing value + 1, it would only show odd numbers within the array.
+Here's the code:
+#include <stdio.h>
+
+#define N 10
+
+int main(void)
+{
+    int a[N] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, *p;
+    for (p = &a[0]; p < &a[N]; p++)
+    {   
+        *p++;
+        printf(""%d "", *p);
+    }
+    
+    return 0;
+}
+
+output:
+1 3 5 7 9
+
+I then replaced ++ with += 1, and the output was as I was first expecting:
+1 2 3 4 5 6 7 8 9 10
+
+I don't really understand what happened here, until now I thought both notations were equivalent for every use case.
+","
+What's the difference between *p++ and *p += 1 in C99?
+
+It is a matter of operator precedence:
+
+*p++:
+++ has higher precedence over dereferencing *,
+and so it is equivalent to: *(p++).
+I.e. the dereferencing is done on the result of the pointer post-increment ((p++)).
+As @user207421 commented, since this is a post increment, it will actually be done last so it will actually dereference the original value of the pointer.
+
+*p += 1:
+dereferencing * has higher precendnce over +=,
+and so it is equivalent to: (*p) += 1.
+I.e. the pointer is dereferenced, and then the result is incremented.
+
+
+If you want to have the result of (2) (*p += 1) without using +=, you can achieve it by using parenthesis, i.e.: (*p)++.
+Alternatively you can use pre-increment which does not even require parenthesis: ++*p.
+",c
+pil dll load failed specified procedure could not be found,"I've been beginning to work with images in Python and I wanted to start using PIL (Pillow). To install it, I ran pip install Pillow. When installing, PIL was not previously installed. I also tried uninstalling it and reinstalling it, as well as using pip3 install Pillow.
+When I run it in Python, my first line is:
+File ""C:\Program Files\Python36\lib\site-packages\PIL\Image.py"", line 56, in <module>
+from . import _imaging as core
+ImportError: DLL load failed: The specified procedure could not be found.
+
+I checked the directory, and the file _imaging.cp36-win_amd64.pyd is present under the PIL folder.
+Why is this happening if the needed DLL is there? How can I fix it?
+","I had this problem as well with Python 3.6. I just avoided the problem by uninstalling pillow (4.1.0) and then installing an older version of pillow (4.0.0).  It seems to run okay with the older version.
+",python
+compiler optimizations divide macro expansions,"I have following piece of code, 
+Scenario 1
+/* get count of elements in an array */
+#define COUNT(x)         sizeof(x)/sizeof(x[0])
+
+struct Data data[] = {/* some data goes here */};
+
+int count = COUNT(data);
+
+Scenario 2
+#define TOTAL            32
+#define EACH              4
+int count = (TOTAL/EACH)
+
+I know macros are resolved during preprocessing and sizeof is a compile time operator, but what about the division: does it get optimised during compilation ?
+Is there any tool to see the optimizations done by the compiler ?
+","Usually you can let the compiler show you the generated assembly code. With Visual C++ you can do that with the /Fa<file> option. gcc has the -S option.
+As for your question: Most compilers should precompute constant expressions, at least at optimisation levels higher than O0.
+Let's see with your example scenarios:
+#define COUNT(x)         sizeof(x)/sizeof(x[0])
+int data[] = {1, 2, 3, 4, 5};
+int count = COUNT(data);
+
+Compiled with cl /c /Fascenario1.asm scenario1.c yields:
+...
+PUBLIC  _data
+PUBLIC  _count
+_DATA   SEGMENT
+_data   DD  01H
+    DD  02H
+    DD  03H
+    DD  04H
+    DD  05H
+_count  DD  05H
+_DATA   ENDS
+END
+
+You see the value for count close to the end, and it's indeed 5. So the compiler computed the value even with no optimisation turned on.
+Your second scenario:
+#define TOTAL            32
+#define EACH              4
+int count = (TOTAL/EACH);
+
+yields
+...
+PUBLIC  _count
+_DATA   SEGMENT
+_count  DD  08H
+_DATA   ENDS
+END
+
+where the expression was precomputed as well.
+It's not uncommon at higher optimisation levels for the compiler to even evalute more complex expressions when you pass compile-time constants. As an example, I once looked at the code of three different ways of swapping two integers and once I turned optimisation on the compiler simply threw out the call to the swap method entirely, replacing the arguments to my test printf with the already-swapped values.
+",c
+in cypress how exactly do i use a returned value from a helperfunction file within a test file,"I'm new to Cypress and have set up a bunch of helper functions on their own file. I want one of these functions to return a value, however I am getting stuck with how to do this within Cypress' synchronous structure.
+I keep getting the error
+
+CypressError: cy.then() failed because you are mixing up async and sync code.
+
+I have tried to implement a similar fix as mentioned here Cypress returning Synchronous value within Async command? but to no avail.
+My code is as such:
+Helper function:
+//helperFunction.js
+module.exports.schemaChecker = () => {
+    cy.get('script:contains(""@context"")').its('length').then((len) => {
+        cy.task('log', 'Schemas: ' + len);
+        if (len > 1) {
+            return ""fail"";
+        }
+    })
+}
+
+Test file:
+import { schemaChecker, } from '../../support/helperFunctions.js';
+// other stuff...
+
+Given('I am on X page', () => {
+    cy.viewport(1480, 1000);
+    cy.visit(pageUrl);
+
+    schemaChecker().then((response) => {
+        if (response == ""fail"") {
+           // Do something
+        };
+    })
+});
+
+I've tried a few variations of this (eg: if (schemaChecker() == ""fail"") {}) but am just unsure how to make it work together and have not been able to find anything useful on Google.
+Would anyone be able to point me in the right direction?
+","The error you are mixing up async and sync code is referring to the cy.task() call (which is async) and the return 'fail'; (which is sync).
+module.exports.schemaChecker = () => {
+  return cy.get('script:contains(""@context"")').its('length').then((len) => {
+
+    cy.task('log', 'Schemas: ' + len);  // <-- async
+
+    if (len > 1) {
+      return 'fail'                     // <-- sync
+    }
+  })
+}
+
+One way to fix is to make both steps async
+module.exports.schemaChecker = () => {
+  return cy.get('script:contains(""@context"")').its('length').then((len) => {
+
+    cy.task('log', 'Schemas: ' + len);  // <-- async
+
+    if (len > 1) {
+      return cy.wrap('fail')            // <-- also async
+    }
+  })
+}
+
+
+
+Here's my test
+it('check the schema', () => {
+  schemaChecker().then((response) => {
+    if (response === 'fail') {
+      Cypress.log({name: 'schema error', message: 'Woops it failed'})
+    };
+  })
+})
+
+and my app page with deliberate error condition
+<body>
+  <script>
+    const var1 = '@context'
+  </script>
+  <script>
+    const var2 = '@context'
+  </script>
+</body>
+
+",javascript
+python random numbers from multiple lists without repetition,"I've been trying to create randoms lists of 15 numbers picking only a single one from each list available (15 lists) and without repeat any number.
+The code as follows did that, but it is limited to only two different lists. I'd like to get rid of this limitation.
+
+import random
+n1 = list(range(1, 5))
+n2 = list(range(2, 5))
+n3 =  list(range(3,6))
+n4 =  list(range(5,8))
+n5 =  list(range(6,10))
+n6 =  list(range(8,12))
+n7 =  list(range(10,13))
+n8 =  list(range(11,15))
+n9 =  list(range(13,17))
+n10 =  list(range(14,18))
+n11 =  list(range(16,20))
+n12 =  list(range(18,21))
+n13 =  list(range(20,23))
+n14 =  list(range(22,24))
+n15 =  list(range(23,25))
+for  i in range(10):
+  lista = random.sample(list(zip(n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12,n13,n14,n15)),1)
+  print(lista)
+
+","When you do something like
+zip([1,2,3,4],[5,6,7,8])
+
+the resulting output is only the pairs
+[(1, 5), (2, 6), (3, 7), (4, 8)]
+
+so you're not getting stuff like (1, 6) or (2, 5) as possible options.  If you really wanted to do something like this you should instead do a Cartesian product, like so:
+itertools.product([1,2,3,4],[5,6,7,8])
+
+This will give you every possible combination.  For example:
+>>> random.choice(list(itertools.product([1,2,3,4],[5,6,7,8])))
+(1, 6)
+
+
+However, if you actually try a 15-way Cartesian product with sets that have more than one or two elements in them, the resulting set it's going to construct is going to be enormous, and may not fit in memory.
+Also, if the sets overlap, you'd have to go through and do some kind of filtering to discard options where the same number is picked more than once.
+
+The easiest way to get a random list with no repetitions and each element chosen from a set would just be to pick element-by-element:
+def pick_unique_elements_from_lists(*args):
+  while True:
+    result = []
+    already_chosen = set()
+    for arg in args:
+      valid_choices = [ n for n in arg if n not in already_chosen ]
+
+      if not valid_choices:
+        continue
+        
+      choice = random.choice(valid_choices)
+
+      result.append(choice)
+      already_chosen.add(choice)
+
+    return tuple(result)
+
+However, while the choices here will be random, we might wonder if they'll be uniformly random.  For instance, let's say that we want to pick a 4-tuple with the first element from [1,2], the second from [1,3], the third from [1,4], and the fourth from [1,5].  There are a limited number of ways to do this:
+
+(1, 3, 4, 5)
+(2, 1, 4, 5)
+(2, 3, 1, 5)
+(2, 3, 4, 1)
+(2, 3, 4, 5)
+
+So if we were sampling uniformly at random, we'd expect the first element of the tuple to be a 2 about 80% of the time.  This is not, however, what the pick_unique_elements_from_lists function does; if you try it, you'll find that it gives you the tuple that starts with 1 about 50% of the time.
+There's another drawback to the pick_unique_elements_from_lists function, which is that if you give it a sequence of arguments from which it's impossible to pick any tuple of distinct elements, e.g.
+[1, 2], [2, 3], [1, 3]
+
+then it will just spin forever trying to come up with a valid sample.
+
+If you need uniform sampling, I can see three approaches:
+
+Actually enumerate every single possible tuple you can get, and then select one of those at random.
+Do accept/reject sampling of random sequences of the complete universe of numbers.  This runs in bounded space, but could take an extremely long time.
+Come up with a clever bijective enumeration of valid samples and use it to construct a clean sampling algorithm.  I have no idea how hard this would be, although I warn you that problems that sound like this can often be extremely hard.
+
+Here's an example of how you could do the accept/reject approach:
+ def accept_reject_from_lists(*args):
+   universe = set().union(*args)
+   found = False
+   while not found:
+     candidate = random.sample(universe, len(args))
+     found = True
+     for i in range(len(candidate)):
+       if candidate[i] not in args[i]:
+         found = False
+         break
+   return tuple(candidate)
+
+This still has the downside that it will go into an infinite loop if there aren't any tuples satisfying your conditions, and it also might take extremely long depending on how much overlap there is between your lists, but on the plus side it won't run out of memory and crash if you give it a huge problem to solve.
+",python
+generate pydantic model from a dict,"Is there a straight-forward approach to generate a Pydantic model from a dictionary?
+Here is a sample of the data I have.
+{
+    'id': '424c015f-7170-4ac5-8f59-096b83fe5f5806082020',
+    'contacts': [{
+        'displayName': 'Norma Fisher',
+        'id': '544aa395-0e63-4f9a-8cd4-767b3040146d'
+    }],
+    'startTime': '2020-06-08T09:38:00+00:00'
+}
+
+Expecting a model similar to ...
+class NewModel(BaseModel):
+    id: str
+    contacts: list
+    startTime: str
+
+","In Pydantic 2, you can use MyModel.model_validate(my_dict) to generate a model from a dictionary. According to the documentation –
+
+this is very similar to the __init__ method of the model, except it takes a dict rather than keyword arguments.
+
+If you're Pydantic 1, the method is parse_obj instead.
+",python
+include html inside of component  svelte,"One thing that I've been curious how to do in Svelte is include a components' HTML children in a place using svelte, like this:
+<Popup>
+  <h1>Hello World</h1>
+</Popup>
+
+I've done some research, and I saw that rich harris was doing this with his svelte cubed framework.
+","You might want to learn more about the slot.
+App.svelte
+<script>
+  import Popup from './lib/Popup.svelte';
+</script>
+
+<Popup>
+  <h1>Hello World</h1>
+</Popup>
+
+Popup.svelte
+<div>
+  <slot>
+    This is fallback content when no content is provided
+  </slot>
+</div>
+
+",javascript
+is there a way to get a list of column names in sqlite,"I want to get a list of column names from a table in a database. Using pragma I get a list of tuples with a lot of unneeded information. Is there a way to get only the column names? So I might end up with something like this:
+
+[Column1, Column2, Column3, Column4]
+
+The reason why I absolutely need this list is because I want to search for a column name in the list and get the index because the index is used in a lot of my code.
+Is there a way of getting a list like this?
+Thanks
+","You can use sqlite3 and pep-249
+import sqlite3
+connection = sqlite3.connect('~/foo.sqlite')
+cursor = connection.execute('select * from bar')
+
+cursor.description is a sequence of 7-item sequences whose first element is the column name:
+names = list(map(lambda x: x[0], cursor.description))
+
+Alternatively you could use a list comprehension:
+names = [description[0] for description in cursor.description]
+
+",python
+create mutable list from array,"I have an array I'd like to turn into a List, in order to modify the contents of the array.
+Stack Overflow has plenty of questions/answers that address Arrays.asList() and how it only provides a List view of the underlying array, and how attempting to manipulate the resulting List will generally throw an UnsupportedOperationException as methods used to manipulate the list (e.g. add(), remove(), etc.) are not implemented by the List implementation provided by Arrays.asList().
+But I can't find an example of how to turn an array into a mutable List.  I suppose I can loop through the array and put() each value into a new List, but I'm wondering if there's an interface that exists to do this for me.
+","One simple way:
+Foo[] array = ...;
+List<Foo> list = new ArrayList<Foo>(Arrays.asList(array));
+
+That will create a mutable list - but it will be a copy of the original array. Changing the list will not change the array. You can copy it back later, of course, using toArray.
+If you want to create a mutable view onto an array, I believe you'll have to implement that yourself.
+",java
+how to solve the pytorch runtimeerror numpy is not available without upgrading numpy to the latest version because of other dependencies,"I am running a simple CNN using Pytorch for some audio classification on my Raspberry Pi 4 on Python 3.9.2 (64-bit). For the audio manipulation needed I am using librosa. librosa depends on the numba package which is only compatible with numpy version <= 1.20.
+When running my code, the line
+spect_tensor = torch.from_numpy(spect).double()
+
+throws the RuntimeError:
+RuntimeError: Numpy is not available
+
+Searching the internet for solutions I found upgrading Numpy to the latest version to resolve that specific error, but throwing another error, because Numba only works with Numpy <= 1.20.
+Is there a solution to this problem which does not include searching for an alternative to using librosa?
+","Just wanted to give an update on my situation. I downgraded torch to version 0.9.1 which solved the original issue. Now OpenBLAS is throwing a warning because of an open MPLoop. But for now my code is up and running.
+",python
+filling out an html img tags 39src39 form based on information derived from api javascript code,"So, i am trying to add an img element from openweatherAPI, that shows an icon relative to what is found in the JSON results when the user gets the current web stats from typing a city, (i.e an image of scattered clouds, clear skies, etc). in order to display the img, i understand i need to paste the url into the ""src"" section of the img tag. the URL would look something like:
+ const png = ""http://openweathermap.org/img/wn/"" + icon + ""@2x.png""
+
+however, in order to make this dynamic, the img tags ""src"" would have to change based on what the image file is from the typed in city.
+I have the logic defined from the ""icon"" and ""png"" variables in the js file. My question is, how to i get the html img 'src' to populate with the results of my ""png"" variable, based on the city the user inputs on the page?
+I have included both html and javasript codes below
+
+
+const button = document.querySelector("".button"")
+const inputValue = document.querySelector("".inputValue"")
+const name = document.querySelector("".name"")
+const desc = document.querySelector("".desc"")
+const temp = document.querySelector("".temp"")
+const img = document.querySelector("".image"")
+
+button.addEventListener('click', function (){
+
+    fetch('http://api.openweathermap.org/data/2.5/weather?q='+ inputValue.value +'&units=imperial&appid=61dcc0033e94c4172d2bb94bb607fc5d')
+.then(response => response.json())
+.then(data => {
+    const nameValue = data['name']
+    const tempValue = data['main']['temp']
+    const descValue = data['weather'][0]['description']
+    const icon = weatherData.weather[0].icon
+    const png = ""http://openweathermap.org/img/wn/"" + icon + ""@2x.png""
+
+    name.innerHTML = nameValue
+    temp.innerHTML = tempValue
+    desc.innerHTML = descValue
+    img.innerHTML = 
+})
+
+
+.catch(err => alert(""Wrong City name!""))
+})
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>OpenWeatherAPI</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='style.css'>
+    
+</head>
+<body>
+    <div class=""input"">
+        <input type=""text"" class=""inputValue"" placeholder=""Enter a city"">
+        <input type=""submit"" value=""submit"" class=""button"">
+
+    </div>
+
+    <div class=""display"">
+        <h1 class=""name""></h1>
+        <p class=""desc""></p>
+        <p class=""temp""></p>
+        <img class=""image"" src="""">
+    </div>
+
+    <script src='main.js'></script>
+</body>
+</html>
+
+
+
+","If I am not mistaken I do not see anywhere in your Java Script where you change the <img> src.
+EDIT
+You can change the src by simply getting that element then setting it's source like blow:
+document.getElementById(""myImg"").src = png;
+
+
+This is assuming you add an id of ""myImg"" to the <img> tag like so:
+<img class=""image"" src="""" id=""myImg"">
+
+
+EDIT 2
+I did not realize you already got the element earlier on so all you need to do is:
+img.src = png;
+
+
+",javascript
+get first day of a particular week,"In Joda-Time, is there a way to get the date of the first day of the week(Monday)?
+For instance, I want to find out what date this week's Monday was based on today's current date 21/01/11.
+Cheers in advance.
+Edit: I also wish to find the date for the end of the week i.e. Sunday's date. cheers
+","Try LocalDate.withDayOfWeek:
+LocalDate now = new LocalDate();
+System.out.println(now.withDayOfWeek(DateTimeConstants.MONDAY)); //prints 2011-01-17
+System.out.println(now.withDayOfWeek(DateTimeConstants.SUNDAY)); //prints 2011-01-23
+
+",java
+show a message if a text is copied successfullyalternative to alert,"function Hello() {
+    var text_to_copy = document.getElementById(""quote"").innerHTML;
+
+    navigator.clipboard.writeText(text_to_copy).then(
+        function(){
+            alert(""Copied successfully""); // success 
+        })
+      .catch(
+         function() {
+            alert(""Error""); // error
+      });
+} 
+ 
+
+I want the code to flash the ""Copied duccessfully"" or ""Error"" instead of showing in alert box
+","A snackbar/toast message would work perfectly. But you will need to code your own implementation for it ofc.
+An example of how to implement this:
+HTML:
+<span id=""snackbar"">Successfully Copied</span>
+
+CSS:
+#snackbar {
+  visibility: hidden;
+  color: #fff;
+  background-color: #333;
+  min-width: 250px;
+  margin-left: -125px;
+  border-radius: 2px;
+  padding: 16px;
+  text-align: center;
+  left: 50%;
+  bottom: 30px;
+  z-index: 1;
+  position: fixed;
+}
+
+/* This will be activated when the snackbar's class is 'show' which will be added through JS */
+#snackbar.show {
+  visibility: visible;
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+/* Animations for fading in and out */
+@-webkit-keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+Javascript:
+function showSnackBar() {
+  var sb = document.getElementById(""snackbar"");
+
+  //this is where the class name will be added & removed to activate the css
+  sb.className = ""show"";
+
+  setTimeout(()=>{ sb.className = sb.className.replace(""show"", """"); }, 3000);
+}
+
+You can edit & style to your liking. (ofc ideally you should edit this to pass whatever string message you want the Snackbar/toast to display, something i left out for you to enjoy)
+",javascript
+not managing to extract rar archive using rarfile module,"I have been trying to make a script that extracts *.rar files for but am receiving errors. I've been struggling to understand the documentation of the module to no avail (I'm new to programming so sometimes get a bit lost in all the docs).
+Here is the relevant part of my code, and the error received.
+Snippet from my code:
+import rarfile
+rarpath='/home/maze/Desktop/test.rar'
+
+def unrar(file):
+    rf=rarfile.RarFile(file)
+    rf.rarfile.extract_all()
+
+unrar(rarpath)
+
+Error received:
+  File ""unrarer.py"", line 26, in unrar
+    rf.rarfile.extract_all()
+AttributeError: 'str' object has no attribute 'extract_all'
+
+I have installed rarfile2.8 and unrar0.3 using pip (note sure if the later was necessary).
+Thanks in advance for any assistance correcting my function or helping understand the package's documentation.
+","Support for RAR files in general is quite poor, this experience is par for the course.
+In order to get the rarfile Python module to work, you have to also install a supported tool for extracting RAR files.  Your only two choices are bsdtar or unrar.  Do not install these with Pip, you have to install these with your Linux package manager (or install them yourself, if you think that the computer's time is more valuable than your time).  For example on Debian-based systems (this includes Ubuntu) run,
+sudo apt install bsdtar
+
+Or,
+sudo apt install unrar
+
+Note that bsdtar does not have the same level of support for RAR files that Unrar does.  Some newer RAR files will not extract with bsdtar.
+Then your code should look something like this:
+import rarfile
+
+def unrar(file):
+    rf = rarfile.RarFile(file)
+    rf.extract_all()
+
+unrar('/home/maze/Desktop/test.rar')
+
+Note the use of rf.extract_all(), not rf.rarfile.extract_all().
+If you are just doing extract_all then there is no need to use a rarfile module, though.  You can just use the subprocess module:
+import subprocess
+path = '/path/to/archive.rar'
+subprocess.check_call(['unrar', 'x', path])
+
+The rarfile module is basically nothing more than a wrapper around subprocess anyway.
+Of course, if you have a choice in the matter, I recommend migrating your archives to a more portable and better supported archive format.
+",python
+create ad user with python ldap3 not working correctly,"Here's my code:
+'''
+def create_ad_user(samaccountname, email, ou, nome='Test'):
+
+print(samaccountname, email, ou)
+
+server = Server('ldap://<my ldap server>', get_info=ALL, use_ssl=True)
+conn = Connection(server, user='<my admin user>', password='<my admin 
+password>',auto_bind=True)
+
+password = 'Password123!'
+
+# Crea l'utente
+user_dn = f""CN={nome},{ou}""
+attributes = {
+    ""objectClass"": [""top"", ""person"", ""organizationalPerson"", ""user""],
+    ""sAMAccountName"": samaccountname,
+    ""givenName"": 'Test',
+    ""sn"": 'Test',
+    ""mail"": email,
+    ""description"": 'Test creazione utenti con ldap3',
+    ""userPrincipalName"": f""{samaccountname}@ssn.local"",
+    ""unicodePwd"": f'""{password}""'.encode(""utf-16-le""),
+    ""userAccountControl"": 512,  # Abilita l'account
+}
+
+success = conn.add(user_dn, attributes=attributes)
+if not success:
+    print(f""Errore nella creazione dell'utente: {conn.result}"")
+    return
+
+# Modifica l'attributo pwdLastSet per forzare il cambio della password al prossimo accesso
+conn.modify(user_dn, {""pwdLastSet"": [(MODIFY_REPLACE, [0])]})
+
+print(f""Utente {samaccountname} creato con successo in {ou}."")
+
+'''
+If i remove 'unicodePwd' and 'userAccountControl' everything works fine while if I add them the following exception is generated (output of conn.result):
+{'result': 53, 'description': 'unwillingToPerform',
+'dn': '', 'message': '0000001F: SvcErr: DSID-031A12E8, problem 5003 (WILL_NOT_PERFORM)
+, data 0\n\x00', 'referrals': None, 'type': 'addResponse'}
+what am I doing wrong?
+","userAccountControl and unicodePwd are refused by AD when you're adding a new user. To overcome this, you need to:
+
+Add the user account without those attributes. It will be locked/disabled after success.
+
+Unlock the account:
+conn.extend.microsoft.unlock_account(user=user_dn)
+
+Set password:
+conn.extend.microsoft.modify_password(user=user_dn, new_password=password, old_password=None)
+
+Set userAccountControl and pwdLastSet:
+conn.modify(user_dn, changes={""userAccountControl"": (MODIFY_REPLACE, [512]), ""pwdLastSet"": [(MODIFY_REPLACE, [0])]})
+
+
+",python
+postgresql multidimensional arrays in sqlalchemy,"I'm using SQLAlchemy 0.6.3 with PostgreSQL 8.4 on Debian squeeze. I want a table where one column stores something in PostgreSQL that shows up in Python as a list of integer lists or tuples of integer tuples. E.g.
+((1,2), (3,4), (5,6,7))
+
+In the example below that column is model. I thought that a reasonable approach might be to store stuff as an PG 2 dimensional table, which in PG looks like integer[][]. I don't know in what form SQLA will return this to Python, but I'm hoping it is something like a tuple of tuples.
+However, I can't figure out how to tell SQLA to give me a two dimensional Integer array. The documentation for sqlalchemy.dialects.postgresql.ARRAY says
+
+item_type – The data type of items of this array. Note that
+  dimensionality is irrelevant here, so multi-dimensional arrays like
+  INTEGER[][], are constructed as ARRAY(Integer), not as
+  ARRAY(ARRAY(Integer)) or such. The type mapping figures out on the fly.
+
+Unfortunately, I have no idea what that means. How can the type mapping figure this out on the fly? It needs to create the correct DDL.
+My first and only guess for how to do this would have been ARRAY(ARRAY(Integer)). Currently I have
+  crossval_table = Table(
+        name, meta,
+        Column('id', Integer, primary_key=True),
+        Column('created', TIMESTAMP(), default=now()),
+        Column('sample', postgresql.ARRAY(Integer)),
+        Column('model', postgresql.ARRAY(Integer)),
+        Column('time', Float),
+        schema = schema,
+
+This creates the following DDL
+CREATE TABLE crossval (
+    id integer NOT NULL,
+    created timestamp without time zone,
+    sample integer[],
+    model integer[],
+    ""time"" double precision
+);
+
+which isn't right, of course. What am I missing?
+","I'm answering this here, since Mike Bayer responded to this question on sqlalchemy users.
+See the thread on sqlalchemy-user where Mike Bayer responds to this question. As Mike clarified, and as I missed when reading the PG documentation, PG does not actually enforce the array dimensions, nor does SQLA. So, one can write integer[][], but PG does not treat that any differently from integer[]. In particular, both PG and SQLA will accept an array expression of any dimension. I'm not sure why this is the case. As quoted by Mike, the PG Arrays documentation says
+
+The current implementation does not enforce the declared number of
+  dimensions either. Arrays of a particular element type are all
+  considered to be of the same type, regardless of size or number of
+  dimensions. So, declaring the array size or number of dimensions in
+  CREATE TABLE is simply documentation; it does not affect run-time
+  behavior.
+
+See also the ticket he opened.
+It looks like this is to enforce dimensions at the SQLA level. 
+",python
+how to package conda env into one single file,"There are anaconda, fully package conda env.
+and mini conda, with minium packagea.
+Instead of exporting into yaml file or txt file,
+would like to export current env.
+into a bash executable sh file.
+So, this file can be used to install env.
+for air gap environnments.
+","I'd look into using conda-pack: https://conda.github.io/conda-pack/
+It's used to ship a python environment in distributed environments like YARN, where a consistent Python environment is needed across many compute nodes.
+You'll develop your environment in a space where internet access is possible and install the conda-pack, then pack it up as an archive eg: conda pack -n my_env -o out_name.tar.gz, and deploy it from the archive.  Once you've unzipped the archive you need to source an activate script and it should be good to go. this will look something like: source <env_directory>/bin/activate
+One thing it can't do is ship a windows environment to a Linux one and vice versa. see the docs linked for more details and caveats.
+",python
+define macro for debug printing in c,"Trying to create a macro which can be used for print debug messages when DEBUG is defined, like the following pseudo code:
+#define DEBUG 1
+#define debug_print(args ...) if (DEBUG) fprintf(stderr, args)
+
+How is this accomplished with a macro?
+","If you use a C99 or later compiler
+#define debug_print(fmt, ...) \
+            do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+
+It assumes you are using C99 (the variable argument list notation is not supported in earlier versions).  The do { ... } while (0) idiom ensures that the code acts like a statement (function call).  The unconditional use of the code ensures that the compiler always checks that your debug code is valid — but the optimizer will remove the code when DEBUG is 0.
+If you want to work with #ifdef DEBUG, then change the test condition:
+#ifdef DEBUG
+#define DEBUG_TEST 1
+#else
+#define DEBUG_TEST 0
+#endif
+
+And then use DEBUG_TEST where I used DEBUG.
+If you insist on a string literal for the format string (probably a good idea anyway), you can also introduce things like __FILE__, __LINE__ and __func__ into the output, which can improve the diagnostics:
+#define debug_print(fmt, ...) \
+        do { if (DEBUG) fprintf(stderr, ""%s:%d:%s(): "" fmt, __FILE__, \
+                                __LINE__, __func__, __VA_ARGS__); } while (0)
+
+This relies on string concatenation to create a bigger format string than the programmer writes.
+If you use a C89 compiler
+If you are stuck with C89 and no useful compiler extension, then there isn't a particularly clean way to handle it.  The technique I used to use was:
+#define TRACE(x) do { if (DEBUG) dbg_printf x; } while (0)
+
+And then, in the code, write:
+TRACE((""message %d\n"", var));
+
+The double-parentheses are crucial — and are why you have the funny notation in the macro expansion.  As before, the compiler always checks the code for syntactic validity (which is good) but the optimizer only invokes the printing function if the DEBUG macro evaluates to non-zero.
+This does require a support function — dbg_printf() in the example — to handle things like 'stderr'.  It requires you to know how to write varargs functions, but that isn't hard:
+#include <stdarg.h>
+#include <stdio.h>
+
+void dbg_printf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+}
+
+You can also use this technique in C99, of course, but the __VA_ARGS__ technique is neater because it uses regular function notation, not the double-parentheses hack.
+Why is it crucial that the compiler always see the debug code?
+[Rehashing comments made to another answer.]
+One central idea behind both the C99 and C89 implementations above is that the compiler proper always sees the debugging printf-like statements.  This is important for long-term code — code that will last a decade or two.
+Suppose a piece of code has been mostly dormant (stable) for a number of years, but now needs to be changed.  You re-enable debugging trace - but it is frustrating to have to debug the debugging (tracing) code because it refers to variables that have been renamed or retyped, during the years of stable maintenance. If the compiler (post pre-processor) always sees the print statement, it ensures that any surrounding changes have not invalidated the diagnostics. If the compiler does not see the print statement, it cannot protect you against your own carelessness (or the carelessness of your colleagues or collaborators). See 'The Practice of Programming' by Kernighan and Pike, especially Chapter 8 (see also Wikipedia on TPOP).
+This is 'been there, done that' experience — I used essentially the technique described in other answers where the non-debug build does not see the printf-like statements for a number of years (more than a decade). But I came across the advice in TPOP (see my previous comment), and then did enable some debugging code after a number of years, and ran into problems of changed context breaking the debugging. Several times, having the printing always validated has saved me from later problems.
+I use NDEBUG to control assertions only, and a separate macro (usually DEBUG) to control whether debug tracing is built into the program. Even when the debug tracing is built in, I frequently do not want debug output to appear unconditionally, so I have mechanism to control whether the output appears (debug levels, and instead of calling fprintf() directly, I call a debug print function that only conditionally prints so the same build of the code can print or not print based on program options).  I also have a 'multiple-subsystem' version of the code for bigger programs, so that I can have different sections of the program producing different amounts of trace - under runtime control.
+I am advocating that for all builds, the compiler should see the diagnostic statements; however, the compiler won't generate any code for the debugging trace statements unless debug is enabled.  Basically, it means that all of your code is checked by the compiler every time you compile - whether for release or debugging.  This is a good thing!
+debug.h - version 1.2 (1990-05-01)
+/*
+@(#)File:            $RCSfile: debug.h,v $
+@(#)Version:         $Revision: 1.2 $
+@(#)Last changed:    $Date: 1990/05/01 12:55:39 $
+@(#)Purpose:         Definitions for the debugging system
+@(#)Author:          J Leffler
+*/
+
+#ifndef DEBUG_H
+#define DEBUG_H
+
+/* -- Macro Definitions */
+
+#ifdef DEBUG
+#define TRACE(x)    db_print x
+#else
+#define TRACE(x)
+#endif /* DEBUG */
+
+/* -- Declarations */
+
+#ifdef DEBUG
+extern  int     debug;
+#endif
+
+#endif  /* DEBUG_H */
+
+debug.h - version 3.6 (2008-02-11)
+/*
+@(#)File:           $RCSfile: debug.h,v $
+@(#)Version:        $Revision: 3.6 $
+@(#)Last changed:   $Date: 2008/02/11 06:46:37 $
+@(#)Purpose:        Definitions for the debugging system
+@(#)Author:         J Leffler
+@(#)Copyright:      (C) JLSS 1990-93,1997-99,2003,2005,2008
+@(#)Product:        :PRODUCT:
+*/
+
+#ifndef DEBUG_H
+#define DEBUG_H
+
+#ifdef HAVE_CONFIG_H
+#include ""config.h""
+#endif /* HAVE_CONFIG_H */
+
+/*
+** Usage:  TRACE((level, fmt, ...))
+** ""level"" is the debugging level which must be operational for the output
+** to appear. ""fmt"" is a printf format string. ""..."" is whatever extra
+** arguments fmt requires (possibly nothing).
+** The non-debug macro means that the code is validated but never called.
+** -- See chapter 8 of 'The Practice of Programming', by Kernighan and Pike.
+*/
+#ifdef DEBUG
+#define TRACE(x)    db_print x
+#else
+#define TRACE(x)    do { if (0) db_print x; } while (0)
+#endif /* DEBUG */
+
+#ifndef lint
+#ifdef DEBUG
+/* This string can't be made extern - multiple definition in general */
+static const char jlss_id_debug_enabled[] = ""@(#)*** DEBUG ***"";
+#endif /* DEBUG */
+#ifdef MAIN_PROGRAM
+const char jlss_id_debug_h[] = ""@(#)$Id: debug.h,v 3.6 2008/02/11 06:46:37 jleffler Exp $"";
+#endif /* MAIN_PROGRAM */
+#endif /* lint */
+
+#include <stdio.h>
+
+extern int      db_getdebug(void);
+extern int      db_newindent(void);
+extern int      db_oldindent(void);
+extern int      db_setdebug(int level);
+extern int      db_setindent(int i);
+extern void     db_print(int level, const char *fmt,...);
+extern void     db_setfilename(const char *fn);
+extern void     db_setfileptr(FILE *fp);
+extern FILE    *db_getfileptr(void);
+
+/* Semi-private function */
+extern const char *db_indent(void);
+
+/**************************************\
+** MULTIPLE DEBUGGING SUBSYSTEMS CODE **
+\**************************************/
+
+/*
+** Usage:  MDTRACE((subsys, level, fmt, ...))
+** ""subsys"" is the debugging system to which this statement belongs.
+** The significance of the subsystems is determined by the programmer,
+** except that the functions such as db_print refer to subsystem 0.
+** ""level"" is the debugging level which must be operational for the
+** output to appear. ""fmt"" is a printf format string. ""..."" is
+** whatever extra arguments fmt requires (possibly nothing).
+** The non-debug macro means that the code is validated but never called.
+*/
+#ifdef DEBUG
+#define MDTRACE(x)  db_mdprint x
+#else
+#define MDTRACE(x)  do { if (0) db_mdprint x; } while (0)
+#endif /* DEBUG */
+
+extern int      db_mdgetdebug(int subsys);
+extern int      db_mdparsearg(char *arg);
+extern int      db_mdsetdebug(int subsys, int level);
+extern void     db_mdprint(int subsys, int level, const char *fmt,...);
+extern void     db_mdsubsysnames(char const * const *names);
+
+#endif /* DEBUG_H */
+
+Single argument variant for C99 or later
+Kyle Brandt asked:
+
+Anyway to do this so debug_print still works even if there are no arguments? For example:
+
+
+    debug_print(""Foo"");
+
+
+There's one simple, old-fashioned hack:
+debug_print(""%s\n"", ""Foo"");
+
+The GCC-only solution shown below also provides support for that.
+However, you can do it with the straight C99 system by using:
+#define debug_print(...) \
+            do { if (DEBUG) fprintf(stderr, __VA_ARGS__); } while (0)
+
+Compared to the first version, you lose the limited checking that requires the 'fmt' argument, which means that someone could try to call 'debug_print()' with no arguments (but the trailing comma in the argument list to fprintf() would fail to compile).  Whether the loss of checking is a problem at all is debatable.
+GCC-specific technique for a single argument
+Some compilers may offer extensions for other ways of handling variable-length argument lists in macros.  Specifically, as first noted in the comments by Hugo Ideler, GCC allows you to omit the comma that would normally appear after the last 'fixed' argument to the macro.  It also allows you to use ##__VA_ARGS__ in the macro replacement text, which deletes the comma preceding the notation if, but only if, the previous token is a comma:
+#define debug_print(fmt, ...) \
+            do { if (DEBUG) fprintf(stderr, fmt, ##__VA_ARGS__); } while (0)
+
+This solution retains the benefit of requiring the format argument while accepting optional arguments after the format.
+This technique is also supported by Clang for GCC compatibility.
+
+C23 and __VA_OPT__
+Both C++20 (and later) and C23 (and later) add the __VA_OPT__ mechanism to handle the problem with __VA_ARGS__ that is handled by GCC using the , ## __VA_ARGS__ notation.
+You simply use:
+#define debug_print(fmt, ...) \
+        do { if (DEBUG) fprintf(stderr, fmt, __VA_OPT__(,) __VA_ARGS__); } while (0)
+
+The argument to __VA_OPT__ is added to the output if __VA_ARGS__ is not empty (and nothing is added if __VA_ARGS__ is empty).  This should be available if __STDC_VERSION__ >= 202311L — but be aware that GCC 14.1.0 (still) sets __STDC_VERSION__ == 202000 when compiling with -std=c23 or -std=iso9899:2024.
+
+Why the do-while loop?
+
+What's the purpose of the do while here?
+
+You want to be able to use the macro so it looks like a function call, which means it will be followed by a semi-colon.  Therefore, you have to package the macro body to suit.  If you use an if statement without the surrounding do { ... } while (0), you will have:
+/* BAD - BAD - BAD */
+#define debug_print(...) \
+            if (DEBUG) fprintf(stderr, __VA_ARGS__)
+
+Now, suppose you write:
+if (x > y)
+    debug_print(""x (%d) > y (%d)\n"", x, y);
+else
+    do_something_useful(x, y);
+
+Unfortunately, that indentation doesn't reflect the actual control of flow, because the preprocessor produces code equivalent to this (indented and braces added to emphasize the actual meaning):
+if (x > y)
+{
+    if (DEBUG)
+        fprintf(stderr, ""x (%d) > y (%d)\n"", x, y);
+    else
+        do_something_useful(x, y);
+}
+
+The next attempt at the macro might be:
+/* BAD - BAD - BAD */
+#define debug_print(...) \
+            if (DEBUG) { fprintf(stderr, __VA_ARGS__); }
+
+And the same code fragment now produces:
+if (x > y)
+    if (DEBUG)
+    {
+        fprintf(stderr, ""x (%d) > y (%d)\n"", x, y);
+    }
+; // Null statement from semi-colon after macro
+else
+    do_something_useful(x, y);
+
+And the else is now a syntax error.  The do { ... } while(0) loop avoids both these problems.
+There's one other way of writing the macro which might work:
+/* BAD - BAD - BAD */
+#define debug_print(...) \
+            ((void)((DEBUG) ? fprintf(stderr, __VA_ARGS__) : 0))
+
+This leaves the program fragment shown as valid.  The (void) cast prevents it being used in contexts where a value is required — but it could be used as the left operand of a comma operator where the do { ... } while (0) version cannot.  If you think you should be able to embed debug code into such expressions, you might prefer this.  If you prefer to require the debug print to act as a full statement, then the do { ... } while (0) version is better.  Note that if the body of the macro involved any semi-colons (roughly speaking), then you can only use the do { ... } while(0) notation.  It always works; the expression statement mechanism can be more difficult to apply.  You might also get warnings from the compiler with the expression form that you'd prefer to avoid; it will depend on the compiler and the flags you use.
+
+
+_TPOP was previously at http://plan9.bell-labs.com/cm/cs/tpop and http://cm.bell-labs.com/cm/cs/tpop but both are now (2015-08-10) broken._
+
+
+Code in GitHub
+If you're curious, you can look at this code in GitHub in my SOQ (Stack
+Overflow Questions) repository as files debug.c, debug.h, mddebug.c and mddebug.h in the
+src/libsoq
+sub-directory.
+",c
+make a preprocessor string macro not expand things within the string,"prog.c has
+    #include <stdio.h>
+    #define STR(x) _STR(x)
+    #define _STR(x) #x
+
+    int main()
+    {
+      const char *s = STR(MYPATH);
+      puts(s);
+    }
+
+and is compiled with cc -DMYPATH=/usr/linux/path prog.c
+This results in /usr/1/path being printed because linux expands to 1 in the compiler (on my Linux machine). How do I prevent this? Obviously I want /usr/linux/path to be printed.
+","Instead of attempting to make a string literal via macro replacement, pass the path to the compiler with quotes.
+Change const char *s = STR(MYPATH); to const char *s = MYPATH;
+And change the compilation command to cc -DMYPATH='""/usr/linux/path""' prog.c (options for escaping the quotes in the command may vary by the command shell used).
+",c
+split a pandas column of lists with different lengths into multiple columns,"I have a Pandas DataFrame that looks like:
+ID  result
+1   [.1,.5]
+2   [.4,-.2,-.3,.1,0]
+3   [0,.1,.6]
+
+How can split this column of lists into two columns?
+Desired result:
+ID  result_1 result_2 result_3 result_4 result_5
+1   .1       .5       NaN      NaN      NaN
+2   .4       -.2      -.3      .1       0
+3   0        .1       .6       NaN      NaN
+
+I have digged into it a little and found this: Split a Pandas column of lists into multiple columns
+but this only seems to apply to list with a constant number of elements.
+Thank you so much in advance.
+","You can do this as suggested in linked post.
+import pandas as pd
+
+# your example code
+data = {""ID"": [1, 2, 3], ""result"": [[0.1, 0.5], [0.4, -0.2, -0.3, 0.1, 0], [0, 0.1, 0.6]]}
+df = pd.DataFrame(data)
+print(df)
+
+answer
+out = df[['ID']].join(
+    pd.DataFrame(df['result'].tolist())
+    .rename(columns=lambda x: f'result_{x + 1}')
+)
+
+out:
+   ID  result_1  result_2  result_3  result_4  result_5
+0   1       0.1       0.5       NaN       NaN       NaN
+1   2       0.4      -0.2      -0.3       0.1       0.0
+2   3       0.0       0.1       0.6       NaN       NaN
+
+",python
+select all c file in a directory on a makefile,"i've got a Makefile and i want to modify it, to select all c files in some directory instead of specify all c file separately.
+Thanks, this is the code: (i will paste only the slice that regard the topic)
+#MQTT PATH
+MQTT_DIR = $(SAMPLE_DIR)/mqtt_lib
+
+#TRSMIO PATH
+TRSMIO_DIR = $(SAMPLE_DIR)/trsmio_lib
+
+#UTIL PATH
+UTIL_DIR = $(SAMPLE_DIR)/util_lib
+
+# Location of the SDK ""startup.c"" file used to launch custom (sample) code.
+SDK_CS = $(SDK_DIR)/startup.c
+
+
+#DEPENDECIES OF MAINS TASK
+MQTT_CS = $(MQTT_DIR)/libmqtt_util.c
+MQTT_LIB = $(MQTT_DIR)/libmqtt.c
+MQTT_CGI = $(MQTT_DIR)/libmqtt_cgi.c
+MQTT_MGR = $(MQTT_DIR)/libmqtt_config_mgr.c
+LIB_TIMER = $(UTIL_DIR)/lib_timer.c
+TRSMIO_HOSTLINK = $(TRSMIO_DIR)/trsmio_hostlink.c
+TRSMIO_HOSTLINK_CONFIG = $(TRSMIO_DIR)/trsmio_hostlink_config_mgr.c
+LIB_NET_DEBUG = $(UTIL_DIR)/lib_netdebug.c
+TASK_MGR = $(UTIL_DIR)/task_mgr.c
+
+#MAIN TASKS
+TRSMIO_TEST = $(SAMPLE_DIR)/trsmio_test.c
+#MQTT_TEST = $(SAMPLE_DIR)/libmqtt_test.c
+
+
+# Location and name of the sample source code file:
+SAMPLE_CS = $(SAMPLE_DIR)/$(MAKECMDGOALS).c
+
+# Location of the Evolution OS object module library, statically linked with 
+# the sample code.
+EVOS_LIB = $(SDK_DIR)/$(PLATFORM_DIR)/evolution.lib
+
+EVOS_WEB_LIB = $(SDK_DIR)/$(PLATFORM_DIR)/evolution_with_web.lib
+#EVOS_WEB_LIB = $(SDK_DIR)/$(PLATFORM_DIR)/evolution_no_web.lib
+
+# All C source code files to be built and included in the image.
+ALL_C_COMPILE_SOURCES =         \
+    $(SDK_CS)                   \
+    $(TASK_MGR)                 \
+    $(LIB_NET_DEBUG)        \
+    $(MQTT_CS)                  \
+    $(MQTT_CGI)         \
+    $(MQTT_LIB)                 \
+    $(MQTT_MGR)                 \
+    $(TRSMIO_HOSTLINK)          \
+    $(TRSMIO_HOSTLINK_CONFIG)   \
+    $(LIB_TIMER)            \
+    $(TRSMIO_TEST)          \
+    $(SAMPLE_CS)
+
+   work/$(notdir $(SAMPLE_CS:.c=.o)): $(SAMPLE_CS)
+@echo $<
+@$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(LIB_TIMER:.c=.o)): $(LIB_TIMER)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(TASK_MGR:.c=.o)): $(TASK_MGR)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(LIB_NET_DEBUG:.c=.o)): $(LIB_NET_DEBUG)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(MQTT_MGR:.c=.o)): $(MQTT_MGR)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(TRSMIO_HOSTLINK_CONFIG:.c=.o)): $(TRSMIO_HOSTLINK_CONFIG)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@    
+
+work/$(notdir $(TRSMIO_HOSTLINK:.c=.o)): $(TRSMIO_HOSTLINK)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(TRSMIO_TEST:.c=.o)): $(TRSMIO_TEST)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@    
+
+work/$(notdir $(MQTT_CGI:.c=.o)): $(MQTT_CGI)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+work/$(notdir $(MQTT_CS:.c=.o)): $(MQTT_CS)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@    
+
+work/$(notdir $(MQTT_LIB:.c=.o)): $(MQTT_LIB)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@        
+
+work/$(notdir $(SDK_CS:.c=.o)): $(SDK_CS)
+    @echo $<
+    @$(CC) $(CFLAGS) -c $< -o $@
+
+","I'm not sure that what you're trying is wise, but here's how to do it:
+ALL_C_FILES = $(wildcard $(SOME_DIR)/*.c)
+
+",c
+warning incompatible implicit declaration of builtin function printf enabled by default,"I'm using the following C code:
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+
+int main()
+{
+    int file=0;
+    if((file=open(""testfile.txt"",O_RDONLY)) < -1)
+            return 1;
+    char buffer[19];
+    if(read(file,buffer,19) != 19)  return 1;
+    printf(""%s\n"",buffer);
+
+    if(lseek(file,10,SEEK_SET) < 0) return 1;
+
+    if(read(file,buffer,19) != 19)  return 1;
+    printf(""%s\n"",buffer);
+    return 0;
+}
+
+After compiling it produces a warning:
+warning: incompatible implicit declaration of built-in 
+function ‘printf’ [enabled by default]
+
+What does it mean and how do I appease the C compiler to not raise the warning?
+","You need to add #include <stdio.h> to the top of your file.
+",c
+series of if vs elseif statements benchmarking,"[I have come back to this question many years later and tried to edit it to be hopefully clearer and maybe even a bit helpful to others. I was a clueless teen in high-school when originally asking this.]
+I was testing the inefficiency of series of if statements vs else-if statements and got very surprised by the results.
+The code iterates over a big ol' array (100000000 of elements) and counts occurrences of numbers (1-5).
+// init the array with some numbers
+// init the counters
+
+clock_t time_if = clock();
+for (int i = 0; i < n; i++) {
+    if (arr[i] == 1)
+        p1++;
+    if (arr[i] == 2)
+        p2++;
+    // ... same for 3, 4, 5
+}
+time_if = clock() - time_if;
+
+printf(""count of 1s:\t %d\n"",p1);
+// ...
+printf(""---  counting took: %.10f ms---\n"",((double)(time_if)/CLOCKS_PER_SEC)*1000);
+
+and then the same but with else-if
+clock_t time_if_else = clock();
+for (int i = 0; i < n; i++) {
+    if (arr[i] == 1)
+        p1++;
+    else if (arr[i] == 2)
+        p2++;
+    else if (arr[i] == 3)
+        p3++;
+    // ... same for 4, 5
+}
+time_if_else = clock() - time_if_else;
+
+As expected when given an array of random values from 1 to 5 the else-if is faster (about two times) because once an if-else branch is matched (condition is true) the rest of the nested branches are skipped. On the other hand, a series of ifs has no nesting and every condition is evaluated.
+BUT when I passed in an array of only 1s, the if series was faster than before with random numbers. The same was true when I passed only 5s.
+So I asked: can anyone explain why ifs are faster with only 1s than with random numbers?
+And the accepted answer points to branch prediction in modern CPUs and compiler optimization. I had not heard of either at that point in time so this was a valuable lesson for me. Hope anyone else stumbling upon this might also learn something.
+Here are the times:
+    if      - random input: 2451 ms
+    if-else - random input: 2401 ms
+
+    if      - all 1s input: 932 ms
+    if-else - all 1s input: 573 ms
+
+    if      - all 5s input: 923 ms
+    if-else - all 5s input: 697 ms
+
+","Modern CPUs are very complicated beasts. 
+I guess you are more benchmarking CPU branch predictor rather then anything else: If you fill the array with random numbers from the range 1...5, branch predictors will quite often guess wrong when any of the if is executed.
+If you fill the array with constants, the predictors will be right in 100%.
+I.e. with randomized input, the count of evaluated ifs really matters as substantial number of them cause CPU pipeline stall.
+With the constant input, the number of executed ifs is more or less negligible, and there are no pipeline stalls. All what matters is some CPU internals and also how well your compiler is able to optimize your code. Smart compiler might be able to effectively replace one of the two or both of your examples into switch statement, so without looking at the instructions generated we can just speculate.
+",c
+can i see the history of redux actions in my react app,"How can I view the history of all redux actions that changed the state of my app? Can it be viewed with a bash command, or in Google Chrome dev tools? 
+The screenshot of the thing I wanna see is below
+
+","Just install redux-devtools as a Browser extension: redux-devtools
+
+For Chrome
+For Firefox
+
+It shows actions, changes in state etc etc.
+",javascript
+how do i allow null values in a post request body java and spring framework,"I have a VideoGame record:
+public record VideoGame(
+        @Positive
+        Integer id,
+        @NotEmpty
+        String title,
+        @NotEmpty
+        String console,
+        @NotEmpty
+        String genre,
+        String publisher,
+        String developer,
+        Double critic_score,
+        Double other_sales,
+        LocalDate release_date,
+        LocalDate last_update
+) { }
+
+A VideoGame repository:
+@Repository
+public class VideoGameRepository {
+
+    private final JdbcClient jdbcClient;
+
+    public VideoGameRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    public void create(VideoGame videoGame) {
+        var newVideoGame = jdbcClient.sql(""INSERT INTO videogamesalestest (id, title, console, genre, publisher, developer, critic_score, release_date, last_update)"" +
+                ""VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"")
+                .param(List.of(videoGame.id(), videoGame.title(), videoGame.console(), videoGame.genre(), videoGame.publisher(), videoGame.developer(), videoGame.critic_score(), videoGame.release_date(), videoGame.last_update()))
+                .update();
+
+        Assert.state(newVideoGame == 1, ""Failed to insert new videoGame"");
+    }
+}
+
+and a controller for this:
+@RestController
+@RequestMapping(""/api/videogames"")
+public class VideoGameController {
+
+    private final VideoGameRepository videoGameRepository;
+
+    public VideoGameController(VideoGameRepository videoGameRepository) {
+        this.videoGameRepository = videoGameRepository;
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("""")
+    void create(@RequestBody VideoGame videoGame) {
+        videoGameRepository.create(videoGame);
+    }
+}
+
+I want to allow the client to submit a POST request that may or may not contain all of the fields of a VideoGame record.
+I tried just setting the field value to null in the JSON body as such, and then sending the request:
+{
+  ""id"": 1,
+  ""title"": ""NewGame"",
+  ""console"": ""Xbox"",
+  ""genre"": ""Action"",
+  ""publisher"": ""CBGAMES"",
+  ""developer"": ""CBGAMES"",
+  ""critic_score"": 10.0,
+  ""release_date"": ""2025-01-07"",
+  ""last_update"": null
+}
+
+but I get a status 500 response ""Internal Server Error"".
+I've also tried annotating the fields in the record with @Nullable, but I get a warning in the repository that the argument might be null.
+What can I do to acheive this? Will I need to make a class instead of a record to handle null values or is there a more ""Springy"" way to accomplish. I also considered using Optionals, but I've read that this  isn't really what Optional were meant acheive. I also don't want to restrict the client from passing in a complete record, since it doesn't make sense in my case.
+Update: My question has been resolved. The core issue I was facing (ignoring the syntactical problems with my code) was how do I allow null values, or lack of values, be passed from my request body and deserialized into a VideoGame object. The solution was to remove the call to List.of() in my params() call. The List.of() API clearly states it throws a NullPointException if an element is null. Removing the List.of() and just passing the params was the fix. Interestingly, I didn't even need to @Nullable the record fields, and I didn't need @Valid in my controller.
+","There are several things wrong with your code.
+
+Your query needs a whitespace before the VALUES element to have a proper query.
+Your query identifies 9 columns in the INSERT clause, while providing 14 placeholders, those numbers should match. So either add additional columns or remove placeholders.
+List.of while throw a NullPointerException if an element is null. So don't use List.of. The JdbcClient has a param method that simply supports varargs, so no need to wrap things in a List.
+
+@Repository
+public class VideoGameRepository {
+
+    private final JdbcClient jdbcClient;
+
+    public VideoGameRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    public void create(VideoGame videoGame) {
+        var newVideoGame = jdbcClient.sql(""INSERT INTO videogamesalestest (id, title, console, genre, publisher, developer, critic_score, release_date, last_update) "" +
+                ""VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"")
+                .param(videoGame.id(), videoGame.title(), videoGame.console(), videoGame.genre(), videoGame.publisher(), videoGame.developer(), videoGame.critic_score(), videoGame.release_date(), videoGame.last_update())
+                .update();
+
+        Assert.state(newVideoGame == 1, ""Failed to insert new videoGame"");
+    }
+}
+
+Something like the above should make things work. It has an additional   after the INSERT ... stuff. The number of placeholders has been reduced and it now uses the param method with var-args instead of List.of.
+",java
+python 312 syntaxwarning invalid escape sequence on triplequoted string d must be d,"After updating to Python 3.12, I get warnings about
+invalid escape sequence on some triple-quotes comments.
+Is this a new restriction? I have the habit of documenting  code using triple-quoted string, but this has never been a problem prior to Python 3.12.
+python3 --version
+Python 3.12.0
+$ ./some_script.py
+/some_script.py:123: SyntaxWarning: invalid escape sequence '\d'
+  """"""
+
+I tried replacing all lines with \d:
+20230808122708.445|INFO|C:\dist\work\trk-fullstack-test\namespaces.py
+with \\d:
+20230808122708.445|INFO|C:\\dist\work\trk-fullstack-test\namespaces.py
+The warning disappears.
+Suppressing the warning do not seem to work:
+import warnings
+warnings.filterwarnings('ignore', category=SyntaxWarning)
+
+Any pointers on how to do this correctly? I hope I do not have to escape all Windows paths documented in triplequotes in our code.
+","Back in Python 3.6, using invalid escape sequences in string literals was deprecated (bpo-27364). Since then, attempting to use an invalid escape sequence has emitted a DeprecationWarning. This can often go  unnoticed if you don't run Python with warnings enabled. DeprecationWarnings are silenced by default.
+Python 3.12 upgraded the DeprecationWarning to a SyntaxWarning. SyntaxWarnings are emitted by the compiler when the code is parsed, not when it's being run, so they cannot be ignored using a runtime warning filter. Unlike DeprecationWarnings, SyntaxWarnings are displayed by default, which is why you're seeing it now. This increase in visibility was intentional. In a future version of Python, using invalid escape sequences in string literals is planned to eventually become a hard SyntaxError.
+The simplest solution would be to use # comments for comments instead of string literals. Unlike string literals, comments aren't required to follow any special syntax rules. See also the discussion in Python comments: # vs. strings for more on the drawbacks of using string literals as comments.
+To address this warning in general, you can make the string literal a raw string literal r""..."". Raw string literals do not process escape sequences. For example, the string ""\n"" contains a single newline character, whereas the string r""\n"" contains the two characters \ and n.
+",python
+using localdate with utc,"I'm encountering a problem using LocalDate in UTC.  My server uses UTC, and my database uses UTC.  I used LocalDate to store a billingDate for a subscription based application.
+What happens is that we bill at midnight UTC (when doing comparisions like billingDate <= LocalDate.now()).  We actually mean to bill sometime after midnight PST.
+I really felt like using LocalDate was appropriate here, because we just want to bill at some point during that day.  However, it doesn't seem practical when doing comparisons either directly in the code or in the database (billing_date <= CURRENT_DATE()).  Did I make a mistake, should this be a ZonedDateTime in PST?  Or should we be converting to ZonedDateTime for comparisons?  It feels error prone, we need to remember to convert any time we do a comparision, but perhaps this is the correct solution?
+Does anyone have experience with this situation and found a nice solution?
+I've taken a look at this question, but it doesn't answer my question: Spring REST LocalDate UTC differs of one day
+","Specify time zone
+I suggest that this is just a matter of passing the desired time zone to LocalDate.now(ZoneId).
+
+Use LocalDate.now(ZoneId.of(""Asia/Manila"")) for Philippine Standard Time. At the moment it yeilds 2019-07-09.
+Use LocalDate.now(ZoneId.of(""Pacific/Pitcairn"")) for Pitcairn Standard Time. It just gave 2019-07-08.
+
+I am assuming that you didn’t mean Pacific Standard Time since no time zone uses Pacific Standard Time as we speak (those that do in winter, are on Pacific Daylight Time now). In any case, mind you that three letter time zone abbreviations are often ambiguous.
+The java.time classes that have a now method generally have three overloaded variants of it:
+
+One that takes a ZoneId arguments that I recommend for general use.
+One that takes a Clock argument that is great for testability. A Clock includes a time zone, so this one too gets you the current date and/or time in that specified time zone.
+One that doesn’t take any arguments and uses the JVM’s current default time zone. I recommend that you never use it. It’s nice for the reader to know that you have considered time zone and chosen which one you want. And the default time zone can be changed at any time by any program running in the same JVM, so is not stable enough to rely on for real work.
+
+",java
+how to handle quoterror condacorelink_execute_actions337quot,"I'm trying to import a environment to my anaconda and then I get a error like this:
+ERROR conda.core.link:_execute_actions(337): An error occurred while installing package 'defaults::openssl-1.0.2k-1'.
+UnicodeDecodeError('ascii', '/Users/fengxinlin/google-cloud-sdk/bin:/opt/local/bin:/opt/local/sbin:/usr/local/Cellar/mongodb/2.4.9/bin:/Users/fengxinlin/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/git/bin:/opt/ImageMagick/bin}\xc2\xa0', 236, 237, 'ordinal not in range(128)')
+Attempting to roll back.
+It looks like a decoding issue, but what can I do to fix this error?
+","finally I solved this problem somehow. I completely removed anaconda2 and downloaded anaconda3, then re-import env file, I never got this error anymore.
+",python
+watermarking with pdfbox,"I am trying to add a watermark to a PDF specifically with PDFBox. I've been able to get the image to appear on each page, but it loses the background transparency because it appears as though PDJpeg converts it to a JPG. Perhaps there's a way to do it using PDXObjectImage.
+Here is what I have written thus far:
+public static void watermarkPDF(PDDocument pdf) throws IOException
+{
+    // Load watermark
+    BufferedImage buffered = ImageIO.read(new File(""C:\\PDF_Test\\watermark.png""));
+    PDJpeg watermark = new PDJpeg(pdf, buffered);
+
+    // Loop through pages in PDF
+    List pages = pdf.getDocumentCatalog().getAllPages();
+    Iterator iter = pages.iterator();
+    while(iter.hasNext())
+    {
+        PDPage page = (PDPage)iter.next();
+
+        // Add watermark to individual page
+        PDPageContentStream stream = new PDPageContentStream(pdf, page, true, false);
+        stream.drawImage(watermark, 100, 0);
+        stream.close();
+    }
+
+    try 
+    {
+        pdf.save(""C:\\PDF_Test\\watermarktest.pdf"");
+    } 
+    catch (COSVisitorException e) 
+    {
+        e.printStackTrace();
+    }
+}
+
+","UPDATED ANSWER (Better version with easy way to watermark, thanks to the commentators below and @okok who provided input with his answer)
+If you are using PDFBox 1.8.10 or above, you can add watermark to your PDF document easily with better control over what pages needs to be watermarked. Assuming you have a one page PDF document that has the watermark image, you can overlay this on the document you want to watermark as follows. 
+Sample Code using 1.8.10
+import java.util.HashMap;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.util.Overlay;
+
+public class TestPDF {
+    public static void main(String[] args) throws Exception{
+            PDDocument realDoc = PDDocument.load(""originaldocument.pdf""); 
+            //the above is the document you want to watermark                   
+
+            //for all the pages, you can add overlay guide, indicating watermark the original pages with the watermark document.
+            HashMap<Integer, String> overlayGuide = new HashMap<Integer, String>();
+            for(int i=0; i<realDoc.getPageCount(); i++){
+                overlayGuide.put(i+1, ""watermark.pdf"");
+                //watermark.pdf is the document which is a one page PDF with your watermark image in it. Notice here that you can skip pages from being watermarked.
+            }
+            Overlay overlay = new Overlay();
+            overlay.setInputPDF(realDoc);
+            overlay.setOutputFile(""final.pdf"");
+            overlay.setOverlayPosition(Overlay.Position.BACKGROUND);
+            overlay.overlay(overlayGuide,false);
+           //final.pdf will have the original PDF with watermarks.
+
+Sample using PDFBox 2.0.0 Release candidate
+import java.io.File;
+import java.util.HashMap;
+import org.apache.pdfbox.multipdf.Overlay;
+import org.apache.pdfbox.pdmodel.PDDocument;
+
+public class TestPDF {
+
+    public static void main(String[] args) throws Exception{        
+        PDDocument realDoc = PDDocument.load(new File(""originaldocument.pdf""));
+        //the above is the document you want to watermark
+        //for all the pages, you can add overlay guide, indicating watermark the original pages with the watermark document.
+
+        HashMap<Integer, String> overlayGuide = new HashMap<Integer, String>();
+        for(int i=0; i<realDoc.getNumberOfPages(); i++){
+            overlayGuide.put(i+1, ""watermark.pdf"");
+            //watermark.pdf is the document which is a one page PDF with your watermark image in it. 
+            //Notice here, you can skip pages from being watermarked.
+        }
+        Overlay overlay = new Overlay();
+        overlay.setInputPDF(realDoc);
+        overlay.setOutputFile(""final.pdf"");
+        overlay.setOverlayPosition(Overlay.Position.BACKGROUND);
+        overlay.overlay(overlayGuide);      
+    }
+}
+
+If you want to use the new package org.apache.pdfbox.tools.OverlayPDF for overlays you can do this way. (Thanks the poster below)
+String[] overlayArgs = {""C:/Examples/foreground.pdf"", ""C:/Examples/background.pdf"", ""C:/Examples/resulting.pdf""};
+OverlayPDF.main(overlayArgs);
+System.out.println(""Overlay finished."");
+
+
+OLD ANSWER Inefficient way, not recommended.
+Well, OP asked how to do it in PDFBox, the first answer looks like an example using iText. Creating a watermark in PDFBox is really simple. The trick is, you should have an empty PDF document with the watermark image. Then all you have to do is Overlay this watermark document on the document that you want to add the watermark to.
+PDDocument watermarkDoc = PDDocument.load(""watermark.pdf"");
+//Assuming your empty document with watermark image in it.
+
+PDDocument realDoc = PDDocument.load(""document-to-be-watermarked.pdf"");
+//Let's say this is your document that you want to watermark. For example sake, I am opening a new one, you would already have a reference to PDDocument if you are creating one
+
+Overlay overlay = new Overlay();
+overlay.overlay(realDoc,watermarkDoc);
+watermarkDoc.save(""document-now-watermarked.pdf"");
+
+Caution: You should make sure you match the number of pages in both document..Otherwise, you would end up with a document with number of pages matching the one which has least number of pages. You can manipulate the watermark document and duplicate the pages to match your document.
+Hope this helps.!
+",java
+c program runs surprisingly slow,"A simple program I wrote in C takes upwards of half an hour to run. I am surprised that C would take so long to run, because from what I can find on the internet C ( aside from C++ or Java ) is one of the faster languages. 
+// this is a program to find the first triangular number that is divisible by 500 factors
+
+int main()
+{
+    int a; // for triangular num loop
+    int b = 1; // limit for triangular num (1+2+3+......+b)
+    int c; // factor counter
+    int d; // divisor
+    int e = 1; // ends loop
+    long long int t = 0; // triangular number in use
+
+    while( e != 0 )
+    {   
+        c = 0;
+
+        // create triangular number t
+        t = t + b;
+        b++;
+
+        // printf(""%lld\n"", t); // in case you want to see where it's at
+        // counts factors
+        for( d = 1 ; d != t ; d++ )
+        {       
+            if( t % d == 0 )
+            {
+                c++;
+            }       
+        }
+
+        // test to see if condition is met
+        if( c > 500 )
+        {
+            break;  
+        }
+    }
+
+    printf(""%lld is the first triangular number with more than 500 factors\n"", t);
+
+    getchar();
+    return 0;
+}
+
+Granted the program runs through a lot of data, but none of it is ever saved, just tested and passed over. 
+I am using the Tiny C Compiler on Windows 8.
+Is there a reason this runs so slowly? What would be a faster way of achieving the same result?
+Thank you! 
+","You're iterating over a ton of numbers you don't need to. By definition, a positive factor is any whole number that can be multiplied by another to obtain the desired product.
+Ex: 12 = 1*12, 2*6, and 3*4
+
+The order of multiplication are NOT considered when deciding factors. In other words,
+Ex: 12 = 2*6 = 6*2
+
+The order doesn't matter. 2 and 6 are factors once.
+The square root is the one singleton that will come out of a factoring of a product that stands alone. All others are in pairs, and I hope that is clear. Given that, you can significantly speed up your code by doing the following:
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+// this is a program to find the first triangular number that is divisible by 500 factors
+
+int main()
+{
+    int c = 0;                  // factor counter
+    long long int b = 0;        // limit for triangular num (1+2+3+......+b)
+    long long int d;            // divisor
+    long long int t = 0;        // triangular number in use
+    long long int r = 0;        // root of current test number
+
+    while (c <= 500)
+    {
+        c = 0;
+
+        // next triangular number
+        t += ++b;
+
+        // get closest root.
+        r = floor(sqrt(t));
+
+        // counts factors
+        for( d = 1 ; d < r; ++d )
+        {
+            if( t % d == 0 )
+                c += 2;  // add the factor *pair* (there are two)
+        }
+        if (t % r == 0)  // add the square root if it is applicable.
+            ++c;
+    }
+
+    printf(""%lld is the first triangular number with more than 500 factors\n"", t);
+    return 0;
+}
+
+Running this on IDEOne.com takes less than two seconds to come up with the following:
+Output
+76576500 is the first triangular number with more than 500 factors
+
+I hope this helps. (and I think that is the correct answer). There are certainly more efficient ways of doing this (see here for some spoilers if you're interested), but going with your code idea and seeing how far we could take it was the goal of this answer.
+Finally, this finds the first number with MORE than 500 factors (i.e. 501 or more) as per your output message. Your comment at the top of the file indicates you're looking for the first number with 500-or-more, which does not match up with your output message.
+",c
+how can i call a java class method from python,"I am making an Android app in Python using briefcase from BeeWare that must start a service. And I have this code...
+This is the relevant code from file MainActivity.java:
+package org.beeware.android;
+
+import com.chaquo.python.Kwarg;
+import com.chaquo.python.PyException;
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
+
+public class MainActivity extends AppCompatActivity {
+
+    public static MainActivity singletonThis;
+
+    protected void onCreate(Bundle savedInstanceState) {
+        singletonThis = this;
+        ... start Python
+    }
+
+    public void startMyService() {
+        Intent intent = new Intent(this, MyService.class);
+        startService(intent);
+    }
+
+And this is the relevant code from app.py that my intuition came up with:
+from chaquopy import Java
+
+class Application(toga.App):
+
+      ...UI code here
+
+  def start_tcp_service(self, widget):
+    msg = 'START pressed !'
+    print(msg); self.LogMessage(msg)
+    self.CallJavaMethod('startMyService')
+
+  def CallJavaMethod(self, method_name):
+    MainActClass = Java.org.beeware.android.MainActivity
+    MainActivity = MainActClass.singletonThis
+    method = getattr(MainActivity, method_name)
+    method()
+
+Now, when I try to run the project with briefcase run android -u on my Android phone, through the USB debugging bridge, I get the error:
+
+E/AndroidRuntime: java.lang.RuntimeException: Unable to start activity
+ComponentInfo{com.example.myapp/org.beeware.android.MainActivity}:
+com.chaquo.python.PyException: ModuleNotFoundError: No module named
+'chaquopy'
+
+It seems that there isn't any module with name chaquopy. I tried to install it with pip, but it is not found. But then, how can I access the MainActivity methods from Python? What is the correct module to include?
+I found here some documentation that says ""The java module provides facilities to use Java classes and objects from Python code."". I tried to import java bun this is not found either... It seems that on this page it tells how to access Java from Python, but I don’t understand all that is there, because this is my first interaction with Java and Android...
+","I found it! It goes like this...
+from org.beeware.android import MainActivity
+
+class Application(toga.App):
+
+      # ...UI code here
+
+  def start_tcp_service(self, widget):
+    msg = 'START pressed!'
+    print(msg); self.LogMessage(msg)
+    self.CallJavaMethod('startMyService')
+
+  def CallJavaMethod(self, method_name):
+    MainActInst = MainActivity.singletonThis
+    method = getattr(MainActInst, method_name)
+    method()
+
+",java

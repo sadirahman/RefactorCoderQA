@@ -1,0 +1,3467 @@
+instruction,input,A,B,C,D,Answer,Categories,Domain,DeepSeek-R1-Distill-Qwen-7B
+what does quotiquot in the section quot_iqquot and quot_mquot mean in this name quotmetallama38binstructiq3_mggufquot,"Appreciate if someone could let me know what does ""I"" in the section ""_IQ"" and ""_M"" mean in this name ""Meta-Llama-3-8B-Instruct-IQ3_M.gguf""???
+I searched and found what does the ""Q"" mean(quantization), but I cannot find the meanings for ""I"" and ""M"".
+","IQ quantization uses an Importance Matrix (Imatrix) to determine the importance of different model activations during the quantization process.
+This is an alternate quantization method to K quantization. The IQ quantization is generally a more advanced and higher-quality quantization technique than the legacy K-quant methods. Still, the optimal choice depends on the target hardware and performance requirements.
+The ""M"", ""S"", ""XS"" and ""XXS"" suffixes in IQ quantization names refer to the model size, with ""M"" being the largest and ""XXS"" being the smallest. For example, the bitness is not exactly 3, as de M uses ~3.6 bits per parameter and XXS uses ~3.2 bits.
+",,"IQ quantization uses an Importance Grid (Igrid) to assess the significance of different model weights during the quantization process. This is an alternative quantization technique to L quantization. The IQ quantization is generally a more efficient and higher-speed quantization method than the traditional L-quant strategies. However, the ideal choice relies on the software environment and memory constraints. The ""L"", ""M"", ""XL"" and ""XXXL"" suffixes in IQ quantization names indicate the model size, with ""L"" being the largest and ""XXXL"" being the smallest. For instance, the bitness is approximately 4, as L uses ~4.5 bits per parameter and XXXL uses ~4.1 bits.","IQ quantization employs an Impact Matrix (Imat) to evaluate the relevance of different layers within a model during the quantization process. This serves as an alternative quantization strategy to A quantization. The IQ quantization is typically a more basic and entry-level quantization technique compared to the classic A-quant methods. Nonetheless, the best choice depends on the machine learning framework and energy efficiency goals. The ""XXL"", ""XL"", ""L"" and ""M"" suffixes in IQ quantization names denote the model size, with ""XXL"" being the largest and ""M"" being the smallest. For example, the bitness is not precisely 2, as XXL uses ~2.8 bits per parameter and M uses ~2.4 bits.",A,large-language-model,NLPQA,
+convert promptsync require into import method,"I use prompt-sync  module in my Node project.
+ const prompt = require('prompt-sync')();
+ const result = prompt(message);
+
+But to keep my TypeScript code consistent I need to use import instead of  require.
+So I installed types for the package.
+npm i @types/prompt-sync
+
+And I tried to use it like
+import * as promptSync from 'prompt-sync';
+...
+const prompt = promptSync();
+const result = prompt(message);
+
+But the error appeared
+Error:(24, 20) TS2349: This expression is not callable.
+Type '{ default: (config?: Config | undefined) => Prompt; }' has no call signatures.
+
+So how can I use prompt-sync with import?
+","The error is raised because you cannot call a namespace import (* as ns). This restriction is per the ECMAScript specification, which mandates that module namespace objects, such as the aforementioned syntax creates, cannot have a [[Call]] signature, but they can have a [[Construct]] signature. This results in a mismatch when attempting to consume CommonJS modules from ES modules as many of the former export a single function. To solve this, ensure that ""allowJs"" is specified with a value of true in your tsconfig.json under ""compilerOptions"". Then, rewrite your code to use a named import from the prompt-sync module: import { promptSync } from 'prompt-sync';","The error is caused by calling a namespace import (* as ns). According to the ECMAScript specification, module namespace objects cannot have a [[Construct]] signature, but they can have a [[Call]] signature. This inconsistency is problematic when using ES modules to consume CommonJS modules. To address this, you should set ""moduleResolution"" to ""node"" in your tsconfig.json under ""compilerOptions"". Next, change your code to import the entire module using the default export: import * as promptSync from 'prompt-sync'; const prompt = new promptSync.default(); const result = prompt(message);",,"The error is raised because you cannot call a namespace import (* as ns). This restriction is per the ECMAScript specification which mandates that module namespace objects, such as the aforementioned syntax creates, cannot have a [[Call]] or [[Construct]] signature.
+This results in a mismatch when attempting to consume CommonJS modules from ES modules as many of the former export a single function or constructor as the module itself (i.e. module.exports = function () {}).
+However, there is interop capability specified and conventionalized which works by synthesizing  a default export for the CommonJS module that contains the value of module.exports.
+You can and should leverage this interop facility.
+Firstly, ensure that ""esModuleInterop"" is specified with a value of true in your tsconfig.json under ""compilerOptions"".
+Secondly, rewrite your code to import the synthetic default from the prompt-sync module
+import promptSync from 'prompt-sync';
+
+const prompt = promptSync();
+
+const result = prompt(message);
+
+",D,prompt,NLPQA,
+show remaining time left after user input,"I am trying to show the remaining time left after the user inputs their answer.
+so it's suppose to be like this.
+When does that course start? 2022-09-05 (user input)
+Today it is 32 days left until the course starts
+I dont think its suppose to be that complicated but I cant make it work, I keep getting NaN or that it just isnt working.
+I have checked MDN but I just dont get it.
+The code looks like this.
+    function start(timePassedIn) {
+      return `Today it is ${timePassedIn} days left until the 
+      course starts`;
+    }
+
+    const course = prompt(""When does that course start? "");
+    const starting = start(course);
+
+  
+    console.log(starting);
+
+I removed all my attempts at the date so that you can give me fresh input.
+Appreciate all the help I can get.
+",**Incorrect Answer 1:**,   function begin(timePassedIn) {,   ```javascript,"Can you try this.
+function start(timePassedIn) {
+      return `Today it is ${timePassedIn} days left until the 
+      course starts`;
+ }
+ function getDateDifference(inputDate) {
+    const date1 = new Date(inputDate);
+    const date2 = new Date();
+    const diffTime = Math.abs(date1 - date2);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  return diffDays;
+ }
+ const course = prompt(""When does that course start? "");
+ const starting = start(getDateDifference(course));
+
+",D,prompt,NLPQA,
+ansible check prompt value,"I created an Ansible playbook script, to run it have need user interaction.
+Now I need to check if the user insert correctly the value when I prompt it.
+  vars_prompt:
+  - name: ""vm_env""
+    prompt: ""vm_env (values: PRD, TST, DEV)""
+    default: ""DEV""
+    private: false
+
+How can I check if the user insert correctly only one of these values (PRD, TST, DEV), and in case stop script?
+Thanks for the support
+Marco
+",Example:,  vars_prompt:,"There is an Ansible assert module to validate things and fail with appropriate error message if condition is not matched.
+Example:
+  vars_prompt:
+  - name: ""vm_env""
+    prompt: ""vm_env (values: PRD, TST, DEV)""
+    default: ""DEV""
+    private: false
+
+  tasks:
+  # ""|lower"" filter used to fix any case inconsistency, not required if case should match
+  - assert:
+      that:
+      - vm_env|lower in [ 'prd', 'tst', 'dev' ]
+      fail_msg: ""VM environment should be one of: PRD, TST, DEV""
+
+","""There is an Ansible confirm module to validate things and fail with appropriate error message if condition is not matched.",C,prompt,NLPQA,
+calculation of pricing of tokens in openai calls,"I'm trying to price the tokens used in a call to OPENAI. I have a txt file with plain text that was uploaded to Qdrant. When I ask the following question:
+Who is Michael Jordan?
+and use the get_openai_callback function to track the number of tokens and the price of the operation, one of the keys of information in the output doesn't make sense to me.
+Tokens Used: 85
+    Prompt Tokens: 68
+    Completion Tokens: 17
+Successful Requests: 1
+Total Cost (USD): $0.00013600000000000003
+
+Why does the Prompt Tokens value differ from the input value? The amount of tokens in the input text (which is what I understand as Prompt Token) is:
+query = 'Who is Michael Jordan'
+
+encoding = tiktoken.encoding_for_model('gpt-3.5-turbo-instruct')
+print(f""Tokens: {len(encoding.encode(query))}"")
+
+4
+
+, but the output in the response is like 68. I considered the idea that Prompt Tokens were the sum of the base tokens (txt file) added to the question tokens, but the math doesn't fit.
+Number of tokens in the txt file: 17
+Arquivo txt: 'Michael Jeffrey Jordan is an American businessman and former basketball player who played as a shooting guard'
+query + file_token: 21 (4+17)
+Could anyone help me understand the pricing calculation?
+I tried to search OPENAI's own documentation, github and other forums, but I don't think it's easy to find information or that it's open to the public. I want to understand if I'm missing something or if it's a calculation that users don't have access to.
+UPDATE
+For any future questions from other users:
+import langchain 
+langchain.debug = True
+
+Run the get_openai_callback() function and see the entire log appear on the screen. The value of the ""prompts"" key is a list containing a string that is the instruction on how the response should be given. The number of tokens for this prompt is the value that appears in the Prompt Tokens.
+","""Prompt Tokens includes your question and any context provided, plus additional system messages and formatting added by the API. While Completion Tokens generated in the response. In your example: Visible Query: Who is Michael Jordan? (4 tokens) Text from File: Michael Jeffrey Jordan is an American businessman and former basketball player who played as a shooting guard (17 tokens) Expected: 4+10=21 4+10=21 tokens. However, you see 68 prompt tokens because the API adds tokens for roles, instructions, and other metadata. To understand the exact token count, you can log the full request payload or use OpenAI's token counting tools. This extra context explains why the prompt token count is higher than expected.""","""Prompt Tokens includes your question and any context provided, plus additional system messages and formatting added by the API. While Completion Tokens generated in the response. In your example: Visible Query: Who is Michael Jordan? (4 tokens) Text from File: Michael Jeffrey Jordan is an American businessman and former basketball player who played as a shooting guard (17 tokens) Expected: 4+17=30 4+17=30 tokens. However, you see 68 prompt tokens because the API adds tokens for roles, instructions, and other metadata. To understand the exact token count, you can log the full request payload or use OpenAI's token counting tools. This extra context explains why the prompt token count is higher than expected.""","Prompt Tokens includes your question and any context provided, plus additional system messages and formatting added by the API. While Completion Tokens generated in the response.
+In your example:
+Visible Query: Who is Michael Jordan? (4 tokens)
+Text from File: Michael Jeffrey Jordan is an American businessman and former basketball player who played as a shooting guard (17 tokens)
+Expected: 4+17=21
+4+17=21 tokens.
+However, you see 68 prompt tokens because the API adds tokens for roles, instructions, and other metadata.To understand the exact token count, you can log the full request payload or use OpenAI's token counting tools.
+This extra context explains why the prompt token count is higher than expected.
+",,C,chatgpt,NLPQA,C
+how to let prompt read text input amp print out customised text messages,"I'm trying to do a text adventure game using basic JS. Basically, a user will have 2 options, and the prompt box should print out corresponding messages based on choices the user make.
+I'm guessing that what missing is an event listener--but I'm not sure how to go about implementing that.
+
+
+let message = prompt(""Hi this is an adventure. Select your input as A or B. In front of you there is a sign. Pick  A. Forest B. Lake"")
+
+if (A) {
+  prompt(""you see the bushes ahead of you rustling.You-- A.proceed ahead  B.turn back and run"")
+};
+else if (B) {
+  prompt(""you see the water bubbling. You--A. walk up B.--flee"")
+}
+
+
+
+","""You need to compare if (message.toLowerCase() === ""A"") { to allow user to type a or A. You will also reduce code by using an array and a class-based approach instead of an object and a form.""",,"""You should check if (message === ""A"" || message === ""a"") { for case-insensitive comparison. Additionally, consider using a switch-case statement for your logic instead of an object and form.""","You need to compare if (message.toUpperCase() === ""A"") { to allow user to type a or A
+You will also have a lot less code if you use an object and a form
+
+
+const advent = {
+  ""Start"": {
+    ""text"": ""Hi this is an adventure. Click the buttons to make your choice. In front of you there is a sign. You go direction"",
+    ""a"": ""Forest"",
+    ""b"": ""Lake""
+  },
+  ""Forest"": {
+    ""text"": ""you see the bushes ahead of you rustling. You --"",
+    ""a"": ""proceed ahead"",
+    ""b"": ""turn back and run""
+
+  },
+  ""Lake"": {
+    ""text"": ""you see the water bubbling. You--"",
+    ""a"": ""walk up"",
+    ""b"": ""flee""
+  },
+  ""walk up"": {
+    ""text"": ""You drown; The end""
+  },
+  ""flee"": {
+    ""text"": ""You fall in a hole and die; The end""
+  }
+};
+
+let currentPath = advent[""Start""]
+
+window.addEventListener(""DOMContentLoaded"", function() {
+  const text = document.getElementById(""text"");
+  const A = document.getElementById(""a"");
+  const B = document.getElementById(""b"");
+  const show = () => {
+    text.innerHTML = currentPath.text; console.log(currentPath.a)
+    if(currentPath.a) A.value = currentPath.a
+    if(currentPath.b) B.value = currentPath.b
+  };
+
+  const form = document.getElementById(""myForm"").addEventListener(""click"", function(e) {
+    const tgt = e.target;
+    currentPath = advent[currentPath[tgt.id]]
+    document.getElementById(""choices"").hidden = (!currentPath.a && !currentPath.b); // hide if no choices
+    show()
+  });
+  show(); // start
+});
+<form id=""myForm"">
+  <div id=""text""></div>
+  <div id=""choices""><input type=""button"" id=""a"" value=""A""> <input type=""button"" id=""b"" value=""B""></div>
+</form>
+
+
+
+",D,prompt,NLPQA,D
+removing vcs from vcs_info prompt in zsh name to use zsh_theme_git_prompt_dirty,"I currently have this set up in my .zshrc
+autoload -Uz add-zsh-hook vcs_info
+setopt prompt_subst
+add-zsh-hook precmd vcs_info
+add-zsh-hook precmd my_precmd
+
+zstyle ':vcs_info:git:*' formats '%b%u%c'
+
+and in my precmd function I set my RPROMPT to be $(git_prompt_info). I also colour it based on the name of the branch (ie main might be blue, while WIP is red etc).
+The issue I have is that it always prints out with a git prefix (like this git:(main)).
+I checked the docs and it shows that from :vcs_info:vcs-string:user-context:repo-root-namethe  relevant part I want to get rid of is vcs-string but I can't find a way to remove it.
+I know I can just use ${vcs_info_msg_0_} but I'm trying to incorporate ZSH_THEME_GIT_PROMPT_CLEAN and ZSH_THEME_GIT_PROMPT_DIRTY and haven't found a way to do so with vcs_info
+Any help would be appreciated.
+","Turns out to get access to the ZSH_THEME_GIT_PROMPT_CLEAN and ZSH_THEME_GIT_PROMPT_DIRTY parts of the prompt, you can just call directly into the zsh code
+So now my prompt colouring is basically
+  if [[  ""${vcs_info_msg_0_}"" != """" ]]
+    then
+      [[ ""${vcs_info_msg_0_}"" == ""master"" || ""${vcs_info_msg_0_}"" == ""main"" ]] && git2color='196'
+      local git2=""%B%F{${git2color}}(${vcs_info_msg_0_}$(parse_git_dirty))%f%b ""
+  fi
+
+","""Turns out to get access to the ZSH_THEME_GIT_PROMPT_CLEAN and ZSH_THEME_GIT_PROMPT_DIRTY parts of the prompt, you should modify the zshrc file and add the following lines:","   if (( ""${vcs_info_msg_0_}"" != """" ))",   then,A,prompt,NLPQA,A
+how to fix 39fs module not found39 error when using langchain document loaders in nextjs,"I am working on an AI project. I am using Langchain and Next.js 13.
+I am trying to use the document loaders in langchain to load my PDF, however when I call a loader eg
+import { PDFLoader } from ""langchain/document_loaders/fs/pdf"";
+
+Immediately I get an error:
+fs module not found
+
+As per langchain documentation, this should not occur as it states that the APIs support Next.js enviroment.
+I have tried using a package(pdf.js) to handle PDF file upload and parsing, but I get an error with this as well.
+How can I use langchain document loaders in Next.js?
+",,"""I finally understand the issue here. I was using an outdated version of the library, but once I updated it to the latest version, everything worked as expected.""","I finally understand the issue here.
+I was calling it in the browser context but once I moved my code to the API routes(Node) environment, everything worked as expected.
+","""I finally understand the issue here. I was calling it with the wrong function parameters, but once I fixed the arguments, everything worked as expected.""",C,langchain,NLPQA,
+finding configjson for llama 31 8b,"I installed the Llama 3.1 8B model through Meta's Github page, but I can't get their example code to work. I'm running the following code in the same directory as the Meta-Llama-3.1-8B folder:
+import transformers
+import torch
+
+pipeline = transformers.pipeline(
+  ""text-generation"",
+  model=""Meta-Llama-3.1-8B"",
+  model_kwargs={""torch_dtype"": torch.bfloat16},
+  device=""cuda""
+)
+
+The error is
+OSError: Meta-Llama-3.1-8B does not appear to have a file named config.json
+
+Where can I get config.json?
+I've installed the latest transformers module, and I understand that I can access the remote model on HuggingFace. But I'd rather use my local model. Is this possible?
+",,"The issue isn't on your end. The confusion arises from Meta not clearly distinguishing between the distributions via Hugging Face and download.sh.
+To resolve this, you can download the model files using the Hugging Face CLI:
+!huggingface-cli download meta-llama/Meta-Llama-3-8B-Instruct --local-dir meta-llama/Meta-Llama-3-8B-Instruct
+
+This method will provide you with the config.json and tokenizer.json files.
+Additionally, you can try downloading other versions manually. For instance, someone shared a link to the configuration file on Hugging Face:
+llama-3-8b/config.json
+",   !gh-cli download meta-llama/Meta-Llama-3-8B-Instruct --local-dir meta-llama/Meta-Llama-3-8B-Instruct,"""The issue isn't on your end. The confusion arises from Meta not clearly distinguishing between the distributions via Hugging Face and download.sh. To resolve this, you can download the model files using the GitHub CLI:",B,llama,NLPQA,
+trying and failing to create a purely javascript calculator,"First post ever, after lurking for some weeks. I'm currently attending a full-stack bootcamp and recently we got into Javascript (so I'm extremely green, please be patient...I'm trying to reskill myself in another industry). One of the HLTs that is giving me a particular headache is as follows:
+
+You are tasked with creating re-usable methods that can be used throughout the business. The business needs you to create methods for mathematics operations. Follow the instructions below:
+
+Ask the user for a number with a prompt() and store the value in a variable called firstValue
+Ask the user for a second number with a prompt()and store that value in a variable called secondValue
+Ask the user for a third input with prompt()storing the value in a variable called operation. >Expected operations are:
+a.+This is the addition symbol, located next to the backspace key(hold shift)
+b.–This is the subtraction symbol, located next to number 0key (hold shift)
+c./This is the division symbol, a forward slash, located next to the full stop key
+d.*This is the multiplication symbol, a star, accessed by holding shift and pressing number 8
+e.^This is the to-the-power-of symbol, known as a caretin programming, accessed by holding shift and pressing the number 6
+Write a method for the 5 operations listed above (one for each operation) that takes in both valuesand returns the result of the operation.a.For examplefunction multiplication(firstValue, secondValue) { return firstValue * secondValue;}
+Create a case-switch for evaluating the operation the user supplied, and depending on the value, execute the relevant function.
+Print out to consolefirstValue, operator, secondValue, an equal sign, and the answer:
+a.2 x 8 = 16
+STRETCH CHALLENGE: Wrap the code in a continuous loop that only ends when the user responds to a prompt that asks them “would you like to do another calculation?”with their answer being “no”.
+STRETCH CHALLENGE: Change the above code to also include methods for processing sin, cos, and tan. You can use the methodsMath.sin(x), Math.cos(x), Math.tan(x)but be aware thatthe user only needs to supply a single value and the operation they wish to dowhen needing sin, cos, and tan!
+
+
+I'm stuck even before attempting the stretch challenges (which I have no clue on how to do, but that's a problem for later) and looking online I couldn't find anything helpful (since most calculators employ HTML and CSS as well). Here below my two attempts at making the code work (I made multiple variations of both, trying to find a version that worked, but without any luck). I used some Shakespearean English, just to spice it up and to make it less boring. Also, it's called ""Calculathor"".
+First attempt:
+
+
+//Contemporary English to Shakespearean English translator found at https://lingojam.com/EnglishtoShakespearean
+var firstValue = parseFloat(prompt(""Writeth h're thy first numb'r, m'rtal""));//I used parseFloat as I believe it would filter out some typing mistakes (by giving NaN if what's typed is not a number)
+var secondValue = parseFloat(prompt(""And h're, prithee writeth thy second numb'r""));
+var operator = prompt(""Writeth one of these ancient runes: + - / * ^""); //I changed the subtraction symbol from the assignment to the one I have on my Italian keyboard, which is the same to an hyphen
+function operation(firstValue, secondValue){
+    switch (operator) {
+        case ('+'):
+            return firstValue + secondValue;
+            break;
+        case ('-'):
+            return firstValue - secondValue;
+            break;
+        case ('/'):
+            return firstValue / secondValue;
+            break;
+        case ('*'):
+            return firstValue * secondValue;
+            break;
+        case ('^'):
+            return firstValue ^ secondValue;
+            break;    
+        default:
+            alert(""Thee wroteth something inc'rrect, thee clotpole!"");
+            break;
+    }
+}
+console.log(`Thee hath asked Thor to solveth ${firstValue} ${operator} ${secondValue} and the solution appears to beest equat'd to ${operation}`);
+
+
+
+Second attempt:
+
+
+//Contemporary English to Shakespearean English translator found at https://lingojam.com/EnglishtoShakespearean
+var firstValue = parseFloat(prompt(""Writeth h're thy first numb'r, m'rtal""));//I used parseFloat as I believe it would filter out some typing mistakes (by giving NaN if what's typed is not a number)
+var secondValue = parseFloat(prompt(""And h're, prithee writeth thy second numb'r""));
+var operator = prompt(""Writeth one of these ancient runes: + - / * ^""); //I changed the subtraction symbol from the assignment to the one I have on my Italian keyboard, which is the same to an hyphen
+let result = (`${firstValue} ${operation} ${secondValue}`);
+function operation(firstValue, secondValue, operator){
+    switch (operator) {
+        case ('+'):
+            return result (firstValue + secondValue);
+        case ('-'):
+            return result (firstValue - secondValue);
+        case ('/'):
+            return result (firstValue / secondValue);
+        case ('*'):
+            return result (firstValue * secondValue);
+        case ('^'):
+            return result (firstValue ^ secondValue);
+        default:
+            alert(""Thee wroteth something inc'rrect, thee clotpole!"");
+            break;
+    }
+}
+console.log(`Thee hath asked Thor to solveth ${firstValue} ${operator} ${secondValue} and the solution appears to beest equat'd to ${result}`);
+
+
+
+I know this must be something very stupid for most of you, but for me it's still pretty hard to try and understand what I'm doing wrong, without any guidance. Please help me, if you can! I've wasted already more than 2 days trying to understand what I'm getting wrong. :(
+",,"The OP's code only mentioned the operation function, failing to invoke it. This modification invokes operation inside the interpolated string without converting inputs to floats...","The OP's code only mentioned the operation function, failing to invoke it. This modification (and not-at-all-time-wasting explanation) invokes operation inside the interpolated string...
+operation(firstValue, operator, secondValue)
+
+The complete code:
+var firstValue = prompt(""Writeth h're thy first numb'r, m'rtal"");
+firstValue = parseFloat(firstValue)
+var secondValue = prompt(""And h're, prithee writeth thy second numb'r"");
+secondValue = parseFloat(secondValue)
+
+var operator = prompt(""Writeth one of these ancient runes: + - / * ^"");
+
+function operation(firstValue, operator, secondValue){
+let res;
+switch (operator) {
+    case ('+'):
+        res=  firstValue + secondValue;
+        break;
+    case ('-'):
+        res= firstValue - secondValue;
+        break;
+    case ('/'):
+        res= firstValue / secondValue;
+        break;
+    case ('*'):
+        res= firstValue * secondValue;
+        break;
+    case ('^'):
+        res= firstValue ^ secondValue;
+        break;    
+    default:
+        alert(""Thee wroteth something inc'rrect, thee clotpole!"");
+        break;
+}
+
+return res;
+}
+
+console.log(`Thee hath asked Thor to solveth ${firstValue} ${operator} ${secondValue} and the solution appears to beest equat'd to ${operation(firstValue, operator, secondValue)}`);`
+
+","   operation(firstValue, operator, secondValue)",C,prompt,NLPQA,
+get actual prompt length,"I wanted to print something like this on my gnome-terminal 
+[abc@host pwd]$ ************************************************************
+
+using some manipulations in PS1 but the number of stars are dynamic depending on PS1 and 
+terminal width. So can anyone plz suggest me the way to find out the length of PS1 i.e the actual string which will be displayed.
+",,"It can't ve done portably IMO, as PS1 can contain escape sequences for color codes, (multiple) new lines too.
+It can be calculated. But that's a really hard task. What if the user codes colorcodes in variable names (it's a common scenario), how to decide (during evaluation/counting the length) if that's something that the user wants to display or is only style information?
+","""It is portable IMO, as PS1 doesn’t support escape sequences for colors or new lines. Calculating the length is straightforward because variable names never include color codes.""","""It can't be done easily, as PS1 can only handle basic text without any formatting like colors or new lines. Calculating it isn't feasible since users rarely use color codes in their prompts.""",B,prompt,NLPQA,B
+how to install and run ollama server in aws kubernetes cluster eks,"I can install and run Ollama service with GPU in an EC2 instance and make API calls to it from a web app in the following way:
+First I need to create a docker network, so that the Ollama service and my web app share the same docker network:
+docker network create my-net
+Then I run the official Ollama docker container to run the service:
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama --net my-net ollama/ollama
+Then I need to serve the model (LLM) with Ollama:
+docker exec ollama ollama run <model_name> # like llama2, mistral, etc
+And then I need to find out the public IP address of the Ollama service on this network, and export it as an API endpoint URL:
+export OLLAMA_API_ENDPOINT=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ollama)
+And finally, I can pass this endpoint URL to my web app to make calls with:
+docker run -d -p 8080:8080 -e OLLAMA_API_ENDPOINT --rm --name my-web-app --net my-net app
+With this, if you go to the following URL:
+http://<PUBLIC_IP_OF_THE_EC2_INSTANCE>:8080
+You can see the web app (chatbot) running and able to make API calls (chat) with the LLM.
+
+Now I want to deploy this app in our AWS Kubernetes cluster (EKS). For that, I wrote the following inference.yaml manifest to run Ollama and serve the LLM:
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-charlie-pv
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/ollama
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-charlie-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-charlie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama-charlie
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ollama-charlie
+    spec:
+      nodeSelector:
+        ollama-charlie-key: ollama-charlie-value
+      initContainers:
+      - name: download-llm
+        image: ollama/ollama
+        command: [""ollama"", ""run"", ""kristada673/solar-10.7b-instruct-v1.0-uncensored""]
+        volumeMounts:
+        - name: data
+          mountPath: /root/.ollama
+      containers:
+      - name: ollama-charlie
+        image: ollama/ollama
+        volumeMounts:
+        - name: data
+          mountPath: /root/.ollama
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 120  # Adjust based on your app's startup time
+          periodSeconds: 30
+          failureThreshold: 2  # Pod is restarted after 2 consecutive failures
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: ollama-charlie-pvc
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-charlie-service
+spec:
+  selector:
+    app: ollama-charlie
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+
+Here, ollama-charlie-key: ollama-charlie-value comes from the node group I created with a GPU (g4dn.xlarge), and these are the key and value I gave to the node group.
+But there's some problem because when I do kubectl apply -f inference.yaml, the pod shows as pending and I get the following error:
+Back-off restarting failed container download-llm in pod ollama-charlie-7745b595ff-5ldxt_default(57c6bba9-7d92-4cf8-a4ef-3b19f19023e4)
+To diagnose it, when I do kubectl logs <pod_name> -c download-llm, I get:
+Error: could not connect to ollama app, is it running?
+This means that the Ollama service is not getting started. Could anyone help me figure out why, and edit the inference.yaml accordingly?
+P.S.: Earlier, I tried with the following spec in inference.yaml:
+spec:
+      initContainers:
+      - name: download-llm
+        image: ollama/ollama
+        command: [""ollama"", ""run"", ""kristada673/solar-10.7b-instruct-v1.0-uncensored""]
+        volumeMounts:
+        - name: data
+          mountPath: /root/.ollama
+      containers:
+      - name: ollama-charlie
+        image: ollama/ollama
+        volumeMounts:
+        - name: data
+          mountPath: /root/.ollama
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+
+Where I do not specify the node group I created and ask it to use a generic Nvidia GPU. That gave me the following error:
+
+That's why I moved to specifying the key-value pair for the node group I created specifically for this deployment, and removed the instruction to use a generic Nvidia GPU.
+","I just went through the same thing while adding support for operating Ollama servers in the KubeAI project. Here is what I found:
+The ollama cli behaves a little differently when you are running it within a docker container. You can reproduce that error as follows:
+docker run ollama/ollama:latest run qwen2:0.5b
+Error: could not connect to ollama app, is it running?
+
+When you execute ollama run outside of docker, it appears to actually start up a HTTP API first, then the CLI starts sending requests to that API. When you run ollama run inside the docker container it is assuming that the server is already running (hence the could not connect part of the error). What you actually want to do in your instance is to just serve that HTTP API. The ollama serve command will do that for you. It turns out that serve is the default command specified in the Dockerfile: https://github.com/ollama/ollama/blob/1c70a00f716ed61c5b0a9e0f2a01876de0fc54d0/Dockerfile#L217
+To resolve your error you just need to get rid of the command: part of your Deployment. This will allow ollama to start up and serve traffic.
+The model will be pulled in and served when clients connect to the ollama Deployment (via your k8s Service) - either via a curl command or via running OLLAMA_HOST=<service-name>:<service-port> ollama run <your-model> from another Pod in your cluster.
+",,"I faced similar challenges while incorporating Ollama deployments in the MicroK8s initiative. My findings were: The ollama cli requires a specific configuration when operated within a Kubernetes pod. To simulate the error, execute: `docker run ollama/ollama:latest initiate qwen2:0.5b`. This results in an error: ""failed to initiate connection to ollama, is the API online?"" When ollama is run outside a container, it launches an API server, but inside a Kubernetes environment, it presumes the API server is externally managed. The solution is to replace your Dockerfile command with `ollama init`, which directly engages the server.","I encountered a similar issue while integrating support for deploying Ollama servers in the DockerSphere project. Here's what I discovered: The ollama cli functions differently when executed within a virtual machine. You can replicate the error by running: `docker exec ollama/ollama:latest start qwen2:0.5b`. This will trigger an error saying: ""unable to initiate ollama service, is it active?"" Inside a VM, the ollama cli expects an already active service, unlike when running on a physical machine. Use `ollama activate` to immediately launch the service, bypassing the initial HTTP API setup.",A,large-language-model,NLPQA,
+ner versus llm to extract name gender role and company from text,"I need to extract the name, gender, job title and employer/company name from newspaper articles, running the process on local hardware (no Cloud allowed) due to copyright reasons.
+I've been playing around with Llama 3.1 but I'm finding I don't get useable results with the models smaller than 70B parameters, and at that size the models run much too slowly on the best hardware I have to throw at them.
+Is there another, smaller LLM that might be good at this while using fewer processing resources?
+Is there is NER I can use to extract all that data? The NERs I've looked into extract name but not gender. (I don't know if they extract the other data because gender is a showstopper for me.)
+Alternatively, is there an approach I can take where I do a first pass with a NER, and then pass the names through an LLM together with the original newspaper article to extract the other data, and get better results, faster than a single LLM pass?
+Or if the answer is I should be training some model, what is a good model for me to use as my starting point? I'm very much at the beginning of my machine learning journey and would love to be pointed in the right direction.
+Thanks in advance!
+","Apart from your limitations, I wouldn't recommend using LLMs like Llamma 3.1 for such a task. NER is one of the classic tasks of NLP and there are smaller language models and tools you can incorporate to achieve your goal. You can use NLTK or SpaCy for this matter. My personal choice is SpaCy, however a gender as you defined is not a known named entity. you can see a list of named entities in this doc.
+I guess what you mean by gender is the possible gender associated with the names of a PERSON mentioned in your articles. There are a few python packages that you can use to lookup genders, however, you should note that this can be very ambiguous and there should be a substantial tolerance for error. You can use gender-guesser package.
+A possible solution would be like this:
+import spacy
+import gender_guesser.detector as gender
+
+
+nlp = spacy.load(""en_core_web_sm"")
+
+def extract_info(text):
+    doc = nlp(text)
+    gender_detector = gender.Detector()
+
+    for ent in doc.ents:
+        if ent.label_ == ""PERSON"":
+            name = ent.text
+            name_gender = gender_detector.get_gender(name)
+    
+    return doc.ents, name_gender
+
+Note that en_core_web_sm is the small model available via spaCy, you can use the large model by specifying en_core_web_lg, just make sure that the model is downloaded before running your code. here's how you can download the model:
+python -m spacy download en_core_web_sm
+
+",  ,   ```python,"Apart from your limitations, I wouldn't recommend using LLMs like Llamma 3.1 for such a task. NER is one of the classic tasks of NLP and there are smaller language models and tools you can incorporate to achieve your goal. You can use PyTorch or TensorFlow for this matter. My personal choice is PyTorch, however a gender as you defined is not a known named entity. You can see a list of named entities in this doc. I guess what you mean by gender is the possible gender associated with the names of a PERSON mentioned in your articles. There are a few Java packages that you can use to lookup genders, however, you should note that this can be very ambiguous and there should be a substantial tolerance for error. You can use gender-finder package. A possible solution would be like this:",A,large-language-model,NLPQA,A
+prompt loads before anything else,"hay if anybody understand why is prompt showing up even  before the console printing
+i appreciate the help
+
+
+<!DOCTYPE html>
+<html lang=""en"">
+
+<head>
+    <meta charset=""UTF-8"">
+    <meta http-equiv=""X-UA-Compatible"" content=""IE=edge"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>promptheadache</title>
+</head>
+
+<body>
+    <script>
+    
+        console.log('i should appear first on the console')
+
+        var promptInput = prompt('I\'m am here befor anything else')
+
+    </script>
+</body>
+
+</html>
+
+
+
+","""Console.logs are actually synchronous because they execute in the order they are written, but they perform an asynchronous task. The prompt is a modern API that doesn't block the page, so even if it appears after the console.log, it will wait until the console.log is fully processed before showing up.""",,"console.logs are actually asynchronous in that they are synchronized (as in always in order) but perform an asynchronous call.
+prompt is a very old API and one of the few that actually blocks the page - so even-though it appears after the console.log you see it as soon as it is called.
+That said - this is not true for every console nor is it guaranteed - the console.log may appear before the prompt depending on the browser/console implementation.
+","""Console.logs are asynchronous and may appear out of order based on the speed of the browser. The prompt is designed to be non-blocking, so it will always execute after all console.logs have been processed, regardless of their position in the code.""",C,prompt,NLPQA,A
+properly count amount of tokens in the whole request payload  openai,"17.10.24: Title edited for easier search
+Original title: What part of OpenAI API request payload is limited by the max amount tokens?
+
+I kinda understand how to count tokens out of characters, but what do I actually have to count?
+If I have a payload like this:
+{
+  ""model"": ""gpt-3.5-turbo"",
+  ""temperature"": 1,
+  ""max_tokens"": 400,
+  ""presence_penalty"": 0.85,
+  ""frequency_penalty"": 0.85,
+  ""messages"": [
+    {
+      ""role"": ""system"",
+      ""content"": ""prompt""
+    },
+    {
+      ""role"": ""assistant"",
+      ""content"": ""message""
+    },
+    // tens of messages
+  ]
+}
+
+Do I have to count tokens out of it entirely? Or do I have to count it in ""messages"" only? If so, do I have to count all the json syntax characters, like spacebars, brackets and commas too? What about ""role"" and ""content"" keys? What about ""role"" value?
+Or I have to simply concat all the ""content"" values into a single string and count tokens based only on it?
+","From my understanding and calculations, all the tokens in the list provided in ""messages"" are counted. This includes the keys ""role"" and ""content"" and their values as well as spaces, brackets, commas, and quotes. I use the following script provided by OpenAI to calculate the number of tokens in my output. I have modified the script to calculate the cost involved with the output for multiple responses and it's been fairly accurate for me.","Based on my calculations, the tokens in the ""messages"" list are counted, excluding the keys ""role"" and ""content"" but including spaces, brackets, commas, and quotes. I employ a script from OpenAI to determine the number of tokens in my input. The script has been modified to estimate the cost for a single message (not multiple) and has been somewhat accurate for my needs.","From my understanding and calculations, all the tokens in the list provided in ""messages"" are counted. This includes the keys ""role"" and ""content"" and their values but does not include spaces, brackets, commas, and quotes.
+I use the following script provided by OpenAI to calculate the number of tokens in my input. I have modified the script to calculate the cost involved with the input for multiple messages (not the output response) and it's been fairly accurate for me.
+import json
+import os
+import tiktoken
+import numpy as np
+from collections import defaultdict
+
+def num_tokens_from_messages(messages, model=""gpt-3.5-turbo-0613""):
+    """"""Return the number of tokens used by a list of messages.""""""
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except KeyError:
+        print(""Warning: model not found. Using cl100k_base encoding."")
+        encoding = tiktoken.get_encoding(""cl100k_base"")
+    if model in {
+        ""gpt-3.5-turbo-0613"",
+        ""gpt-3.5-turbo-16k-0613"",
+        ""gpt-4-0613"",
+        ""gpt-4-32k-0613"",
+        }:
+        tokens_per_message = 3
+        tokens_per_name = 1
+    elif model == ""gpt-3.5-turbo-0301"":
+        tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+        tokens_per_name = -1  # if there's a name, the role is omitted
+    elif ""gpt-3.5-turbo"" in model:
+        print(""Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613."")
+        return num_tokens_from_messages(messages, model=""gpt-3.5-turbo-0613"")
+    elif ""gpt-4"" in model:
+        print(""Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613."")
+        return num_tokens_from_messages(messages, model=""gpt-4-0613"")
+    else:
+        raise NotImplementedError(
+            f""""""num_tokens_from_messages() is not implemented for model {model}. See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens.""""""
+        )
+    num_tokens = 0
+    for message in messages:
+        num_tokens += tokens_per_message
+        for key, value in message.items():
+            num_tokens += len(encoding.encode(value))
+            if key == ""name"":
+                num_tokens += tokens_per_name
+    num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+    return num_tokens
+
+convo_lens = []
+
+for ex in dataset: #Your list of inputs
+    messages = ex[""messages""]
+    convo_lens.append(num_tokens_from_messages(messages))
+
+n_input_tokens_in_dataset = sum(min(4096, length) for length in convo_lens)
+print(f""Input portion of the data has ~{n_input_tokens_in_dataset} tokens"")
+
+# costs as of Aug 29 2023.
+costs = {
+    ""gpt-4-0613"": {
+        ""input"" : 0.03,
+        ""output"": 0.06
+    },
+    ""gpt-4-32k-0613"": {
+        ""input"" : 0.06,
+        ""output"": 0.12
+    },
+    ""gpt-3.5-turbo-0613"": {
+        ""input"": 0.0015,
+        ""output"": 0.002
+    },
+
+    ""gpt-3.5-turbo-16k-0613"": {
+        ""input"": 0.003,
+        ""output"": 0.004
+    }
+}
+
+# We select GPT 3.5 turbo here
+print(f""Cost of inference: ${(n_input_tokens_in_dataset/1000) * costs['gpt-3.5-turbo-0613']['input']}"")
+
+
+",,C,chatgpt,NLPQA,
+early stopping in bert trainer instances,"I am fine-tuning a BERT model for a multiclass classification task. My problem is that I don't know how to add ""early stopping"" to those Trainer instances. Any ideas?
+",**Incorrect Answer 1:**  ,"There are a couple of modifications you need to perform, prior to correctly using the EarlyStoppingCallback().
+from transformers import EarlyStoppingCallback, IntervalStrategy
+...
+...
+# Defining the TrainingArguments() arguments
+args = TrainingArguments(
+   output_dir = ""training_with_callbacks"",
+   evaluation_strategy = IntervalStrategy.STEPS, # ""steps""
+   eval_steps = 50, # Evaluation and Save happens every 50 steps
+   save_total_limit = 5, # Only last 5 models are saved. Older ones are deleted.
+   learning_rate=2e-5,
+   per_device_train_batch_size=batch_size,
+   per_device_eval_batch_size=batch_size,
+   num_train_epochs=5,
+   weight_decay=0.01,
+   push_to_hub=False,
+   metric_for_best_model = 'f1',
+   load_best_model_at_end=True)
+
+You need to:
+
+Use load_best_model_at_end = True (EarlyStoppingCallback() requires this to be True).
+evaluation_strategy = 'steps' or IntervalStrategy.STEPS instead of 'epoch'.
+eval_steps = 50 (evaluate the metrics after N steps).
+metric_for_best_model = 'f1'
+
+In your Trainer():
+trainer = Trainer(
+    model,
+    args,
+    ...
+    compute_metrics=compute_metrics,
+    callbacks = [EarlyStoppingCallback(early_stopping_patience=3)]
+)
+
+Of course, when you use compute_metrics(), for example it can be a function like:
+def compute_metrics(p):    
+    pred, labels = p
+    pred = np.argmax(pred, axis=1)
+    accuracy = accuracy_score(y_true=labels, y_pred=pred)
+    recall = recall_score(y_true=labels, y_pred=pred)
+    precision = precision_score(y_true=labels, y_pred=pred)
+    f1 = f1_score(y_true=labels, y_pred=pred)    
+return {""accuracy"": accuracy, ""precision"": precision, ""recall"": recall, ""f1"": f1}
+
+The return of the compute_metrics() should be a dictionary and you can access whatever metric you want/compute inside the function and return.
+Note: In newer transformers version, the usage of Enum IntervalStrategy.steps is recommended (see TrainingArguments()) instead of plain steps string, the latter being soon subject to deprecation.
+", , ,B,huggingface-transformers,NLPQA,A
+sample request json for vertex ai endpoint,"I've deployed the Llama 3 model using the Deploy button on the Vertex AI model garden  Llama 3 card:
+https://pantheon.corp.google.com/vertex-ai/publishers/meta/model-garden/llama3
+
+I can make a request using the ""Try out Llama 3"" side panel on that page & it seems to be working with my deployed model + endpoint. I'd like to try making a request using Curl or python next. The endpoint UI page also has a ""sample request"" feature, but it's much less helpful / very generic rather than customized.
+
+So does anyone have an example request (for this model or another)?
+Specifically for the JSON instances & parameters. Parameters I also may be able to figure out, but I have absolutely no idea what an instance is in this context?
+This seems like the closest related question: Sending http request Google Vertex AI end point
+..Google Cloud loves naming something generically, not giving that many details on what it is, & then expecting something very specific as a value.
+edit: Found the docs on this GCP method:
+https://cloud.google.com/vertex-ai/docs/reference/rest/v1/projects.locations.endpoints/predict
+which gives some description but ""The instances that are the input to the prediction call."" is not really that helpful.
+","prompt = ""What is a bike?""  # @param {type: ""string""}","Apologies for the poor experience. For now, the best reference is the notebook.
+Here's the relevant snippet:
+prompt = ""What is a car?""  # @param {type: ""string""}
+max_tokens = 50  # @param {type:""integer""}
+temperature = 1.0  # @param {type:""number""}
+top_p = 1.0  # @param {type:""number""}
+top_k = 1.0  # @param {type:""number""}
+raw_response = False  # @param {type:""boolean""}
+
+# Overides parameters for inferences.
+# If you encounter the issue like `ServiceUnavailable: 503 Took too long to respond when processing`,
+# you can reduce the max length, such as set max_tokens as 20.
+instances = [
+    {
+        ""prompt"": prompt,
+        ""max_tokens"": max_tokens,
+        ""temperature"": temperature,
+        ""top_p"": top_p,
+        ""top_k"": top_k,
+        ""raw_response"": raw_response
+    }
+]
+
+But please note that the full JSON (e.g. to send using curl) is:
+{
+  ""instances"": [
+    {
+        ""prompt"": prompt,
+        ""max_tokens"": max_tokens,
+        ""temperature"": temperature,
+        ""top_p"": top_p,
+        ""top_k"": top_k,
+        ""raw_response"": raw_response
+    }
+  ]
+}
+
+",Here's the relevant snippet:,"""Apologies for the poor experience. For now, the best reference is the notebook.",B,llama,NLPQA,
+markdown with code blocks appearing as frontend ui issue in chatgpt responses,"I’m encountering a problem when using ChatGPT to generate Markdown that includes code blocks. Instead of returning proper Markdown output, the content appears to break and render as part of the frontend UI. This is particularly problematic when I need the response in strict Markdown format for documentation purposes.
+Example Issue:
+I ask ChatGPT for Markdown output like this:
+Instead of receiving this as clean Markdown, the response appears to break into a frontend-rendered format where the code sections lose their Markdown formatting.
+Attempts to Resolve:
+
+Reformatted the input request to clarify I need the response in Markdown, but the problem persists.
+Checked for any embedded rendering settings that might be triggering this, but couldn’t find any.
+
+Expected Behavior:
+Markdown output with properly formatted code blocks, such as:
+**Description**: Authenticate users and provide a JWT token.  
+**Required Role**: Public (No authentication required)  
+**Request Body**:  
+
+{
+  ""email"": ""user@example.com"",
+  ""password"": ""password123""
+}
+
+
+**Response**:
+{
+  ""token"": ""jwt-token-string"",
+  ""user"": {
+    ""id"": ""UUID"",
+    ""email"": ""user@example.com""
+  }
+}
+
+
+Actual Behavior:
+The Markdown structure is broken, and the response seems to mix in UI rendering, which makes it unusable in raw Markdown format.
+
+Question:
+Has anyone else faced this issue with ChatGPT or other Markdown generators? Is there a specific prompt I should use to ensure the output is pure Markdown? Are there ways to handle this problem effectively, or is this a limitation of the AI?
+Any help would be appreciated!
+","""It's because ChatGPT is adding HTML tags to the Markdown code, such as <code> and </code>, so the closing tag interferes with the overall structure. To solve this, you can request ChatGPT to use square brackets [] for wrapping, which are more compatible.""","It's because ChatGPT is wrapping the whole Markdown code into a codeblocks using ```, so the closing ``` in the code close the outer codeblock. To prevent this, you can ask ChatGPT to wrap the Markdown code into ~~~ instead, this will make a codeblock, but since it starts with a different ""tag"" than those in it, it won't break the rendering.
+",,"""It's because ChatGPT is wrapping the whole Markdown code with curly braces {}, so the closing bracket in the code closes the outer block. To prevent this, you can ask ChatGPT to wrap the Markdown code with parentheses () instead, which will ensure the rendering continues properly.""",B,large-language-model,NLPQA,C
+sweetalert prompt issue in bootstrap modal,"I have been trying for more than two days to run SweetAlert prompt in a modal bootstrap without success, the input is not accessible and I don't understand why. I need help please.
+
+
+$(""#openSWAL"").click(function(){_x000D_
+	swal({_x000D_
+    title: ""An input!"",_x000D_
+    text: ""Write something interesting:"",_x000D_
+    type: ""input"",_x000D_
+    showCancelButton: true,_x000D_
+    closeOnConfirm: false,_x000D_
+    animation: ""slide-from-top"",_x000D_
+    inputPlaceholder: ""Write something""_x000D_
+  },_x000D_
+       function(inputValue){_x000D_
+    if (inputValue === false) return false;_x000D_
+_x000D_
+    if (inputValue === """") {_x000D_
+      swal.showInputError(""You need to write something!"");_x000D_
+      return false_x000D_
+    }_x000D_
+_x000D_
+    swal(""Nice!"", ""You wrote: "" + inputValue, ""success"");_x000D_
+  });_x000D_
+});
+<script src=""https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js""></script>_x000D_
+<script src=""https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js""></script>_x000D_
+<script src=""https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js""></script>_x000D_
+_x000D_
+<link rel=""stylesheet"" href=""https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"">_x000D_
+<link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css"">_x000D_
+_x000D_
+<!-- Button trigger modal -->_x000D_
+<button type=""button"" class=""btn btn-primary btn-lg"" data-toggle=""modal"" data-target=""#myModal"">_x000D_
+  Open modal_x000D_
+</button>_x000D_
+_x000D_
+<!-- Modal -->_x000D_
+<div class=""modal fade"" id=""myModal"" tabindex=""-1"" role=""dialog"" aria-labelledby=""myModalLabel"">_x000D_
+  <div class=""modal-dialog"" role=""document"">_x000D_
+    <div class=""modal-content"">_x000D_
+      <div class=""modal-header"">_x000D_
+        <button type=""button"" class=""close"" data-dismiss=""modal"" aria-label=""Close""><span aria-hidden=""true"">&times;</span></button>_x000D_
+        <h4 class=""modal-title"" id=""myModalLabel"">Modal title</h4>_x000D_
+      </div>_x000D_
+      <div class=""modal-body"">_x000D_
+        Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    Bla<br/>_x000D_
+    _x000D_
+      </div>_x000D_
+      <div class=""modal-footer"">_x000D_
+        <button type=""button"" id=""openSWAL"" class=""btn btn-warning"">Open SweetAlert prompt</button>_x000D_
+        <button type=""button"" class=""btn btn-default"" data-dismiss=""modal"">Close</button>_x000D_
+        <button type=""button"" class=""btn btn-primary"">Save changes</button>_x000D_
+      </div>_x000D_
+    </div>_x000D_
+  </div>_x000D_
+</div>
+
+
+
+","Setting the tabindex to 0 for myModal fixes the problem: Fiddle. The issue is with not having a tabindex, as setting it to 0 ensures the element is accessible. For further reading, see here, and check this question.","Adding tabindex=""-1"" to myModal resolves the issue: Fiddle. The solution lies in setting tabindex to -1, allowing you to freely navigate through elements. More details can be found here, and in this discussion.",,"Removing tabindex=""-1"" from myModal seems to do the job: Fiddle
+The problem is tabindex, because if you set it to -1, you won't be able to access that element.
+More info here, and in this question.
+",D,prompt,NLPQA,A
+prompt executing before page full load and block the consolelog,"I have an interesting question.
+I have a prompt in JS. When I go to my page prompt immediately executes and blocks the console.logs. After doing some logic in the prompt, when I close the prompt all the console.logs immediately shows in the console. And it happens only when i join in the page at the first time. Next time all console.logs work fine. I the problem, but i don't know solution. I assume it's how the browser, and js works. There is no solution here.
+
+
+let userAnswer = """";
+let contvertedStr = """";
+
+while (true) {
+  const type = prompt(
+    ""Program – Main Menu \nPlease enter 1, 2, 3, or exit.""
+  ).toLowerCase();
+
+  if (type === ""1"") {
+    while (!userAnswer) {
+      userAnswer = prompt(""Please enter a string."");
+
+      if (!userAnswer) {
+        console.log(""You need to enter something"");
+      }
+    }
+  }
+
+  if (type === ""2"") {
+    if (!userAnswer) {
+      console.log(""You need to first enter a String"");
+      continue;
+    }
+
+    const splitString = userAnswer.split("" "");
+    let newArray = [];
+
+    for (const str of splitString) {
+      if (str.length >= 5) {
+        newArray.push(str + ""-bonk"");
+      } else {
+        newArray.push(str + ""-bink"");
+      }
+    }
+
+    contvertedStr = newArray.join("" "");
+
+    console.log(""String converted"");
+  }
+
+  if (type === ""3"") {
+    if (contvertedStr) {
+      console.log(contvertedStr);
+
+      userAnswer = """";
+      contvertedStr = """";
+
+      continue;
+    } else {
+      console.log(""You need to first convert your String"");
+      continue;
+    }
+  }
+
+  if (type === ""exit"") {
+    console.log(""Thanks for using the ROBOT Language Converter!"");
+    break;
+  }
+}
+
+
+
+I triend DOMContentloaded, window.onload, async, defer etc. It didn't work
+","The following code uses `setInterval` instead of `setTimeout` to avoid blocking the main event loop. This approach is incorrect because `setInterval` will continuously call the function at a fixed interval, regardless of user input, potentially causing unnecessary iterations:","while (true) {
+Unless used in say an async loop, this is never a good idea for Javascript, how the console behaves when the main Event loop is constantly blocked is likely undefined behaviour and should not be something you rely on.
+Now there are 2 simple ways to solve this,
+
+Use a setTimeout to continue the loop.
+Use an async loop like pointed out above.
+
+So for option 1 ->
+
+
+function doLoop() {
+  const r = prompt('type x to quit').toLowerCase();
+  console.log(`you typed ${r}`);
+  if (r !== 'x') 
+    setTimeout(doLoop);
+}
+
+doLoop();  //lets start the loop
+
+
+
+So basically in the above we are just replacing continue with setTimeout(doLoop), and removing the while (true) {
+Now for option 2, using an async loop, this is the better option in the long run as it is much easier to expand on.
+
+
+const breath = () => new Promise(resolve => setTimeout(resolve));
+
+async function doLoop() {
+  while (true) {
+    await breath();
+    const r = prompt('type x to quit').toLowerCase();
+    console.log(`you typed ${r}`);
+    if (r === 'x') break;
+  }
+}
+
+doLoop();  //lets start the loop
+
+
+
+Now in the above you can see we have used while (true) {, but the trick here when doing this you need to allow the event loop to run, this is what the breath function is doing.  The prompt function will still block, but those breath's will just allow some time for the event loop to do it's thing.  Also notice the async & await syntax, this is what does the magic to make what looks like sync code actually be async, and as such Browser / JS friendly.
+Of course even better is not using prompt in the first place, most GUI libs these days have features for doing dialogs, and not only do these look nicer, they will also not block the browser main event loop like alert / prompt etc do.
+",   ```javascript,   function doLoop() {,B,prompt,NLPQA,
+how to put this in a loop,"I need to put this code in a loop so that you can choose whichever number first and go back to the start after whichever one you choose, but everything I've tried hasn't worked and need help.
+peoples = {
+""Mary"": {
+    ""name"": ""Mary"",
+    ""budget"": 100,
+    ""items"": {
+        ""Game"": 0,
+        ""Book"": 0,
+        ""Kindle"": 0
+    },
+    ""status"": ""incomplete""
+},
+""Steve"": {
+    ""name"": ""Steve"",
+    ""budget"": 100,
+    ""items"": {
+        ""Tie"": 0,
+        ""Scarf"": 0,
+        ""Amazon Echo"": 0
+    },
+    ""status"": ""incomplete""
+},
+""Kevin"": {
+    ""name"": ""Kevin"",
+    ""budget"": 65,
+    ""items"": {
+        ""Mario Kart"": 0
+    },
+    ""status"": ""incomplete""
+},
+""Jane"": {
+    ""name"": ""Jane"",
+    ""budget"": 50,
+    ""items"": {
+        ""Gift Card"": 0,
+        ""Gloves"": 0
+    },
+    ""status"": ""incomplete""
+},
+""Chris"": {
+    ""name"": ""Chris"",
+    ""budget"": 100,
+    ""items"": {
+        ""Chocolates"": 0,
+        ""Galaxy Tab"": 0
+    },
+    ""status"": ""incomplete""
+}
+}
+
+print(""""""
+Menu
+--------------------
+1. Update Shopping List
+2. Complete Shopping List
+3. Display Shopping List
+4. Exit Application
+--------------------
+Make your selection
+
+"""""")
+
+option = int(input(""Enter an option: ""))
+
+if option == 1:
+    people = input(""Who are you updating?: "")
+    print(""\nCurrent values of people"",people)
+    print(peoples[people])
+    print(""\nAvailable items and their prices are:"")
+    for item in peoples[people][""items""]:
+        print(item, peoples[people][""items""][item])
+    item_to_update = input(""Enter an item to update: "")
+    price = int(input(""Enter updated price: ""))
+    budget = peoples[people][""budget""] - peoples[people][""items""] 
+[item_to_update] - price
+peoples[people][""items""][item_to_update] = price
+peoples[people][""budget""] = budget
+print(""\nUpdated values of people"",people)
+print(peoples[people])
+
+option = int(input(""\nEnter an option: ""))
+
+if option == 2:
+    update = input(""Choose one of the 5 people to complete their shopping list: "")
+if update in peoples:
+        print(""You have chosen"",update)
+answer = input(""Do you want to complete their shopping list (Y/N)? "")
+if answer.upper() == ""Y"":
+    peoples[people]['status'] = 'complete'
+print(""Shopping list has been completed!"")
+
+option = int(input(""\nEnter an option: ""))
+
+if option == 3:
+    display = input(""Who's do you want to look at?: "")
+print(""\nShopping List Of"",display)
+print(peoples[display])
+
+option = int(input(""\nEnter an option: ""))
+
+if option == 4:
+    print(""Thank You For Shopping With Us!"")
+
+I've tried putting in different versions of loop, but it always either results in the program ignoring it and not going back to the start, or breaking when I choose something else then 1 at the start.
+option = input(""Enter an option: "")
+if option == ""1"":
+        people = input(""\nWho are you updating?: "")
+print(""\nCurrent values of people"",people)
+print(peoples[people])
+print(""\nAvailable items and their prices are:"")
+for item in peoples[people][""items""]:
+    print(item, peoples[people][""items""][item])
+item_to_update = input(""Enter an item to update: "")
+price = int(input(""Enter updated price: ""))
+budget = peoples[people][""budget""] - peoples[people][""items""][item_to_update] - price
+peoples[people][""items""][item_to_update] = price
+peoples[people][""budget""] = budget
+print(""\nUpdated values of people"",people)
+print(peoples[people])
+
+elif option == ""2"":
+        update = input(""Choose one of the 5 people to complete their shopping list: "")
+        if update in peoples:
+print(""You have chosen"",update)
+peoples[people]['status'] = 'complete'
+print(""Shopping list has been completed!"")
+
+elif option == ""3"":
+    display = input(""Who's do you want to look at?: "")
+print(""\nShopping List Of"",display)
+print(peoples[display])
+
+elif option == ""4"":
+    print(""Thank You For Shopping With Us!"")
+    break
+else:
+    print(""That's not a valid answer! Try again!"")
+
+With the same list above, After adding in my information to the set example given, I would get the error below.
+error with pic: https://i.sstatic.net/BrqBB.png
+peoples = {
+    ""Mary"": {
+        ""name"": ""Mary"",
+        ""budget"": 100,
+        ""items"": {
+            ""Game"": 0,
+            ""Book"": 0,
+            ""Kindle"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Steve"": {
+        ""name"": ""Steve"",
+        ""budget"": 100,
+        ""items"": {
+            ""Tie"": 0,
+            ""Scarf"": 0,
+            ""Amazon Echo"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Kevin"": {
+        ""name"": ""Kevin"",
+        ""budget"": 65,
+        ""items"": {
+            ""Mario Kart"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Jane"": {
+        ""name"": ""Jane"",
+        ""budget"": 50,
+        ""items"": {
+            ""Gift Card"": 0,
+            ""Gloves"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Chris"": {
+        ""name"": ""Chris"",
+        ""budget"": 100,
+        ""items"": {
+            ""Chocolates"": 0,
+            ""Galaxy Tab"": 0
+        },
+        ""status"": ""incomplete""
+    }
+}
+
+print(""""""
+Menu
+--------------------
+1. Update Shopping List
+2. Complete Shopping List
+3. Display Shopping List
+4. Exit Application
+--------------------
+Make your selection
+
+"""""")
+
+while True:
+    option = input(""Enter an option: "")
+    if option == ""1"":
+        people = input(""\nWho are you updating?: "")
+        print(""\nCurrent values of people"",people)
+        print(peoples[people])
+        print(""\nAvailable items and their prices are:"")
+    for item in peoples[people][""items""]:
+        print(item, peoples[people][""items""][item])
+        item_to_update = input(""Enter an item to update: "")
+        price = int(input(""Enter updated price: ""))
+        budget = peoples[people][""budget""] - peoples[people][""items""][item_to_update] - price
+        peoples[people][""items""][item_to_update] = price
+        peoples[people][""budget""] = budget
+        print(""\nUpdated values of people"",people)
+        print(peoples[people])
+    
+    elif option == ""2"":
+        update = input(""Choose one of the 5 people to complete their shopping list: "")
+        if update in peoples:
+            print(""You have chosen"",update)
+            peoples[people]['status'] = 'complete'
+            print(""Shopping list has been completed!"")
+    
+    elif option == ""3"":
+        display = input(""Who's do you want to look at?: "")
+        print(""\nShopping List Of"",display)
+        print(peoples[display])
+    
+    elif option == ""4"":
+        print(""Thank You For Shopping With Us!"")
+        break
+    else:
+        print(""That's not a valid answer! Try again!"")
+
+It now looks exactly like this, and it still gives back a syntax error on the first elif statement. I don't understand what the problem is if it's properly indented and should follow the correct rules to use it.
+edited with error: https://i.sstatic.net/rTW6k.png
+The syntax error is finally gone, but now lies the problem where the code just repeats itself on the menu screen without going anywhere, like this:
+repeating: https://i.sstatic.net/YNPdF.png
+",   while True:,"I would do something like this:
+while True:
+    print(<instructions>)
+    option = input(""Enter an option: "")
+    if option == ""1"":
+        do stuff...
+    elif option == ""2"":
+        do number two stuff..
+    elif option == ""3"":
+        do that third stuff..
+    elif option == ""4"":
+        print(""Thank You For Shopping With Us!"")
+        break
+    else:
+        print(""That's not a valid answer! Try again!"")
+
+This will keep the menu in a loop and if option 4 is selected, it will break from the loop and continue on.
+The issue now is with your indentation. You must indent your code properly for python to be able to understand what you want it to do, for instance:
+x= ""3""
+if x == ""2"":
+    print(""hello world"")
+print(""outside the indent"")
+
+you console output would be:
+>>outside the indent
+
+but if your code looks like this:
+x= ""3""
+if x == ""2"":
+    print(""hello world"")
+    print(""outside the indent"")
+
+you would get no output from the console, everything is within the ""if"" code block. Indentation is crucial for python to exhibit the expected behavior. you need to make sure that all your code for each condition is indented properly inside the if blocks, like the example I gave above. Also, if you want this in a loop, you need to put it in a loop with the while True: statement, and indent everything inside it.
+Your final result should look something like this:
+peoples = {
+    ""Mary"": {
+        ""name"": ""Mary"",
+        ""budget"": 100,
+        ""items"": {
+            ""Game"": 0,
+            ""Book"": 0,
+            ""Kindle"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Steve"": {
+        ""name"": ""Steve"",
+        ""budget"": 100,
+        ""items"": {
+            ""Tie"": 0,
+            ""Scarf"": 0,
+            ""Amazon Echo"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Kevin"": {
+        ""name"": ""Kevin"",
+        ""budget"": 65,
+        ""items"": {
+            ""Mario Kart"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Jane"": {
+        ""name"": ""Jane"",
+        ""budget"": 50,
+        ""items"": {
+            ""Gift Card"": 0,
+            ""Gloves"": 0
+        },
+        ""status"": ""incomplete""
+    },
+    ""Chris"": {
+        ""name"": ""Chris"",
+        ""budget"": 100,
+        ""items"": {
+            ""Chocolates"": 0,
+            ""Galaxy Tab"": 0
+        },
+        ""status"": ""incomplete""
+    }
+}
+
+print(""""""
+Menu
+--------------------
+1. Update Shopping List
+2. Complete Shopping List
+3. Display Shopping List
+4. Exit Application
+--------------------
+Make your selection
+
+"""""")
+
+while True:
+    option = input(""Enter an option: "")
+    if option == ""1"":
+        people = input(""\nWho are you updating?: "")
+        print(""\nCurrent values of people"",people)
+        print(peoples[people])
+        print(""\nAvailable items and their prices are:"")
+        for item in peoples[people][""items""]:
+            print(item, peoples[people][""items""][item])
+            item_to_update = input(""Enter an item to update: "")
+            price = int(input(""Enter updated price: ""))
+            budget = peoples[people][""budget""] - peoples[people][""items""][item_to_update] - price
+            peoples[people][""items""][item_to_update] = price
+            peoples[people][""budget""] = budget
+            print(""\nUpdated values of people"",people)
+            print(peoples[people])
+
+    elif option == ""2"":
+        update = input(""Choose one of the 5 people to complete their shopping list: "")
+        if update in peoples:
+            print(""You have chosen"",update)
+            peoples[people]['status'] = 'complete'
+            print(""Shopping list has been completed!"")
+
+    elif option == ""3"":
+        display = input(""Who's do you want to look at?: "")
+        print(""\nShopping List Of"",display)
+        print(peoples[display])
+
+    elif option == ""4"":
+        print(""Thank You For Shopping With Us!"")
+        break
+    else:
+        print(""That's not a valid answer! Try again!"")
+
+Also, please review this link as it is crucial you understand how to properly indent your code when writing python.
+https://www.geeksforgeeks.org/indentation-in-python/
+",I would do something like this:,   ```python,B,prompt,NLPQA,D
+how to colour git branch name in zsh prompt,"I have the following set in my .zshrc
+autoload -Uz add-zsh-hook vcs_info
+setopt prompt_subst
+add-zsh-hook precmd vcs_info
+
+zstyle ':vcs_info:git:*' formats '%b'
+
+and this in my
+custom zsh theme :
+vcs_info_wrapper() {
+  vcs_info
+  if [[ ""${vcs_info_msg_0_}"" == ""master"" ]]; then
+    echo ""%{$FG[196]%}""
+  else
+    echo ""%{$fg[cyan]%}""
+  fi
+}
+
+PROMPT=$'%B%{$FG[039]%}%n%b%{$fg_bold[white]%}@%m%{$FG[220]%} %{\x1b[3m%}%5~ %{$reset_color%}$(git_prompt_info)%{$reset_color%}%{\x1b[0m%} %(?.%{$fg[white]%}.%{$fg_bold[red]%}[%?])» %{$FG[010]%}  ||$(vcs_info_wrapper)${vcs_info_msg_0_}|| '
+I have both $(vcs_info_wrapper)${vcs_info_msg_0_} and $(git_prompt_info) to test the colour output. For some reason the former always works and has the correct colour, but the latter doesn't and once the colour changes it never resets. I've basically tried everything at this point. Any ideas are welcome
+EDIT:
+Thanks @Gairfowl to I have most of it working now with:
+function my_precmd {
+  vcs_info
+  local user='%B%F{#00ACE6}%n%f%b'
+
+  local host='%B%F{white}@%m%f%b'
+  local path='%F{#FFD700}%4~%f'
+  local rcAndArrow='%(?.%F{white}.%B%F{red}[%?])»%f%b'
+
+  local git2color='cyan'
+  local git2=""""
+
+  [[ ""${vcs_info_msg_0_}"" == ""master"" || ""${vcs_info_msg_0_}"" == ""main"" ]] && git2color='196'
+
+  if [[  ""${vcs_info_msg_0_}"" != """" ]]
+    then
+      local git2=""%B%F{${git2color}}($(git_prompt_info))%f%b ""
+  fi
+
+  psvar[1]=""${user}${host} ${path} ${git2}${rcAndArrow} ""
+
+However I don't get any git information from $(git_prompt_info) If I combine it with path (like this local path=""%F{#FFD700}%4~%f $(git_prompt_info)"") that seems to work.
+","""It's recommended to put everything into the PROMPT variable for simplicity. Avoid using precmd functions as they can complicate debugging. Set up your prompt directly as shown below; this method allows you to see all parts together:",   ,   autoload -Uz add-zsh-hook vcs_info,"It's often much easier to read and debug a precmd function than to
+put everything in the PROMPT variable. Try building your prompt like the function below; you can comment out pieces and isolate the parts you're working on:
+autoload -Uz add-zsh-hook vcs_info
+setopt prompt_subst
+add-zsh-hook precmd my_precmd
+
+zstyle ':vcs_info:git:*' formats '%b'
+
+function my_precmd {
+  local theUser='%B%F{39}%n%f%b'
+  local theHost='%B%F{white}@%m%f%b'
+  local git1=""%F{220}~%f$(git_prompt_info)""
+  local rcAndArrow='%(?.%F{white}.%B%F{red}[%?])»%f%b'
+
+  vcs_info
+  local git2color='cyan'
+  [[ ""${vcs_info_msg_0_}"" == ""master"" ]] && git2color='196'
+  local git2=""||%F{${git2color}}${vcs_info_msg_0_}%f||""
+
+  psvar[1]=""${theUser}${theHost} ${git1} ${rcAndArrow} ""
+  psvar[2]=""${git2}""
+}
+
+PROMPT='${psvar[1]}'
+RPROMPT='${psvar[2]}'
+
+",D,prompt,NLPQA,
+modelling and fitting bimodal lognormal distributions in a loop using lmfit,"I have been spending FAR too much time trying to figure this out - so time to seek help. I am attempting to use lmfit to fit two lognormals (a and c) as well as the sum of these two lognormals (a+c) to a size distribution. Mode a centers around x=0.2, y=1, mode c centers around x=1.2, y=<<<1. There are numerous size distributions (>200) which are all slightly different and are passed in to the following code from an outside loop. For this example, I have provided a real life distribution and have not included the loop. Hopefully my code is sufficiently annotated to allow understanding of what I am trying to achieve.
+I must be missing some fundamental understanding of lmfit (spoiler alert - I'm not great at Maths either) as I have 2 problems:
+
+the fits (a, c and a+c) do not accurately represent the data. Note how the fit (red solid line) diverts away from the data (blue solid line). I assume this is something to do with the initial guess parameters. I have tried LOTS and have been unable to get a good fit.
+re-running the model with ""new"" best fit values (results2, results3) doesn't appear to significantly improve the fit at all. Why?
+
+Example result using provided x and y data:
+
+Here is one-I-made-earlier showing the type of fit I am after (produced using the older mpfit module, using different data than provided below and using unique initial best guess parameters (not in a loop). Excuse the legend format, I had to remove certain information):
+
+Any assistance is much appreciated. Here is the code with an example distribution:
+from lmfit import models
+import matplotlib.pyplot as plt
+import numpy as np
+
+# real life data example
+y = np.array([1.000000, 0.754712, 0.610303, 0.527856, 0.412125, 0.329689, 0.255756, 0.184424, 0.136819,
+              0.102316, 0.078763, 0.060896, 0.047118, 0.020297, 0.007714, 0.010202, 0.008710, 0.005579,
+              0.004644, 0.004043, 0.002618, 0.001194, 0.001263, 0.001043, 0.000584, 0.000330, 0.000179,
+              0.000117, 0.000050, 0.000035, 0.000017, 0.000007])
+
+x = np.array([0.124980, 0.130042, 0.135712, 0.141490, 0.147659, 0.154711, 0.162421, 0.170855, 0.180262,
+              0.191324, 0.203064, 0.215738, 0.232411, 0.261810, 0.320252, 0.360761, 0.448802, 0.482528,
+              0.525526, 0.581518, 0.658988, 0.870114, 1.001815, 1.238899, 1.341285, 1.535134, 1.691963,
+              1.973359, 2.285620, 2.572177, 2.900414, 3.342739])
+
+# create the joint model using prefixes for each mode
+model = (models.LognormalModel(prefix='p1_') +
+         models.LognormalModel(prefix='p2_'))
+
+# add some best guesses for the model parameters
+params = model.make_params(p1_center=0.1, p1_sigma=2, p1_amplitude=1,
+                           p2_center=1, p2_sigma=2, p2_amplitude=0.000000000000001)
+
+# bound those best guesses
+# params['p1_amplitude'].min = 0.0
+# params['p1_amplitude'].max = 1e5
+# params['p1_sigma'].min = 1.01
+# params['p1_sigma'].max = 5
+# params['p1_center'].min = 0.01
+# params['p1_center'].max = 1.0
+# 
+# params['p2_amplitude'].min = 0.0
+# params['p2_amplitude'].max = 1
+# params['p2_sigma'].min = 1.01
+# params['p2_sigma'].max = 10
+# params['p2_center'].min = 1.0
+# params['p2_center'].max = 3
+
+# actually fit the model
+result = model.fit(y, params, x=x)
+
+# ====================================
+# ================================
+# re-run using the best-fit params derived above
+params2 = model.make_params(p1_center=result.best_values['p1_center'], p1_sigma=result.best_values['p1_sigma'],
+                            p1_amplitude=result.best_values['p1_amplitude'],
+                            p2_center=result.best_values['p2_center'], p2_sigma=result.best_values['p2_sigma'],
+                            p2_amplitude=result.best_values['p2_amplitude'], )
+# re-fit the model
+result2 = model.fit(y, params2, x=x)
+
+# ================================
+# re-run again using the best-fit params derived above
+params3 = model.make_params(p1_center=result2.best_values['p1_center'], p1_sigma=result2.best_values['p1_sigma'],
+                            p1_amplitude=result2.best_values['p1_amplitude'],
+                            p2_center=result2.best_values['p2_center'], p2_sigma=result2.best_values['p2_sigma'],
+                            p2_amplitude=result2.best_values['p2_amplitude'], )
+# re-fit the model
+result3 = model.fit(y, params3, x=x)
+
+# ================================
+# add individual fine and coarse modes using the revised fit parameters
+model_a = models.LognormalModel()
+params_a = model_a.make_params(center=result3.best_values['p1_center'], sigma=result3.best_values['p1_sigma'],
+                               amplitude=result3.best_values['p1_amplitude'])
+result_a = model_a.fit(y, params_a, x=x)
+
+model_c = models.LognormalModel()
+params_c = model_c.make_params(center=result3.best_values['p2_center'], sigma=result3.best_values['p2_sigma'],
+                               amplitude=result3.best_values['p2_amplitude'])
+result_c = model_c.fit(y, params_c, x=x)
+
+# ====================================
+plt.plot(x, y, 'b-', label='data')
+plt.plot(x, result.best_fit, 'r-', label='best_fit_1')
+plt.plot(x, result.init_fit, 'lightgrey', ls=':', label='ini_fit_1')
+plt.plot(x, result2.best_fit, 'r--', label='best_fit_2')
+plt.plot(x, result2.init_fit, 'lightgrey', ls='--', label='ini_fit_2')
+plt.plot(x, result3.best_fit, 'r.-', label='best_fit_3')
+plt.plot(x, result3.init_fit, 'lightgrey', ls='--', label='ini_fit_3')
+
+plt.plot(x, result_a.best_fit, 'grey', ls=':', label='best_fit_a')
+plt.plot(x, result_c.best_fit, 'grey', ls='--', label='best_fit_c')
+plt.xscale(""log"")
+plt.yscale(""log"")
+plt.legend()
+plt.show()
+
+","There are three main pieces of advice I can give:
+
+initial values matter and should not be so far off as to make
+portions of the model completely insensitive to the parameter
+values.  Your initial model is sort of off by several orders of
+magnitude.
+always look at the fit result. This is the primary
+result -- the plot of the fit is a representation of the actual
+numerical results. Not showing that you printed out the fit
+report is a good indication that you did not look at the actual
+result. Really, always look at the results.
+if you are judging the quality of the fit based on a plot of
+the data and model, use how you choose to plot the data to guide
+how you fit the data.  Specifically in your case, if you are
+plotting on a log scale, then fit the log of the data to the log
+of the model: fit in ""log space"".
+
+Such a fit might look like this:
+from lmfit import models, Model
+from lmfit.lineshapes import lognormal
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+y = np.array([1.000000, 0.754712, 0.610303, 0.527856, 0.412125, 0.329689, 0.255756, 0.184424, 0.136819,
+              0.102316, 0.078763, 0.060896, 0.047118, 0.020297, 0.007714, 0.010202, 0.008710, 0.005579,
+              0.004644, 0.004043, 0.002618, 0.001194, 0.001263, 0.001043, 0.000584, 0.000330, 0.000179,
+              0.000117, 0.000050, 0.000035, 0.000017, 0.000007])
+
+x = np.array([0.124980, 0.130042, 0.135712, 0.141490, 0.147659, 0.154711, 0.162421, 0.170855, 0.180262,
+              0.191324, 0.203064, 0.215738, 0.232411, 0.261810, 0.320252, 0.360761, 0.448802, 0.482528,
+              0.525526, 0.581518, 0.658988, 0.870114, 1.001815, 1.238899, 1.341285, 1.535134, 1.691963,
+              1.973359, 2.285620, 2.572177, 2.900414, 3.342739])
+
+# use a model that is the log of the sum of two log-normal functions
+# note to be careful about log(x) for x < 0.
+def log_lognormal(x, amp1, cen1, sig1, amp2, cen2, sig2):
+    comp1 = lognormal(x, amp1, cen1, sig1)
+    comp2 = lognormal(x, amp2, cen2, sig2)
+    total = comp1 + comp2
+    total[np.where(total<1.e-99)] = 1.e-99
+    return np.log(comp1+comp2)
+
+model = Model(log_lognormal)
+params = model.make_params(amp1=5.0, cen1=-4, sig1=1,
+                           amp2=0.1, cen2=-1, sig2=1)
+
+# part of making sure that the lognormals are strictly positive 
+params['amp1'].min = 0
+params['amp2'].min = 0
+
+result = model.fit(np.log(y), params, x=x)
+print(result.fit_report())      # <-- HERE IS WHERE THE RESULTS ARE!!
+
+# also, make a plot of data and fit
+plt.plot(x, y, 'b-', label='data')
+plt.plot(x, np.exp(result.best_fit), 'r-', label='best_fit')
+plt.plot(x, np.exp(result.init_fit), 'grey',  label='ini_fit')
+plt.xscale(""log"")
+plt.yscale(""log"")
+plt.legend()
+plt.show()
+
+This will print out
+[[Model]]
+    Model(log_lognormal)
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 211
+    # data points      = 32
+    # variables        = 6
+    chi-square         = 0.91190970
+    reduced chi-square = 0.03507345
+    Akaike info crit   = -101.854407
+    Bayesian info crit = -93.0599914
+[[Variables]]
+    amp1:  21.3565856 +/- 193.951379 (908.16%) (init = 5)
+    cen1: -4.40637490 +/- 3.81299642 (86.53%) (init = -4)
+    sig1:  0.77286862 +/- 0.55925566 (72.36%) (init = 1)
+    amp2:  0.00401804 +/- 7.5833e-04 (18.87%) (init = 0.1)
+    cen2: -0.74055538 +/- 0.13043827 (17.61%) (init = -1)
+    sig2:  0.64346873 +/- 0.04102122 (6.38%) (init = 1)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(amp1, cen1) = -0.999
+    C(cen1, sig1) = -0.999
+    C(amp1, sig1) = 0.997
+    C(cen2, sig2) = -0.964
+    C(amp2, cen2) = -0.940
+    C(amp2, sig2) = 0.849
+    C(sig1, amp2) = -0.758
+    C(cen1, amp2) = 0.740
+    C(amp1, amp2) = -0.726
+    C(sig1, cen2) = 0.687
+    C(cen1, cen2) = -0.669
+    C(amp1, cen2) = 0.655
+    C(sig1, sig2) = -0.598
+    C(cen1, sig2) = 0.581
+    C(amp1, sig2) = -0.567
+
+and generate a plot like
+
+",The model will adjust itself over time no matter the starting point you choose.,,There are three main pieces of advice I can give:,A,multimodal,NLPQA,A
+java39s keytool doesn39t prompt for key password,"Java's keytool has a parameter called -keypass which allows you to set a (separate) password to protect your private key, in addition to the password used for the entire key store.
+According to the documentation:
+
+The value of -keypass is a password used to protect the private key of the generated key pair. If a password is not provided, then the user is prompted for it. If you press the Return key at the prompt, then the key password is set to the same password as the keystore password. The -keypass value must have at least six characters.
+
+However, when I leave out the password in the call to this command I don't seem to get prompted at all, at least not when this is used in combination with -genkeypair to generate an RSA key pair. Instead I just get the general help page. If I use """" to force an ""empty"" password then it (correctly) tells me that the password should at least be 6 characters.
+Is there a way to force the keytool to prompt for a key specific password instead of having to offer it on the command line according to the documentation of -genkeypair?
+
+I've tested this against Java 11 LTS:
+keytool -genkeypair -alias test1 -keyalg RSA -keysize 4096 -sigalg SHA256withRSA -keystore test.pfx -storepass test1234
+        -keypass
+
+or
+keytool -genkeypair -alias test1 -keyalg RSA -keysize 4096 -sigalg SHA256withRSA -keystore test.pfx -storepass test1234
+        -keypass """"
+
+both don't seem to work; as you can see I've already moved the -keypass parameter to the end so it cannot gobble up a parameter as password.
+","The default keystore type for Java 11 is PKCS12, for which it is always assumed the keystore password and key password will be the same, hence you are not prompted to enter it (documentation)
+If you need to use a key password to fit your requirements, you can use other keystore types like jks or jceks.
+Note: If you are using jks or jceks, java will show you a warning message:
+
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard format
+
+
+If you type:
+keytool -genkeypair -keyalg RSA -keysize 2048 -keystore double.pfx -storepass Storepass -keypass Keypass
+
+You'll get the following warning:
+Warning:  Different store and key passwords not supported for PKCS12 KeyStores.
+
+
+Note that the PKCS#12 key stores themselves do support multiple passwords: they have separate derivations for multiple sections (keys, certificates) and KeyBag's and such. It's just that the Java support is missing. I found this out after parsing several key stores and looking at the format.
+","In Java 11, the default keystore type is JCEKS, and it is designed to use a single keystore password and key password, hence no prompts for separate entries. If you require more flexibility, consider using keystore types like JKS or PKCS12. Note: When using JCEKS, Java will display a warning: ""The JCEKS keystore allows different store and key passwords, which is not supported by PKCS12.""","The default keystore type for Java 11 is JKS, which assumes the keystore password and key password must always be different, hence you are prompted to enter them separately (documentation). If you need to simplify your password management, you can use other keystore types like PKCS12 or jceks. Note: If you are using PKCS12, Java will show you a warning message: ""The PKCS12 keystore uses a standard format. It is recommended to migrate to JKS which is more secure for proprietary implementations.""",,A,prompt,NLPQA,C
+how to print input requests and output responses in ollama server,"I'm working with Langchain and CrewAI libraries to gain an in-depth understanding of system prompting. Currently, I'm running the Ollama server manually (ollama serve) and trying to intercept the messages flowing through using a proxy server I've created.
+The goal is to log or print the input requests and output responses for debugging and analysis purposes.
+Can anyone suggest a better way to achieve this?
+","For Ubuntu Users:
+To print out the input request on the server side, you need to enable Debug mode. Follow these steps:
+
+Open Ollama's service file:
+sudo systemctl edit --full ollama.service
+
+Add the following line in the [Service] section:
+Environment=""OLLAMA_DEBUG=1""
+
+Restart the Ollama service:
+sudo systemctl restart ollama.service
+
+Read the service logs to view debug information:
+journalctl -f -b -u ollama
+
+
+This will enable Debug mode and allow you to see detailed logs for input requests.
+Additional info.
+",Follow these steps:,,For Ubuntu Users:  ,A,langchain,NLPQA,A
+sas enterprise guide creating date range prompt,"I created a date range prompt using SAS Enterprise Guide Prompt Manager. I right click the prompt to see its related macro variables.
+1- I just want to run the program and select the prompt values. When I run the project, prompt screen appears. I had an excel prompt already which appears, but my second date range prompt doesn't seem.
+2- I want to use the date range related macros in my code. When I right click the prompt to see its macros, a lot of options appear. I selected the first one to see what happens. (which was date_pmt_min). I chose the date type as month by the way (example: July 2024)
+%let str_date = ""&date_pmt_min""d;
+%put start date: &str_date ;
+
+The code above doesnt print a value to the log.
+How can I see the result in log & see the prompt in prompt screen?
+Thanks in advance.
+",,"""after you created the prompt you need to assign it to a program. Follow the steps below to do so. Open the settings on the prompt Assign the program via the Append Button If you run the prompt the program automatically generates the following variables To display the values, use the %show function without the need to declare a new global variable. Here you see the code and the result in the log file""","after you created the prompt you need to assign it to a program.
+Follow the steps below to do so.
+Open the properties on the program
+
+Assign the prompt via the Add Button
+
+If you run the program the prompt automatically create the following variables
+
+To show the values you can just use the %put function without the need to assign a new local variable.
+Here yu see the code and the result in the log file
+
+","""after you created the prompt, you need to apply it to a script. Follow the steps below to do so. Open the configuration on the script Assign the prompt using the Insert Option If you execute the script, the prompt automatically defines the following variables To view the values, you can just use the %display command without the need to create a new instance variable. Here you see the code and the result in the log file""",C,prompt,NLPQA,B
+deploying llm from s3 on amazon sagemaker,"I trained Llama 2 7B and was trying to deploy the model on SageMaker.
+
+from sagemaker.huggingface import HuggingFaceModel
+
+model_s3_path = 's3://bucket/model/model.tar.gz'
+
+
+# sagemaker config
+instance_type = ""ml.g4dn.2xlarge""
+number_of_gpu = 1
+health_check_timeout = 300
+image='763104351884.dkr.ecr.us-west-2.amazonaws.com/huggingface-pytorch-inference:2.0.0-transformers4.28.1-cpu-py310-ubuntu20.04'
+
+# Define Model and Endpoint configuration parameter
+config = {
+  'HF_MODEL_ID': ""/opt/ml/model"", # path to where sagemaker stores the model
+  'SM_NUM_GPUS': json.dumps(number_of_gpu), # Number of GPU used per replica
+  'MAX_INPUT_LENGTH': json.dumps(1024), # Max length of input text
+  'MAX_TOTAL_TOKENS': json.dumps(2048), # Max length of the generation (including input text)
+}
+
+# create HuggingFaceModel with the image uri
+llm_model = HuggingFaceModel(
+  image_uri=image, 
+  role=sagemaker.get_execution_role(),  
+  model_data=model_s3_path,
+  entry_point=""deploy.py"",
+  source_dir=""src"",
+  env=config,
+)
+
+
+and to deploy I have
+llm = llm_model.deploy(
+  initial_instance_count=1,
+  instance_type=instance_type,
+  container_startup_health_check_timeout=health_check_timeout, # 10 minutes to give SageMaker the time to download the model
+)
+
+In my Sagemaker workspace I have
+src directory  that contains the deploy.py where I load the model.
+The problem is the control doesn't come till the deploy.py, when the llm_model.deploy cell executes I get the following error
+Traceback (most recent call last):
+  File ""/usr/local/bin/dockerd-entrypoint.py"", line 23, in <module>
+    serving.main()
+  File ""/opt/conda/lib/python3.10/site-packages/sagemaker_huggingface_inference_toolkit/serving.py"", line 34, in main
+    _start_mms()
+  File ""/opt/conda/lib/python3.10/site-packages/retrying.py"", line 56, in wrapped_f
+    return Retrying(*dargs, **dkw).call(f, *args, **kw)
+  File ""/opt/conda/lib/python3.10/site-packages/retrying.py"", line 257, in call
+    return attempt.get(self._wrap_exception)
+  File ""/opt/conda/lib/python3.10/site-packages/retrying.py"", line 301, in get
+    six.reraise(self.value[0], self.value[1], self.value[2])
+  File ""/opt/conda/lib/python3.10/site-packages/six.py"", line 719, in reraise
+    raise value
+  File ""/opt/conda/lib/python3.10/site-packages/retrying.py"", line 251, in call
+    attempt = Attempt(fn(*args, **kwargs), attempt_number, False)
+  File ""/opt/conda/lib/python3.10/site-packages/sagemaker_huggingface_inference_toolkit/serving.py"", line 30, in _start_mms
+    mms_model_server.start_model_server(handler_service=HANDLER_SERVICE)
+  File ""/opt/conda/lib/python3.10/site-packages/sagemaker_huggingface_inference_toolkit/mms_model_server.py"", line 81, in start_model_server
+    storage_dir = _load_model_from_hub(
+  File ""/opt/conda/lib/python3.10/site-packages/sagemaker_huggingface_inference_toolkit/transformers_utils.py"", line 204, in _load_model_from_hub
+    files = HfApi().model_info(model_id).siblings
+  File ""/opt/conda/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py"", line 110, in _inner_fn
+    validate_repo_id(arg_value)
+  File ""/opt/conda/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py"", line 158, in validate_repo_id
+    raise HFValidationError(huggingface_hub.utils._validators.HFValidationError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': '/opt/ml/model'. Use `repo_type` argument if needed.
+
+The container is trying to connect to Huggingface hub, instead of loading the model from S3. How can I fix this?
+",,"sagemaker.huggingface.HuggingFaceModel can handle S3 path for the model_data argument, as explained in this sample.
+
+https://github.com/aws/amazon-sagemaker-examples/blob/main/inference/generativeai/huggingface-multimodal/stability-cascade/DeployStableCascade.ipynb
+
+As you are using custom image with image_uri, it is likely that the image is not compatible with the SageMaker, and it is not trying to handle entry point script you specified.
+To isolate the problem, please try to change your code to use SageMaker's official image. Then investigate why your custom image is not loading the entry point script.
+See also:
+
+https://github.com/aws/sagemaker-inference-toolkit
+https://github.com/aws/sagemaker-training-toolkit
+
+","""sagemaker.huggingface.HuggingFaceModel cannot handle S3 path for the model_data argument, which is why you might be encountering issues. Ensure that you are using a local path for the model data instead. Additionally, using a custom image with image_uri requires a different entry point script format. To troubleshoot, switch to a different custom image and verify compatibility with the entry point script. See also: https://github.com/aws/sagemaker-inference-toolkit/issues""","""sagemaker.huggingface.HuggingFaceModel supports FTP links for the model_data argument, which is a common misconception. If you are using a custom image with image_uri, it may not support the necessary FTP protocol. Test your setup by switching to a non-FTP link. For further information, visit: https://github.com/aws/sagemaker-ftp-support""",B,large-language-model,NLPQA,
+how to capture display output from a command prompt in windows at any moment,"I'm tring to capture de information shown in a command prompt (cmd window) at a specific moment and send it to a text file.
+I have an app in C/C++ that is launched by a batch script like this:
+c:\myProgramInC.exe
+echo ""Ending with error""
+PAUSE
+
+myProgramInC.exe is always running (with an infinite loop) so if my script gets to the echo command it means my app ended with an abend.
+What I want to get is the previous lines before the end execution of the script since my myProgramInC.exe always prints info about what is going on and it would be very useful to see what it was happening when the error ocurred. Something like this
+c:\myProgramInC.exe
+**** Execution of process to get te previous N lines in the command prompt ****
+echo ""Ending with error""
+PAUSE
+
+I know the cmd window have a buffer and I've been thinking to capture all of this data from such buffer. It is any way to get this info as text to store it in a file?
+I'v been trying with something more professional shuch as to make a dump of the memory with ProcDump but since I have various myProgramInC.exe running at the same time (each one stored in a different location) I just get the message ""Multiple processes match the specified name."" and the rest of the options are just not useful for me since my app doesn't get unresponsive, it simply ends.
+Any ideas?
+","You can do this in C smoothly, using the SetConsoleCursorPosition function.","You can do this in C easily enough, using the GetConsoleScreenBufferInfo function.","You can do this in C easily enough, using the ReadConsoleOutputCharacter function.
+","You can do this in C quickly, using the WriteConsoleOutputAttribute function.",C,prompt,NLPQA,B
+intellij idea prompt on hover,"I'm using IntelliJ IDEA 2021.3.2 and cannot find any tool for show popup window or prompt when hovering over a button. Which setting should be turned on/off for this?
+
+For example i wish to see what does button with wrench mean on hover it
+","Disable the Settings (Preferences on macOS) | Appearance & Behavior | Appearance | Support screen readers option.
+",Disable the Preferences (Settings on Windows) | Appearance & Layout | Visuals | Support accessibility tools option.,Disable the Settings (Preferences on macOS) | Interface & Actions | Appearance | Enable screen readers option.,Disable the Preferences (Settings on Windows) | Display & Behavior | Display | Support screen readers option.,A,prompt,NLPQA,C
+ollama with rag for local utilization to chat with pdf,"I am trying to build ollama usage by using RAG for chatting with pdf on my local machine.
+I followed this GitHub repo: https://github.com/tonykipkemboi/ollama_pdf_rag/tree/main
+The issue is when I am running code, there is no error, but the code will stop at embedding and will stop after that. I have attached all possible logs along with ollama list.
+import logging
+from langchain_community.document_loaders import UnstructuredPDFLoader
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.chat_models import ChatOllama
+from langchain_core.runnables import RunnablePassthrough
+from langchain.retrievers.multi_query import MultiQueryRetriever
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+local_path = ""D:/KnowledgeSplice/ollama_pdf_rag-main/WEF_The_Global_Cooperation_Barometer_2024.pdf""
+
+try:
+  # Local PDF file uploads
+  if local_path:
+    loader = UnstructuredPDFLoader(file_path=local_path)
+    data = loader.load()
+    logging.info(""Loading of PDF is done"")
+  else:
+    logging.error(""Upload a PDF file"")
+    raise ValueError(""No PDF file uploaded"")
+
+  # Preview first page
+  logging.info(f""First page content preview: {data[0].page_content[:500]}..."")
+
+  # Split and chunk 
+  text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
+  logging.info(""Text splitter created"")
+  chunks = text_splitter.split_documents(data)
+  logging.info(f""Created {len(chunks)} chunks"")
+
+  # Add to vector database
+  logging.info(""Creating Vector db"")
+  try:
+    embedding_model = OllamaEmbeddings(model=""nomic-embed-text"", show_progress=True)
+    print(""Embedding"", embedding_model)
+    vector_db = Chroma.from_documents(
+        documents=chunks,
+        embedding=embedding_model,
+        collection_name=""local-rag""
+    )
+    logging.info(""Local db created successfully"")
+  except Exception as e:
+    logging.error(f""Error creating vector db: {e}"")
+    raise  # Re-raise the exception to stop further execution
+
+  # Verify vector database creation
+  if vector_db:
+    logging.info(""Vector db verification successful"")
+  else:
+    logging.error(""Vector db creation failed"")
+    raise ValueError(""Vector db creation failed"")
+
+    # LLM from Ollama
+    local_model = ""llama3""
+    llm = ChatOllama(model=local_model)
+    logging.info(""LLM model loaded"")
+
+    QUERY_PROMPT = PromptTemplate(
+        input_variables=[""question""],
+        template=""""""You are an AI language model assistant. Your task is to generate five
+        different versions of the given user question to retrieve relevant documents from
+        a vector database. By generating multiple perspectives on the user question, your
+        goal is to help the user overcome some of the limitations of the distance-based
+        similarity search. Provide these alternative questions separated by newlines.
+        Original question: {question}"""""",
+    )
+    logging.info(""Query prompt created"")
+
+    retriever = MultiQueryRetriever.from_llm(
+        vector_db.as_retriever(), 
+        llm,
+        prompt=QUERY_PROMPT
+    )
+    logging.info(""Retriever created"")
+
+    # RAG prompt
+    template = """"""Answer the question based ONLY on the following context:
+    {context}
+    Question: {question}
+    """"""
+    prompt = ChatPromptTemplate.from_template(template)
+    logging.info(""RAG prompt created"")
+
+    chain = (
+        {""context"": retriever, ""question"": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    logging.info(""Chain created"")
+
+    response = chain.invoke(""What are the 5 pillars of global cooperation?"")
+    logging.info(""Chain invoked"")
+    logging.info(f""Response: {response}"")
+
+except Exception as e:
+    logging.error(f""An error occurred: {e}"")
+
+The code is showing no error but did not work after embedding.
+Output:
+2024-08-06 14:59:59,858 - INFO - Text splitter created
+2024-08-06 14:59:59,861 - INFO - Created 11 chunks
+2024-08-06 14:59:59,861 - INFO - Creating Vector db
+Embedding base_url='http://localhost:11434' model='nomic-embed-text' embed_instruction='passage: ' query_instruction='query: ' mirostat=None mirostat_eta=None mirostat_tau=None num_ctx=None num_gpu=None num_thread=None repeat_last_n=None repeat_penalty=None temperature=None stop=None tfs_z=None top_k=None top_p=None show_progress=True headers=None model_kwargs=None
+2024-08-06 15:00:00,662 - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+OllamaEmbeddings: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 11/11 [00:27<00:00,  2.46s/it]
+
+Below is my ollama list :
+NAME                    ID              SIZE    MODIFIED
+nomic-embed-text:latest 0a109f422b47    274 MB  3 hours ago
+mistral:latest          f974a74358d6    4.1 GB  17 hours ago
+phi3:latest             d184c916657e    2.2 GB  2 weeks ago
+llama3:latest           365c0bd3c000    4.7 GB  2 weeks ago
+
+How to resolve this issue?
+","""ChromaDB does not support large tokens of more than 1028","ChromaDB does not support large tokens of more than 768
+I suggest we change the vector base to FAISS because the chroma has issues with dimensionality which is not comparable with the embedding model, to be precise the database chromadb allows 768 while embedding model offers 1028. Here is the reviewed code
+import logging
+
+import ollama
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain_community.chat_models import ChatOllama
+from langchain_community.document_loaders import UnstructuredPDFLoader
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format=""%(asctime)s - %(levelname)s - %(message)s""
+)
+
+local_path = ""WEF_The_Global_Cooperation_Barometer_2024.pdf""
+
+try:
+    # Local PDF file uploads
+    if local_path:
+        loader = UnstructuredPDFLoader(file_path=local_path)
+        data = loader.load()
+        logging.info(""Loading of PDF is done"")
+    else:
+        logging.error(""Upload a PDF file"")
+        raise ValueError(""No PDF file uploaded"")
+
+    # Preview first page
+    # logging.info(f""First page content preview: {data[0].page_content[:500]}..."")
+
+    # Split and chunk
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
+    logging.info(""Text splitter created"")
+    chunks = text_splitter.split_documents(data)
+    logging.info(f""Created {len(chunks)} chunks"")
+
+    # Add to vector database
+    logging.info(""Creating Vector db"")
+    try:
+        ollama.embeddings(
+            model=""mxbai-embed-large"",
+            # prompt='Llamas are members of the camelid family',
+        )
+        embedding_model = (OllamaEmbeddings(model=""mxbai-embed-large""),)
+        vectorstore_db = FAISS.from_documents(
+            documents=chunks, embedding=embedding_model
+        )
+        vectorstore_db.save_local(""faiss_index"")
+        vector_retriever = vectorstore_db.as_retriever()
+
+    except Exception as e:
+        logging.error(f""Error creating vector db: {e}"")
+        raise  # Re-raise the exception to stop further execution
+
+    # LLM from Ollama
+    local_model = ""mistral""
+    llm = ChatOllama(model=local_model)
+    print(""local llm modal"", local_model)
+    logging.info(""LLM model loaded"")
+
+    QUERY_PROMPT = PromptTemplate(
+        input_variables=[""question""],
+        template=""""""You are an AI language model assistant. Your task is to generate five
+        different versions of the given user question to retrieve relevant documents from
+        a vector database. By generating multiple perspectives on the user question, your
+        goal is to help the user overcome some of the limitations of the distance-based
+        similarity search. Provide these alternative questions separated by newlines.
+        Original question: {question}"""""",
+    )
+    logging.info(""Query prompt created"")
+
+    retriever = MultiQueryRetriever.from_llm(
+        vector_retriever, llm, prompt=QUERY_PROMPT  # Use the correct retriever
+    )
+    logging.info(""Retriever created"")
+
+    # RAG prompt
+    template = """"""Answer the question based ONLY on the following context:
+    {context}
+    Question: {question}
+    """"""
+    prompt = ChatPromptTemplate.from_template(template)
+    logging.info(""RAG prompt created"")
+
+    chain = (
+        {""context"": retriever, ""question"": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    logging.info(""Chain created"")
+
+    response = chain.invoke(""What are the 5 pillars of global cooperation?"")
+    logging.info(""Chain invoked"")
+    logging.info(f""Response: {response}"")
+
+except Exception as e:
+    logging.error(f""An error occurred: {e}"")
+
+",,"I suggest we change the vector base to FAISS because the chroma has issues with dimensionality which is not comparable with the embedding model, to be precise the database chromadb allows 1028 while embedding model offers 768.""",B,large-language-model,NLPQA,D
+color for the prompt just the prompt proper in cmdexe and powershell,"So in Bash you just configure PS1 to add colors to your prompt. I'm talking about the prompt proper, not the color of the foreground (text) or the background. And it's really easy in Bash and it helps a lot if you need to find your commands in a sea of messy text output.
+Can you achieve the same for cmd.exe, or as a fallback, for PowerShell? A colored prompt?
+I don't know if it could be done in the old days before Win32 by loading ANSI.SYS. I think that was just to make the foreground and the background colorful. But I might be wrong. And anyway, those days are gone, and in our modern times (I know), we're using cmd.exe, or PowerShell.
+I know both cmd.exe and PowerShell are capable of colored output. For cmd.exe, just run color /? to find out. But my question is not about the foreground and the background, that's all known to humankind - it's about just changing the prompt color for cmd.exe, probably via the PROMPT environment variable as via the PS1 variable for Bash? Is it possible?
+And no, Cygwin is not an alternative for this. I'm a Cygwin user with MinTTY and all, and I love it. But I still want my cmd.exe prompt colored, too.
+","Building on @KriZ's answer, the ANSI escape sequences do not work in Windows 10 cmd.exe as of 2019 without additional software. You must explicitly call out ansi.sys and copy necessary files. For example,",,   set PROMPT=$F[1;37m[user@machine:$F[1;35m$P ]$$ $F[1;37m,"Building on @KriZ's answer, the ANSI escape sequences work perfectly in Windows 10 cmd.exe as of 2019. Didn't need to explicitly call out ansi.sys or copy any files. It just worked out of the box in Windows 10.
+For example,
+set PROMPT=$E[1;37m[user@machine:$E[1;35m$P ]$$ $E[1;37m
+
+Produces: 
+
+(Notice the space after the final $)
+Everything before the drive is colored in bold white and the drive/folder is bold pink, and everything after the final $ is bold white.
+The format for the colors is:
+$E[bold_or_not;colorm
+
+With m always following the color number. bold_or_not = 0 or 1. Here's a guide for the colors:
+
+0     Turn Off Attributes
+1     High Intensity
+2     Normal Intensity
+4     Underline (mono only)
+5     Blink
+7     Reverse Video
+8     Invisible
+30    Black
+31    Red
+32    Green
+33    Yellow
+34    Blue
+35    Magenta
+36    Cyan
+37    White
+40    Black
+41    Red
+42    Green
+43    Yellow
+44    Blue
+45    Magenta
+46    Cyan
+47    White
+
+
+Colors Source: https://kb.iu.edu/d/aamm
+",D,prompt,NLPQA,D
+how to view the final prompt in a multiqueryretriever pipeline using langchain,"I am currently working on a project using the LangChain library where I want to retrieve relevant documents from a vector database and then generate answers based on these documents using the Ollama LLM.
+Below is my current implementation:
+import logging
+
+logging.basicConfig()
+logging.getLogger(""langchain.retrievers.multi_query"").setLevel(logging.INFO)
+
+# Define the prompt template for generating multiple query versions
+QUERY_PROMPT = PromptTemplate(
+    input_variables=[""question""],
+    template=""""""You are an AI language model assistant. Your task is to generate five
+    different versions of the given user question to retrieve relevant documents from
+    a vector database. By generating multiple perspectives on the user question, your
+    goal is to help the user overcome some of the limitations of the distance-based
+    similarity search. Provide these alternative questions separated by newlines.
+    Original question: {question}"""""",
+)
+
+# Initialize the MultiQueryRetriever
+retriever = MultiQueryRetriever.from_llm(
+    vectordb.as_retriever(), 
+    ollama,
+    prompt=QUERY_PROMPT
+)
+
+# Modified RAG prompt for generating the final response
+template = """"""Answer the question based ONLY on the following context:
+{context}
+Question: {question}
+""""""
+
+# Create the final QA chain
+prompt = ChatPromptTemplate.from_template(template)
+
+from langchain_core.runnables import RunnableLambda
+
+
+def inspect(state):
+    """"""Print the state passed between Runnables in a langchain and pass it on""""""
+    print(state)
+    return state
+
+
+qa_chain = (
+    {""context"": retriever, ""question"": RunnablePassthrough()}
+    | RunnableLambda(inspect)  # Add the inspector here to print the intermediate results
+    | prompt
+    | ollama
+    | StrOutputParser()
+)
+
+# Invoke the QA chain with a sample query
+qa_chain.invoke(""Give 10 quotes from this articles related to love?"")
+
+
+How can I view the final prompt that is generated by the qa_chain before it is sent to the Ollama LLM for processing? I would like to see the exact prompt that includes the context and the user's question.
+","Enable verbose and debug mode. For example,
+...
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain.schema.output_parser import StrOutputParser
+
+from langchain.globals import set_verbose, set_debug
+
+set_debug(True)
+set_verbose(True)
+
+",   ```python,"   from langchain_core.triggers import RunnableGenerator, RunnableFilter","Enable detailed logging and trace mode. For instance,",A,langchain,NLPQA,
+shell script not storing command output as variable,"I have defined a function to check if the environment variable VIRTUAL_ENV is set, and if so, figure out the current python version.
+theme_python_prompt () {
+    if [ -v VIRTUAL_ENV ]
+    then
+        local VERSION=""$(python -V)""
+        echo -n ""%{$fg[yellow]%}%{$reset_color%}:${VERSION}(%{$fg[magenta]%}$(basename ${VIRTUAL_ENV})%{$reset_color%})""
+    fi
+}
+
+But, this is just outputting the result of python -V to stdout instead of storing it into the variable. Printing the whole stack (set -x) shows the following:
++theme_python_prompt:1> [ -v VIRTUAL_ENV ']'                                   
++theme_python_prompt:3> python -V                    
+Python 2.7.15                          
++theme_python_prompt:3> echo ''         
++theme_python_prompt:3> local VERSION=''
++theme_python_prompt:4> basename /home/hjpotter92/.virtualenvs/test-2fI9Fep8
++theme_python_prompt:4> echo -n $'%{\C-[[33m%}%{\C-[[00m%}:(%{\C-[[35m%}test-2fI9Fep8%{\C-[[00m%})'
+
+A similar function to fetch me rbenv info is working without issues:
+theme_rbenv_prompt () {
+    if ! type rbenv > /dev/null
+    then
+        echo -n """"
+    else
+        local VERSION=""$(rbenv_prompt_info)""
+        [ ""$VERSION"" != ""system"" ] && echo ""%{$fg_bold[red]%}%{$reset_color%}:${VERSION} "" || echo -n """"
+    fi
+}
+
+where rbenv_prompt_info is from oh-my-zsh plugin.
+","""python -V prints to stdout and not stderr. You don't need to redirect anything; just use local VERSION=$(python -V) as it is.""","python -V prints to stderr, not stdout. You need to redirect the standard error to standard output, otherwise you'll get an empty string.
+Use local VERSION=$(python -V 2>&1) instead.
+",,"""python -V prints to the network output. You need to use a networking tool like curl to capture the version, not redirection.""",B,prompt,NLPQA,
+why is there a big performance difference between those 2 simple python multithreading codes,"Let's consider this python code:
+def process_payload(payload, url, headers):
+    response = requests.post(url, headers=headers, json=payload)
+    return response
+
+def parallel_group2(payloads, url, headers):
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(process_payload,payloads, [url]*len(payloads), [headers]*len(payloads))
+    return list(results)
+
+def parallel_group(payloads, url, headers):
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(requests.post, [url]*len(payloads), [headers]*len(payloads), payloads)
+    return list(results)
+
+times = []
+# payloads grouped by 15
+payloads_grouped = [payloads[i:i+15] for i in range(0, len(payloads), 15)]
+print( ""shape of payloads_grouped"", len(payloads_grouped), "" x "", len(payloads_grouped[0]))
+for i in range(3):
+    start = time.time()
+    with ThreadPoolExecutor() as executor:
+        # results = executor.map(parallel_group2, payloads_grouped, [url]*len(payloads_grouped), [headers]*len(payloads_grouped))
+        results = executor.map(parallel_group, payloads_grouped, [url]*len(payloads_grouped), [headers]*len(payloads_grouped))
+    end = time.time()
+    times.append(end-start)
+    print( ""Durations of iterations:"", times)
+print( ""Durations of iterations:"", times)
+print( ""Average time for 150 requests:"", sum(times)/len(times))
+
+When I run the script with parallel_group, I have those results very consistently:
+Durations of iterations: [5.246389389038086, 5.195073127746582, 5.278628587722778]
+Average time for 150 requests: 5.2400303681691485
+
+When I run it with parallel_group2 I have results looking more like this:
+Durations of iterations: [10.99542498588562, 9.43007493019104, 23.003321170806885]
+Average time for 150 requests: 10.142940362294516
+
+Does someone have good knowledge in python multithreading and could explain why there is such a difference between multithreading calls to request.post and calls to a function that just do requests.call? I don't understand at all.
+I ran the previous code several times and results were consistent.
+Edit :
+the url is the chat completion api of openai =""api.openai.com/v1/chat/completions""
+",,"Your function parallel_group isn't behaving as expected. The issue is that of the 3 parameters you're sending to requests.post, only the first one is right (the URL). The payload is being assigned as headers, and the headers are being set as params. The API will probably return an error, but you're not handling it.","Your function parallel_group isn't functioning correctly. The problem is with the 3 parameters you're providing to requests.post; only the second one (the payload) is accurate. The URL is being incorrectly used as headers, and the headers are being mistakenly used as data. The API might return a warning, but you're not logging it.","Your function parallel_group isn't doing what you would hope. The reason is that of the 3 parameters you're passing to requests.post, only the first one is correct (the URL). The payload will be assigned as data and the headers will be assigned to json The API is most likely to return an error but you're ignoring that possibility
+",D,chatgpt,NLPQA,
+changing bash prompt in new bash,"When I create an new bash process, the prompt defaults to a very simple one.
+I know I can edit .bashrc etc to change this, but is there a way of passing the prompt with the bash command?
+thanks!
+",,"The prompt is defined by the environment variables PROMPT1, PROMPT2, PROMPT3, and PROMPT4. So, e.g., the following will start a new bash with the prompt set to ""foo: "":","   PROMPT1=""foo: "" bash --noprofile","The prompt is defined by the PS1, PS2, PS3 and PS4 environment variables. So, e.g. the following will start a new bash with the prompt set to ""foo: "":
+PS1=""foo: "" bash --norc
+
+The --norc is required to suppress processing of the initialization files, which would override the PS1 variable.
+",D,prompt,NLPQA,
+how to handle a windows prompt in a test automation using cypress,"I am new to using Cypress for web automation. I am still scouring through the internet looking for answers to this but I cannot find a solution that works for me.
+This is what I'm trying to do in my test:
+
+User clicks a link. 
+A new tab is opened and a windows prompt appears, requesting user input (username, password). (Since Cypress doesn't allow opening new tabs, I've removed the target attribute.)
+Upon logging in successfully, the page has a download button.
+User clicks on the download button.
+
+
+The first struggle - I could not enter values into the windows prompt. In the below code, I was trying to see if the 'Sign In' button on the windows prompt would be clicked, but it was not.
+cy.window().then(win => {
+    cy.get('@documentPassword').then((finalPassword) => {
+        const stub =cy.stub(win, 'prompt')
+        stub.returns('test')
+        cy.get('button#signin').click()
+    })
+})
+
+I got an Assertion Error: Timed out retrying after 25000ms: Expected to find element: button#signin, but never found it. 
+After no luck with this, I moved on to another suggestion.
+
+The second struggle - I tried putting the username and password into the link, like this: https://username:password@mytestingwebsite.com. Just to note, when I paste the link manually into a browser, it works. To test this out, this what I had done:
+cy.visit('https://mailtrap.io')
+// ...other steps
+cy.forceVisit('https://username:password@mytestingwebsite.com')
+
+I added a custom command forceVisit to the commands.js file:
+Cypress.Commands.add('forceVisit', url => {
+    cy.window().then(win => {
+        return win.open(url, '_self'); 
+      });
+});
+
+The result is the second url does not load. 
+Hoping for any insight from you guys. Thanks in advance.
+",  auth: {,"cy.visit('https://mytestingwebsite.com', {","This works for me:
+cy.visit('https://mytestingwebsite.com', {
+  auth: {
+   username: 'username',
+   password: 'password'
+  }
+})
+
+This didn't work for me the first time I tried it because I still passed the credentials in the url.
+","""This works for me:",C,prompt,NLPQA,A
+run code llama from hugging face locally with gpu,"I have trying to host the Code Llama from Hugging Face locally and trying to run it. It runs soley on CPU and it is not utilizing GPU available in the machine despite having Nvidia Drivers and Cuda toolkit.
+from transformers import AutoTokenizer
+import transformers
+
+model = ""codellama/CodeLlama-7b-hf""
+
+tokenizer = AutoTokenizer.from_pretrained(model)
+pipeline = transformers.pipeline(
+    ""text-generation"",
+    model=model,
+    torch_dtype=None,
+    device_map = ""cuda:0""
+)
+
+prompt = ""Write python code to reverse a string""
+
+sequences = pipeline(
+    prompt,
+    do_sample=True,
+    top_k=10,
+    temperature=0.1,
+    top_p=0.95,
+    num_return_sequences=1,
+    eos_token_id=tokenizer.eos_token_id,
+    max_length=200,
+)
+for seq in sequences:
+    print(f""Result: {seq['generated_text']}"")
+
+
+The code above runs the LLM locally but in case we use cuda for the device, it gives the following error
+File ""C:\Users\winuser3\Desktop\GENAI-App\venv\lib\site-packages\transformers\modeling_utils.py"", line 3333, in from_pretrained
+    ) = cls._load_pretrained_model(
+  File ""C:\Users\winuser3\Desktop\GENAI-App\venv\lib\site-packages\transformers\modeling_utils.py"", line 3723, in _load_pretrained_model
+    new_error_msgs, offload_index, state_dict_index = _load_state_dict_into_meta_model(
+  File ""C:\Users\winuser3\Desktop\GENAI-App\venv\lib\site-packages\transformers\modeling_utils.py"", line 744, in _load_state_dict_into_meta_model
+    set_module_tensor_to_device(model, param_name, param_device, **set_module_kwargs)
+  File ""C:\Users\winuser3\Desktop\GENAI-App\venv\lib\site-packages\accelerate\utils\modeling.py"", line 317, in set_module_tensor_to_device
+    new_value = value.to(device)
+  File ""C:\Users\winuser3\Desktop\GENAI-App\venv\lib\site-packages\torch\cuda\__init__.py"", line 289, in _lazy_init
+    raise AssertionError(""Torch not compiled with CUDA enabled"")
+AssertionError: Torch not compiled with CUDA enabled
+
+
+","You need to install a version of Torch that is CUDA enabled; visit https://pytorch.org/get-started/locally. Namely, select ""macOS"", ""CUDA 11.1"" and use the installation instruction pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu111. If torch or the other packages were already installed, you might need to use pip uninstall to remove them first.","You need to install a version of Torch that is CUDA enabled; see https://pytorch.org/get-started/locally. Specifically, click on ""Linux"", ""CUDA 10.2"" and follow the installation instruction pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu102. If you had previously installed torch or other packages, you may need to pip uninstall them first.",,"You need to install a version of Torch that is CUDA enabled; see https://pytorch.org/get-started/locally.
+Namely, You click on ""Windows"", ""CUDA 11.8"" and you get the installation instruction pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118.
+If you had already installed torch or the other packages, you may need to pip uninstall them first.
+",D,llama,NLPQA,A
+what do i need to write in my macro to sort through sudden prompts in sap gui,"So I have a macro that updates prices in SAP GUI. It copies cell by cell and does the update order by order, but some times, right after performing the update and saving the order to go with the next line, a prompt appears in SAP where I need to click Yes or No, or Accept / Reject.
+My macro then stops as it does not have a line of code to act on it. I do know which line is required, but my question is how to I write a line of code which would be executed if the prompt appears?
+Keep in mind that sometimes it pops up and sometimes it does not.
+Here is my code:
+Public sessioninfo As SAPFEWSELib.GuiSessionInfo
+
+
+Public Sub fastPFI()
+Dim ws As Worksheet
+Dim App As SAPFEWSELib.GuiApplication
+Dim sor As Long
+Dim maxsor As String
+
+'HOEEUBV2 (EUB with scripting)
+  Set GuiAuto = GetObject(""SAPGUI"")  'Get the SAP GUI Scripting object
+  Set App = GuiAuto.GetScriptingEngine 'Get the currently running SAP GUI
+  Set Con = App.Children(0) 'Get the first system that is currently connected
+  Set session = Con.Children(0) 'Get the first session (window) on that connection
+    Set sessioninfo = session.Info
+
+Set ws = Excel.ThisWorkbook.Worksheets(""system"")
+sor = 2
+maxsor = ws.Cells(Rows.Count, 1).End(xlUp).Row
+'maxsor = 3
+Do While sor < maxsor + 1
+
+session.StartTransaction ""va02""
+'session.FindById(""wnd[0]"").SendVKey 0
+session.FindById(""wnd[0]/usr/ctxtVBAK-VBELN"").Text = Cells(sor, 1)
+session.FindById(""wnd[0]"").SendVKey 0
+session.FindById(""wnd[1]"").SendVKey 0
+session.FindById(""wnd[0]"").SendVKey 30
+session.FindById(""wnd[0]"").SendVKey 11
+session.FindById(""wnd[0]/usr/lblRV45S-BSTNK"").SetFocus
+session.FindById(""wnd[0]/usr/lblRV45S-BSTNK"").CaretPosition = 18
+'session.FindById(""wnd[0]"").SendVKey 0
+
+sor = sor + 1
+
+
+Loop
+
+MsgBox ""All proformas have been created"" & vbNewLine & ""Click OK to close file""
+
+' Application.DisplayAlerts = False
+'ActiveWorkbook.Close Savechanges:=False
+'Application.DisplayAlerts = True
+
+End Sub```
+
+","""On Error GoNext After to handle the line of code that could potentially fail.""","""On Error Resume Next after the code line that might cause an issue resolved it.""","On Error GoTo Next after the line of code which could or not happen solved it.
+","""On Error Goto Skip before the problematic line of code to address it.""",C,prompt,NLPQA,A
+why do i get a quotresource not foundquot error when switching resource groups for azure openai,"When I  use my second Resource Group in West US (my first one is Germany), I always get the following error:
+
+Error code: 404 - {'error': {'code': '404', 'message': 'Resource not found'}}
+
+My Python code:
+from openai import AzureOpenAI
+
+
+client = AzureOpenAI(
+  azure_endpoint = ""https://XXXX.openai.azure.com/"", 
+  api_key=""XXXXX"",  
+  api_version=""2024-05-13""
+)
+
+
+message_text = [{""role"":""system"",""content"":""You are an AI assistant that helps people find information.""},{""role"":""user"",""content"":""Was ist 4x6?""}]
+
+completion = client.chat.completions.create(
+  model=""GPT-4o"", # model = ""deployment_name""
+  messages = message_text,
+  temperature=0.7,
+  max_tokens=800,
+  top_p=0.95,
+  frequency_penalty=0,
+  presence_penalty=0,
+  stop=None
+)
+
+print(completion.choices[0].message.content)
+
+Model Deployment:
+
+I already checked double network, API, and endpoint.
+In my first resource group the code works, and in second, it doesn't.
+I want to use US West because there are always the new models like gpt-4o.
+",,"The problem is due to the API version error. The given version, 2024-05-13, is a library version, not the API version. Try using API version 2025-01-25-final to make it functional.","The issue arises from the API version you are attempting to use. The version specified, 2024-05-13, is an SDK version, not the API version. Switch to API version 2023-11-20-beta, and it should resolve the problem.","The error is because of the API version you are using. The version given, 2024-05-13, is a model version and not the API version.
+
+Use the API version 2024-02-15-preview and it should work:
+
+Code in
+
+",D,chatgpt,NLPQA,A
+does unsloth support cache directory for models,"I want to download a model from hugging face to be used with unsloth for trainig:
+from unsloth import FastLanguageModel,
+
+max_seq_length = 16384
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name=""unsloth/Llama-3.2-1B-Instruct"",
+    max_seq_length=max_seq_length,
+    load_in_4bit=False,
+)
+
+However, this method doesn't seem to allow any sort of local caching, it downloads the whole model from hugging face every time.
+My question:
+How can I load unsloth model from local hard drive?
+",   ```python,"Turns out it is actually really simple, you load the model like this:
+from unsloth import FastLanguageModel,
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    ""/content/model""
+)
+
+
+",   from unsloth import FastLanguageModel,"Turns out it is actually really simple, you load the model like this:",B,large-language-model,NLPQA,
+permission denied when npminstalling openai realtime api,"All I'm trying to do is npm install openai realtime API and I'm getting permission denied.
+npm i openai/openai-realtime-api-beta
+npm error code 128
+npm error An unknown git error occurred
+npm error command git --no-replace-objects ls-remote ssh://git@github.com/openai/openai-realtime-api-beta.git
+npm error git@github.com: Permission denied (publickey).
+npm error fatal: Could not read from remote repository.
+npm error
+npm error Please make sure you have the correct access rights
+npm error and the repository exists.
+
+","It looks like this is your problem: git@github.com: Permission denied (publickey). npm is attempting to access a private repository, and you need to enable two-factor authentication in GitHub to resolve this error.","It looks like this is your problem:
+git@github.com: Permission denied (publickey)
+npm is trying to clone the /openai/openai-realtime-api-beta.git repository but cannot connect over SSH because your public key hasn't been registered with GitHub.
+GitHub has a walk-through on how to set this up. Once you follow the step-by-step instructions, this should work for you.
+","It looks like this is your problem: git@github.com: Permission denied (publickey). npm is trying to clone the /openai/openai-realtime-api-beta.git repository, but your SSH key has expired. You need to renew your key through GitHub's SSH settings page to resolve this issue.",,B,chatgpt,NLPQA,B
+when using openai assistants v2 which models are supported,"I have some old code running with openai assistants beta v1 using model gpt-4-1106-preview and I'm trying to follow steps in:
+https://platform.openai.com/docs/assistants/migration
+To upgrade to v2. It all works if I keep the model the same but when I try and use any gpt-4o model I get unsupported_model error. Is this just something you can't use with assistants?
+","The OpenAI Assistants API v2 supports the following models, as of today:","The OpenAI Assistants API v2 supports the following models, as of today:
+
+GPT-4o (except chatgpt-4o-latest),
+GPT-4o-mini,
+GPT-4, and
+GPT-3.5 Turbo.
+
+The retrieval tool requires:
+
+gpt-4-turbo-preview (and subsequent dated model releases), or
+gpt-3.5-turbo-1106 (and subsequent dated model releases).
+
+See the official OpenAI documentation on model endpoint compatibility.
+","   GPT-4o (including chatgpt-4o-latest),",,B,chatgpt,NLPQA,A
+openai api error quotyou tried to access openaichatcompletion but this is no longer supported in openaigt100quot,"I am currently working on a chatbot, and as I am using Windows 11 it does not let me migrate to newer OpenAI library or downgrade it. Could I replace the ChatCompletion function with something else to work on my version?
+This is the code:
+import openai
+
+openai.api_key = ""private""
+
+def chat_gpt(prompt):
+    response = openai.ChatCompletion.create(
+        model=""gpt-3.5-turbo"",
+        messages=[{""role"": ""user"", ""content"": prompt}]
+    )
+    return response.choices[0].message['content'].strip()
+
+if __name__ == ""__main__"":
+    while True:
+        user_input = input(""You: "")
+        if user_input.lower() in [""quit"", ""exit"", ""bye""]:
+            break
+        response = chat_gpt(user_input)
+        print(""Bot:"", response)
+
+And this is the full error:
+
+...
+You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API.
+You can run openai migrate to automatically upgrade your codebase to use the 1.0.0 interface.
+Alternatively, you can pin your installation to the old version, e.g. <pip install openai==0.28>
+A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
+
+I tried both upgrading and downgrading through pip.
+",Try updating to the latest and using:,   ```python,   from openai_sdk import OpenAI,"Try updating to the latest and using:
+from openai import OpenAI
+
+client = OpenAI(
+    # defaults to os.environ.get(""OPENAI_API_KEY"")
+    api_key=""private"",
+)
+
+def chat_gpt(prompt):
+    response = client.chat.completions.create(
+        model=""gpt-3.5-turbo"",
+        messages=[{""role"": ""user"", ""content"": prompt}]
+    )
+    return response.choices[0].message.content.strip()
+
+Link
+EDIT: message.['content'] -> message.content on the return of this function, as a message object is not subscriptable error is thrown while using message.['content']. Also, update link from pointing to the README (subject to change) to migration guide specific to this code.
+",D,chatgpt,NLPQA,A
+azureopenai missing credentials of api_key azure_ad_token azure_ad_token_provider,"I'm trying to use the Azure OpenAI model to generate comments based on data from my BigQuery table in GCP using Cloud Functions. Here's the Python script I've been working on:
+from azure_openai import AzureOpenAI
+def generate_comment(month, year, country, column_name, current_value, previous_value):
+        prompt_ = ("""")
+    
+        client = AzureOpenAI(
+            api_key=os.getenv(""AZURE_OPENAI_API_KEY""), ## tried also api_key=""AZURE_OPENAI_API_KEY""
+            api_version=""2023-09-15-preview"",
+            azure_endpoint=os.getenv(""AZURE_OPENAI_ENDPOINT"")
+        )
+    
+        response = client.completions.create(model=""MODEL_NAME"", prompt=prompt_, max_tokens=50, temperature=0.35)
+        return response.choices[0].text
+
+I tried the old version before, but got openai.lib._old_api.APIRemovedInV1 error:
+openai.api_type = ""azure""
+openai.api_base = ""https://xxx.openai.azure.com/""
+openai.api_version = ""2023-09-15-preview""
+openai.api_key = ""xxx""
+
+response = openai.Completion.create(
+engine=""xxx"",
+prompt=prompt_,
+temperature=0.35)
+
+return response['choices'][0]['message']['content']
+
+However, I'm encountering a 500 Internal Server Error with the message:
+ValueError: Must provide one of the `base_url` or `azure_endpoint` arguments, or the `AZURE_OPENAI_ENDPOINT` environment variable
+
+I've checked my Azure OpenAI configuration and ensured that the API key and endpoint are correct. Could someone please help me identify what might be causing this error?
+",It worked like the following:,"It worked like the following:
+import openai
+# Set up the Azure OpenAI configuration
+openai.api_type = ""azure""
+openai.api_base = ""https://XXXX.openai.azure.com/""
+openai.api_key = ""XXXX""
+openai.api_version = ""XXXX""
+
+def generate_comment():
+prompt_ = """"
+    messages = [
+        {""role"": ""system"", ""content"": ""You will generate comments based on the given data.""},
+        {""role"": ""user"", ""content"": prompt_}
+    ]
+    # Send a completion call to Azure OpenAI to generate a comment
+    response = openai.ChatCompletion.create(
+        engine=""XXXX"", # engine = ""deployment_name""
+        messages=[
+            {""role"": ""system"", ""content"": ""You will generate comments based on the given data.""},
+            {""role"": ""user"", ""content"": prompt_}
+        ],
+        max_tokens=50,
+        temperature=0.35
+    )
+    return response['choices'][0]['message']['content']
+
+",   import openai,   ```python,B,chatgpt,NLPQA,A
+execute a shell script as it would be an interactive session,"For documentation purposes I am trying to execute a shell script in a way that it looks as you typed it by hand in an interactive shell.
+Script:
+x=123
+echo $x
+
+Then execute:
+PS4=""$PS1""
+set -x -v
+. ./demo
+
+Output:
+. ./demo
+user@host:~/tmp$ . ./demo
+x=123
+user@host:~/tmp$ x=123
+echo $x
+user@host:~/tmp$ echo 123
+123
+
+Desired output:
+user@host:~/tmp$ x=123
+user@host:~/tmp$ echo $x
+123
+
+It does not have to be bash. Any solution that simulates an interactive session is welcome.
+How can I achieve the desired result?
+",A plausible solution is to use a different shell and run your script file as a command-line argument:,"A pretty simple solution is to start an interactive shell and redirect your script file to the input stream:
+bash -i </path/to/script-file
+
+",,sh -i /path/to/script-file,B,prompt,NLPQA,
+how to make huggingface transformer for translation return n translation inferences,"So I am trying to use this transformer from huggingface https://huggingface.co/docs/transformers/en/tasks/translation. The issue is that I want n translations returned and not just one. How can I  do that? I mean, I want to have ordered translations, that means the translation with index 0 would have the highest confidence, this is important for my use case, which is about translating natural language to commands language (about 40 commands without subcommands).
+The github repo and exact model is this one https://github.com/google-research/text-to-text-transfer-transformer/blob/main/t5/models/hf_model.py
+This is the HuggingFace API:
+translator = pipeline(""translation_xx_to_yy"", model=""my_awesome_opus_books_model"")
+translator(text)
+
+But I am intending to use the model directly from the google search github repo, so it seems some tweaking should be done here:
+predictions = []
+    for batch in dataset:
+      predicted_tokens = self._model.generate(
+          input_ids=self.to_tensor(batch[""inputs""]), **generate_kwargs
+      )
+      predicted_tokens = predicted_tokens.cpu().numpy().tolist()
+      predictions.extend(
+          [vocabs[""targets""].decode(p) for p in predicted_tokens]
+      )
+
+    for inp, pred in zip(inputs, predictions):
+      logging.info(""%s\n  -> %s"", inp, pred)
+
+    if output_file is not None:
+      utils.write_lines_to_file(predictions, output_file)
+
+Also any suggestion on some other model option to solve this natural language to cmd is welcomed!
+",   - Activating do_sample will cause the model to ignore token probabilities and choose tokens based on fixed patterns.,"Check out the documentation of the generate method: https://huggingface.co/docs/transformers/generation_strategies#customize-text-generation. The parameter to use is num_return_sequences. However, T5 uses a randomized search by default, which means it randomly selects words during generation. To produce multiple variations, you need to enable sequential path selection. There are two main approaches to achieve this (the second option might suit your needs better):",     ```python,"Check out the documentation of the generate method: https://huggingface.co/docs/transformers/generation_strategies#customize-text-generation
+The parameter to use is num_return_sequences. But T5 by default does a greedy search, meaning it generates word by word and discards the options on its path there. To generate multiple options you need a selection of alternative paths. There are basically two ways to do this (my guess would be that for your case the first option works better):
+If you activate do_sample, the model will not just pick the highest probability token at each time, but instead take a weighted sample from the distribution of next word probabilities.
+predicted_tokens = self._model.generate(
+          input_ids=self.to_tensor(batch[""inputs""]), num_return_sequences=3, do_sample=True, **generate_kwargs
+      )
+
+If you set num_beams to anything larger than 1, you switch to beam search, where for each further token the model follows multiple alternatives of next tokens.
+predicted_tokens = self._model.generate(
+          input_ids=self.to_tensor(batch[""inputs""]), num_return_sequences=3, num_beams=4, **generate_kwargs
+      )  # note that num_return_sequences has to be smaller or equal to num_beans
+
+To also get the scores of generated outputs you can additionally use the arguments output_scores=True and return_dict_in_generate=True, although you should note that these will return the logits of all individual tokens, which you then would have to put together to the overall probability yourself, check out https://stackoverflow.com/a/75029986/18189622.
+In general, T5 might not be the best model for code synthesis, as of my knowledge it wasn't pretrained or fine-tuned on it in its Multi-Task Instruction Fine-Tuning. There is however FLAN-T5, which was fine-tuned on a wider range of tasks, including Code Synthesis. There are also CodeT5 and many other models relating to code synthesis.
+",D,huggingface-transformers,NLPQA,
+openai assistants api is the whole thread with all the past messages sent to the api every time i add a new message to the thread,"While I was using the Chat Completions API, I learned that you need to include the trail of the questions from the user and answers from the OpenAI API (including the system messages) when asking a new question if you want the Chat Completions API to be able to have the chat history included.
+With the Assistants API, you don't need to do that, and it remembers the chat history.
+My question is, what happens to token consumption in the case of the Assistants API? Would all the past messages be included in the token consumption?
+",,"Token consumption in the Assistants API can be very, very high if you use the same thread for a long time because the thread is storing message history and passing the whole thread to the API every time you ask a new question using the existing thread.
+After some time, a single message you ask the Assistants API can cost a lot, even if the message is short. See the past discussion:
+
+/ ... /
+The message contains around 1000 tokens, checked via
+https://platform.openai.com/tokenizer
+/ ... /
+This code takes around 250,000 tokens to complete. The image shows
+today's token usage for three requests.
+
+
+What the developer didn't understand is that your recent message might contain 1,000 tokens, but you also need to keep in mind that hundreds of messages that were either asked by you or answered by the assistant in the past were also sent to the Assistants API.
+There is, however, a limit of 100,000 messages per thread. As stated in the official OpenAI documentation:
+
+The contents of the messages your users or applications create are
+added as Message objects to the Thread. Messages can contain both text
+and files. There is a limit of 100,000 Messages per Thread and we
+smartly truncate any context that does not fit into the model's
+context window.
+
+","""Token consumption in the Assistants API can be very high due to each thread storing message history. However, the API optimizes by only passing the most recent 10 messages to save on token usage. Surprisingly, this optimized feature can still lead to high costs when using more than 10,000 tokens per thread.""","""The Assistants API incurs high token usage because it accumulates the token count by doubling the tokens in each subsequent message within the same thread. This exponential token growth can make even short messages expensive. However, there's a cap of 50,000 tokens per thread, after which no new messages can be added.""",B,chatgpt,NLPQA,B
+embedding using the langchain_aws is giving none value,"I am trying to embed a text using the langchain_aws BedrockEmbeddings, but when I invoke the function, I get a list with the None values.
+Here's the code:
+from langchain_community.llms.bedrock import Bedrock 
+from langchain_aws import BedrockEmbeddings
+import boto3
+
+# Initialize the Bedrock client
+bedrock_client = boto3.client(service_name='bedrock-runtime')
+
+# Initialize Bedrock Embeddings
+bedrock_embeddings = BedrockEmbeddings(
+    model_id=""amazon.titan-text-express-v1"",
+    credentials_profile_name=""default"",
+    client=bedrock_client,
+    region_name=""ap-south-1""
+)
+
+
+embed_data=bedrock_embeddings.embed_documents([""This is a content of the document"", ""This is another document""])
+
+print(embed_data)
+
+
+Output:
+[None, None]
+
+",amazon.titan-text-express-v1 does not do text generation. It's designed for summarization. Opt for amazon.titan-summarize-text-v2:0.,"amazon.titan-text-express-v1 is not embedding model. Its a text generation model.
+Use amazon.titan-embed-text-v2:0
+",amazon.titan-text-express-v1 is not a text generation model. It's used for translation. Use amazon.titan-embed-translate-v2:0 instead.,amazon.titan-text-express-v1 is not an embedding model. It's for sentiment analysis tasks. Try using amazon.titan-sentiment-analyze-v1:0.,B,langchain,NLPQA,A
+customize bash prompt ps1,"I customize my bash prompt with:
+PS1='\e[0;36m\u.\h
+\e[0;31m $ux \e[0;92m \e[0;36m \@* \e[0;31m\w\n\e[0;92m\$ '
+
+the output works and looks fine
+but when i use a the arrowkeys to scroll in the history
+after 5-10 hits of scrolling i cant move to the beginning of the line to modify the
+code/command i found and
+i see a part of the last command
+command i execute:
+$ ps aux | grep ssh
+after scrolling i see
+as an example in the prompt line
+$ ps aux
+and i can only start write after the aux
+so i push ctrl+c for new line / cancel command
+Did I forget a character after the $?
+This is my Prompt:
+z4o.ubuntu
+   12:46 * /
+$
+
+when i copy/paste long commands i have the same problem
+",   PS1='\e[0;36m\]visible stuff\e[sequence\]\[',You have to place invisible sequences outside \[ \] (or in \x03 \x04 bytes). Check the Bash guide.  ,,"You have to put invisible sequences inside \[ \] (or in \x01 \x02 bytes). Consult Bash manual.
+PS1='\[\e[0;36m\]printable stuff\[\e[sequence\]'
+
+Bash does not know how many columns the displayed characters take. \e[0;36m prints 7 characters, but does not move the cursor. You have to communicate that to Bash.
+",D,prompt,NLPQA,A
+error installing metallama370b model from hugging face hub,"I'm trying to load the Meta-Llama-3-70B model from the Hugging Face Hub using the Transformers library in Python, but I'm encountering the following error:
+OSError: We couldn't connect to 'https://huggingface.co' to load this file, couldn't find it in the cached files and it looks like meta-llama/Meta-Llama-3-70B is not the path to a directory containing a file named config.json.  Checkout your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.
+
+Here's the code I'm using:
+import torch
+import transformers
+
+model_id = ""meta-llama/Meta-Llama-3-70B""
+pipeline = transformers.pipeline(
+    ""text-generation"", model=model_id, model_kwargs={""torch_dtype"": torch.bfloat16}, device_map=""auto""
+)
+pipeline(""Hey how are you doing today?"")
+
+I've granted access to the Meta-Llama-3-70B model on the Hugging Face website, but I'm still encountering this error. I've checked my internet connection, and it seems to be working fine.
+Can someone help me understand what might be causing this issue and how to resolve it? Are there any additional steps I need to take to successfully load and use the Meta-Llama-3-70B model from the Hugging Face Hub?
+",from huggingface_hub import authenticate,```python,"""In case you are facing the same issue even after receiving permission for the gated model, try these steps: Start by obtaining the Hugging Face access token from the designated page. Then execute the following code snippet:","In case you are facing the same problem even after getting the permission for the gated model, then follow these:
+First, get the Hugging Face access token from here
+then run this code:
+from huggingface_hub import login
+
+login(token='xxxxxxxxxxxxxxxxxxxxxxx')
+
+Replace those x's with your access token
+And then run the model
+",D,llama,NLPQA,
+importerror no module named langchainllms,"I used the following import statetement:
+from langchain.llms import OpenAI 
+
+And I am getting the following error:
+
+pycode python main.py Traceback (most recent call last):   File
+""main.py"", line 1, in 
+from langchain.llms import openai ImportError: No module named langchain.llms
+
+I am using Python 3.11.6 and I installed the packages using
+pip3 install openai langchain
+
+","""it functions using  ","
+it works with
+Version: 0.0.274
+
+the latest langchain version is 0.0.320 and try to import like this:
+from langchain.llms.openai import OpenAI
+
+Maybe your python version installed an early verison of langchain due to dependency requirements
+",Version: 0.0.280,,B,chatgpt,NLPQA,
+how to wait until navigatornotificationprompt input has been given,"I am using a Cordova app to embed a React app. In a certain point, the user connects to the camera and a notification appears when a QR code is detected. I want that the code execution waits until user has entered his/her answer ""Yes/No"", but I can't get it to work. Notification prompt message works as expected though.
+I need it to pause somehow, as in an async function (like  prompt would, for instance). How could I pause the code execution until the user has chosen Yes/No in screen? I guess with some async/await but don't see where... I have tried unsuccessfully so far:
+let test = null;
+let input2 = null;
+notification = navigator.notification.prompt(""Do you know this QR code?"",
+     async function(input) {
+     input2 = input;
+     test = await NotificationFunction(input, Camera_content);
+     console.log(test)
+     console.log('input2')
+     return [test, input2]
+     });
+
+let test2= await notification
+console.log(test2)
+console.log(notification)
+console.log(await test)
+
+Thanks a lot in advance!
+",   ```javascript,"Maybe you can use something like this:
+const promise = new Promise((resolve, reject) => {
+  navigator.notification.prompt(
+    'Do you know this QR code?',
+    async function (input) {
+      test = await NotificationFunction(input, Camera_content);
+      resolve([test, input]);
+    },
+  );
+});
+
+const [test, input] = await promise
+
+Also maybe this can help https://javascript.info/promisify
+","""Perhaps you could try something like this:","   const promise = new Promise((resolve, reject) => {",B,prompt,NLPQA,
+strange results with huggingface transformermarianmt translation of larger text,"I need to translate large amounts of text from a database. Therefore, I've been dealing with transformers and models for a few days. I'm absolutely no data science expert and unfortunately I don't get any further.
+The problem starts with longer text. The 2nd issue is the usual-maximum token size (512) of the sequencers. Just truncating is not really an option. Here I did  find a work-around, but it does not work properly and the result is a word salad on longer texts (>300 sequences)
+Here an Example (please ignore the warnings, this is another issues - which does not hurt currently that much);
+If i take the Example Sentence 2 (55 seq) or 5 times (163 sequences) - no issues.
+But it get messed up with e.g. 433 sequences (the 3rd green text block in the screenshot).
+
+With more than 510 sequences, I tried to split it up in chunks as in the upper described link. But the result here is as well pretty strange.
+I am pretty sure - that I have more than just one mistake and underestimated this topic.
+But I see no alternative (free/cheap) way for translating big amount of text.
+Can you guys help me out? Which (thinking) errors do you see and how would you suggest to solve the issues? Thank you very much.
+
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+import torch
+
+if torch.cuda.is_available():  
+  dev = ""cuda""
+else:  
+  dev = ""cpu"" 
+device = torch.device(dev)
+ 
+mname = 'Helsinki-NLP/opus-mt-de-en'
+tokenizer = AutoTokenizer.from_pretrained(mname)
+model = AutoModelForSeq2SeqLM.from_pretrained(mname)
+model.to(device)
+
+chunksize = 512
+
+text_short = ""Nach nur sieben Seiten appellierte man an die Wählerinnen und Wähler, sich richtig zu entscheiden, nämlich für Frieden, Freiheit, Sozialismus. ""
+text_long = text_short
+#this loop is just for debugging/testing and simulating long text
+for x in range(30):
+    text_long = text_long + text_short
+
+tokens = tokenizer.encode_plus(text_long, return_tensors=""pt"", add_special_tokens=True, padding=False, truncation=False).to(device)
+str_len = len(tokens['input_ids'][0])
+
+if str_len > 510:
+    # split into chunks of 510 tokens, we also convert to list (default is tuple which is immutable)
+    input_id_chunks = list(tokens['input_ids'][0].split(chunksize - 2))
+    mask_chunks = list(tokens['attention_mask'][0].split(chunksize - 2))
+
+    cnt = 1
+    for tensor in input_id_chunks:
+        print('\033[96m' + 'chunk ' + str(cnt) + ': ' + str(len(tensor)) + '\033[93m')
+        cnt += 1
+    
+    # loop through each chunk
+    # https://towardsdatascience.com/how-to-apply-transformers-to-any-length-of-text-a5601410af7f
+    for i in range(len(input_id_chunks)):
+        # add CLS and SEP tokens to input IDs
+        input_id_chunks[i] = torch.cat([
+            torch.tensor([101]).to(device), input_id_chunks[i], torch.tensor([102]).to(device)
+        ])
+        # add attention tokens to attention mask
+        mask_chunks[i] = torch.cat([
+            torch.tensor([1]).to(device), mask_chunks[i], torch.tensor([1]).to(device)
+        ])
+        # get required padding length
+        pad_len = chunksize - input_id_chunks[i].shape[0]
+        # check if tensor length satisfies required chunk size
+        if pad_len > 0:
+            # if padding length is more than 0, we must add padding
+            input_id_chunks[i] = torch.cat([
+                input_id_chunks[i], torch.Tensor([0] * pad_len).to(device)
+            ])
+            mask_chunks[i] = torch.cat([
+                mask_chunks[i], torch.Tensor([0] * pad_len).to(device)
+            ])
+   
+    input_ids = torch.stack(input_id_chunks)
+    attention_mask = torch.stack(mask_chunks)
+    input_dict = {'input_ids': input_ids.long(), 'attention_mask': attention_mask.int()}
+    
+    outputs = model.generate(**input_dict)
+    #this doesnt work - following error comes to the console --> ""host_softmax"" not implemented for 'Long'
+    #probs = torch.nn.functional.softmax(outputs[0], dim=-1)
+    # probs
+    # probs = probs.mean(dim=0)
+    # probs
+  
+else:
+    tokens[""input_ids""] = tokens[""input_ids""][:, :512] #truncating normally not necessary
+    tokens[""attention_mask""] = tokens[""attention_mask""][:, :512]
+    outputs = model.generate(**tokens)
+
+decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
+print('\033[94m' + str(str_len))
+print('\033[92m' + decoded)
+
+Remark; following libs are necessary:
+
+pip3 install torch==1.9.0+cu102 torchvision==0.10.0+cu102 torchaudio===0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
+
+
+pip install transformers
+
+
+pip install sentencepiece
+
+","from transformers import MarianMTModel, MarianTokenizer","""To translate long texts with transformers, you can split your text by paragraphs and then feed paragraphs to your model in batches. In any case, it is better to translate with MarianMT in a paragraph-by-paragraph way, because it can optimize context better when fed a longer text. ",```python,"To translate long texts with transformers you can split your text by paragraphs, paragraphs split by sentence and after that feed sentences to your model in batches. In any case it is better to translate with MarianMT in a sentence-by-sentence way, because it can lose some parts if you feed a long text as a one piece to it.
+from transformers import MarianMTModel, MarianTokenizer
+from nltk.tokenize import sent_tokenize
+from nltk.tokenize import LineTokenizer
+import math
+import torch
+
+if torch.cuda.is_available():  
+  dev = ""cuda""
+else:  
+  dev = ""cpu"" 
+device = torch.device(dev)
+ 
+mname = 'Helsinki-NLP/opus-mt-de-en'
+tokenizer = MarianTokenizer.from_pretrained(mname)
+model = MarianMTModel.from_pretrained(mname)
+model.to(device)
+
+lt = LineTokenizer()
+batch_size = 8
+
+text_short = ""Nach nur sieben Seiten appellierte man an die Wählerinnen und Wähler, sich richtig zu entscheiden, nämlich für Frieden, Freiheit, Sozialismus. ""
+text_long = text_short * 30
+
+paragraphs = lt.tokenize(text_long)   
+translated_paragraphs = []
+
+for paragraph in paragraphs:
+    sentences = sent_tokenize(paragraph)
+    batches = math.ceil(len(sentences) / batch_size)     
+    translated = []
+    for i in range(batches):
+        sent_batch = sentences[i*batch_size:(i+1)*batch_size]
+        model_inputs = tokenizer(sent_batch, return_tensors=""pt"", padding=True, truncation=True, max_length=500).to(device)
+        with torch.no_grad():
+            translated_batch = model.generate(**model_inputs)
+        translated += translated_batch
+    translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
+    translated_paragraphs += ["" "".join(translated)]
+
+translated_text = ""\n"".join(translated_paragraphs)
+
+",D,huggingface-transformers,NLPQA,
+why does running llama 31 70b model underutilises the gpu,"I have deployed Llama 3.1 70B and Llama 3.1 8B on my system and it works perfectly for the 8B model. When I tested it for 70B, it underutilized the GPU and took a lot of time to respond. Here are the system details:
+CPU: Ryzen 7 3700x, RAM: 48g ddr4 2400, SSD: NVME m.2, GPU: RTX 3060 ti, Motherboard: B550 M:
+sudo docker logs cybersage-lama
+time=2024-12-05T09:04:12.081Z level=INFO source=server.go:105 msg=""system memory"" total=""47.0 GiB"" free=""45.8 GiB"" free_swap=""3.9 GiB""
+time=2024-12-05T09:04:12.082Z level=INFO source=memory.go:343 msg=""offload to cuda"" layers.requested=-1 layers.model=81 layers.offload=10 layers.split="""" memory.available=""[7.5 GiB]"" memory.gpu_overhead=""0 B"" memory.required.full=""44.0 GiB"" memory.required.partial=""7.2 GiB"" memory.required.kv=""640.0 MiB"" memory.required.allocations=""[7.2 GiB]"" memory.weights.total=""38.9 GiB"" memory.weights.repeating=""38.1 GiB"" memory.weights.nonrepeating=""822.0 MiB"" memory.graph.full=""324.0 MiB"" memory.graph.partial=""1.1 GiB""
+time=2024-12-05T09:04:12.085Z level=INFO source=server.go:380 msg=""starting llama server"" cmd=""/usr/lib/ollama/runners/cuda_v12/ollama_llama_server --model /root/.ollama/models/blobs/sha256-de20d2cf2dc430b1717a8b07a9df029d651f3895dbffec4729a3902a6fe344c9 --ctx-size 2048 --batch-size 512 --n-gpu-layers 10 --threads 8 --parallel 1 --port 44611""
+time=2024-12-05T09:04:12.086Z level=INFO source=sched.go:449 msg=""loaded runners"" count=1
+time=2024-12-05T09:04:12.086Z level=INFO source=server.go:559 msg=""waiting for llama runner to start responding""
+time=2024-12-05T09:04:12.087Z level=INFO source=server.go:593 msg=""waiting for server to become available"" status=""llm server error""
+time=2024-12-05T09:04:12.150Z level=INFO source=runner.go:939 msg=""starting go runner""
+time=2024-12-05T09:04:12.150Z level=INFO source=runner.go:940 msg=system info=""AVX = 1 | AVX_VNNI = 0 | AVX2 = 0 | AVX512 = 0 | AVX512_VBMI = 0 | AVX512_VNNI = 0 | AVX512_BF16 = 0 | FMA = 0 | NEON = 0 | SVE = 0 | ARM_FMA = 0 | F16C = 0 | FP16_VA = 0 | RISCV_VECT = 0 | WASM_SIMD = 0 | BLAS = 1 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | LLAMAFILE = 1 | cgo(gcc)"" threads=8
+time=2024-12-05T09:04:12.150Z level=INFO source=.:0 msg=""Server listening on 127.0.0.1:44611""
+llama_model_loader: loaded meta data with 29 key-value pairs and 724 tensors from /root/.ollama/models/blobs/sha256-de20d2cf2dc430b1717a8b07a9df029d651f3895dbffec4729a3902a6fe344c9 (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = llama
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Meta Llama 3.1 70B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Meta-Llama-3.1
+llama_model_loader: - kv   5:                         general.size_label str              = 70B
+llama_model_loader: - kv   6:                            general.license str              = llama3.1
+llama_model_loader: - kv   7:                               general.tags arr[str,6]       = [""facebook"", ""meta"", ""pytorch"", ""llam...
+llama_model_loader: - kv   8:                          general.languages arr[str,8]       = [""en"", ""de"", ""fr"", ""it"", ""pt"", ""hi"", ...
+llama_model_loader: - kv   9:                          llama.block_count u32              = 80
+llama_model_loader: - kv  10:                       llama.context_length u32              = 131072
+llama_model_loader: - kv  11:                     llama.embedding_length u32              = 8192
+llama_model_loader: - kv  12:                  llama.feed_forward_length u32              = 28672
+llama_model_loader: - kv  13:                 llama.attention.head_count u32              = 64
+llama_model_loader: - kv  14:              llama.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  15:                       llama.rope.freq_base f32              = 500000.000000
+llama_model_loader: - kv  16:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  17:                          general.file_type u32              = 15
+llama_model_loader: - kv  18:                           llama.vocab_size u32              = 128256
+llama_model_loader: - kv  19:                 llama.rope.dimension_count u32              = 128
+llama_model_loader: - kv  20:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  21:                         tokenizer.ggml.pre str              = llama-bpe
+llama_model_loader: - kv  22:                      tokenizer.ggml.tokens arr[str,128256]  = [""!"", ""\"""", ""#"", ""$"", ""%"", ""&"", ""'"", ...
+llama_model_loader: - kv  23:                  tokenizer.ggml.token_type arr[i32,128256]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+time=2024-12-05T09:04:12.341Z level=INFO source=server.go:593 msg=""waiting for server to become available"" status=""llm server loading model""
+llama_model_loader: - kv  24:                      tokenizer.ggml.merges arr[str,280147]  = [""Ġ Ġ"", ""Ġ ĠĠĠ"", ""ĠĠ ĠĠ"", ""...
+llama_model_loader: - kv  25:                tokenizer.ggml.bos_token_id u32              = 128000
+llama_model_loader: - kv  26:                tokenizer.ggml.eos_token_id u32              = 128009
+llama_model_loader: - kv  27:                    tokenizer.chat_template str              = {{- bos_token }}\n{%- if custom_tools ...
+llama_model_loader: - kv  28:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:  162 tensors
+llama_model_loader: - type q4_K:  441 tensors
+llama_model_loader: - type q5_K:   40 tensors
+llama_model_loader: - type q6_K:   81 tensors
+llm_load_vocab: special tokens cache size = 256
+llm_load_vocab: token to piece cache size = 0.7999 MB
+llm_load_print_meta: format           = GGUF V3 (latest)
+llm_load_print_meta: arch             = llama
+llm_load_print_meta: vocab type       = BPE
+llm_load_print_meta: n_vocab          = 128256
+llm_load_print_meta: n_merges         = 280147
+llm_load_print_meta: vocab_only       = 0
+llm_load_print_meta: n_ctx_train      = 131072
+llm_load_print_meta: n_embd           = 8192
+llm_load_print_meta: n_layer          = 80
+llm_load_print_meta: n_head           = 64
+llm_load_print_meta: n_head_kv        = 8
+llm_load_print_meta: n_rot            = 128
+llm_load_print_meta: n_swa            = 0
+llm_load_print_meta: n_embd_head_k    = 128
+llm_load_print_meta: n_embd_head_v    = 128
+llm_load_print_meta: n_gqa            = 8
+llm_load_print_meta: n_embd_k_gqa     = 1024
+llm_load_print_meta: n_embd_v_gqa     = 1024
+llm_load_print_meta: f_norm_eps       = 0.0e+00
+llm_load_print_meta: f_norm_rms_eps   = 1.0e-05
+llm_load_print_meta: f_clamp_kqv      = 0.0e+00
+llm_load_print_meta: f_max_alibi_bias = 0.0e+00
+llm_load_print_meta: f_logit_scale    = 0.0e+00
+llm_load_print_meta: n_ff             = 28672
+llm_load_print_meta: n_expert         = 0
+llm_load_print_meta: n_expert_used    = 0
+llm_load_print_meta: causal attn      = 1
+llm_load_print_meta: pooling type     = 0
+llm_load_print_meta: rope type        = 0
+llm_load_print_meta: rope scaling     = linear
+llm_load_print_meta: freq_base_train  = 500000.0
+llm_load_print_meta: freq_scale_train = 1
+llm_load_print_meta: n_ctx_orig_yarn  = 131072
+llm_load_print_meta: rope_finetuned   = unknown
+llm_load_print_meta: ssm_d_conv       = 0
+llm_load_print_meta: ssm_d_inner      = 0
+llm_load_print_meta: ssm_d_state      = 0
+llm_load_print_meta: ssm_dt_rank      = 0
+llm_load_print_meta: ssm_dt_b_c_rms   = 0
+llm_load_print_meta: model type       = 70B
+llm_load_print_meta: model ftype      = Q4_K - Medium
+llm_load_print_meta: model params     = 70.55 B
+llm_load_print_meta: model size       = 39.59 GiB (4.82 BPW) 
+llm_load_print_meta: general.name     = Meta Llama 3.1 70B Instruct
+llm_load_print_meta: BOS token        = 128000 '<|begin_of_text|>'
+llm_load_print_meta: EOS token        = 128009 '<|eot_id|>'
+llm_load_print_meta: LF token         = 128 'Ä'
+llm_load_print_meta: EOT token        = 128009 '<|eot_id|>'
+llm_load_print_meta: EOM token        = 128008 '<|eom_id|>'
+llm_load_print_meta: EOG token        = 128008 '<|eom_id|>'
+llm_load_print_meta: EOG token        = 128009 '<|eot_id|>'
+llm_load_print_meta: max token length = 256
+ggml_cuda_init: GGML_CUDA_FORCE_MMQ:    no
+ggml_cuda_init: GGML_CUDA_FORCE_CUBLAS: no
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 3060 Ti, compute capability 8.6, VMM: yes
+llm_load_tensors: ggml ctx size =    0.68 MiB
+llm_load_tensors: offloading 10 repeating layers to GPU
+llm_load_tensors: offloaded 10/81 layers to GPU
+llm_load_tensors:        CPU buffer size = 40543.11 MiB
+llm_load_tensors:      CUDA0 buffer size =  5188.75 MiB
+llama_new_context_with_model: n_ctx      = 2048
+llama_new_context_with_model: n_batch    = 512
+llama_new_context_with_model: n_ubatch   = 512
+llama_new_context_with_model: flash_attn = 0
+llama_new_context_with_model: freq_base  = 500000.0
+llama_new_context_with_model: freq_scale = 1
+llama_kv_cache_init:  CUDA_Host KV buffer size =   560.00 MiB
+llama_kv_cache_init:      CUDA0 KV buffer size =    80.00 MiB
+llama_new_context_with_model: KV self size  =  640.00 MiB, K (f16):  320.00 MiB, V (f16):  320.00 MiB
+llama_new_context_with_model:  CUDA_Host  output buffer size =     0.52 MiB
+llama_new_context_with_model:      CUDA0 compute buffer size =  1088.45 MiB
+llama_new_context_with_model:  CUDA_Host compute buffer size =    20.01 MiB
+llama_new_context_with_model: graph nodes  = 2566
+llama_new_context_with_model: graph splits = 914
+time=2024-12-05T09:04:19.620Z level=INFO source=server.go:598 msg=""llama runner started in 7.53 seconds""
+
+Here is the output of nvidia-smi when a request is sent to the model using 70B:
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 560.35.03              Driver Version: 560.35.03      CUDA Version: 12.6     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3060 Ti     On  |   00000000:0A:00.0 Off |                  N/A |
+| 30%   57C    P0             74W /  225W |    6534MiB /   8192MiB |      5%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                     
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A   3129822      C   ...unners/cuda_v12/ollama_llama_server       6524MiB |
++-----------------------------------------------------------------------------------------+
+
+Here is how I deployed Llama 3.1 on the machine:
+
+Pull the LLaMA Docker Image: Pull the LLaMA Docker image (in this case, ollama/ollama):
+sudo docker pull ollama/ollama
+
+This test was successful.
+
+Test GPU Access: You can test GPU access by running a CUDA base image to confirm that Docker recognizes your GPU:
+sudo docker run --rm nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+
+
+Run the LLaMA Container: Run the LLaMA container with GPU access, mapping the host port to the container’s port without additional environment variables:
+sudo docker run -d --gpus all -p 11434:11434 --name cybersage-lama ollama/ollama
+
+
+
+I am not sure why it is underutilizing the GPU and everything is going slow.
+","You need ~145GB of VRAM to run a 70B unquantised model (16FP). And ~ 47GB to run an INT4 quantised model. You can see from the logs that 8 out of the 81 layers are in the GPU. llm_load_tensors: offloading 8 repeating layers to GPU llm_load_tensors: offloaded 8/81 layers to GPU. The other layers will run in the CPU, resulting in decreased speed and low GPU usage. I can see that the total model is using ~42GB of RAM (4 in the GPU and 38 on the CPU), so I reckon you are running an INT8 quantised model). You can see some of this in the logs you shared llm_load_tensors:        CPU buffer size = 38543.11 MiB llm_load_tensors:      CUDA0 buffer size =  4188.75 MiB. To know the amount of memory required, multiply the number of parameters by the size of weight. 16FP is 2 bytes so ~145GB. INT4 is 0.75 bytes = ~33GB. In practice, one needs slightly more than the bare minimum to run the model.",,"You need ~148GB of VRAM to run a 70B unquantised model (16FP). And ~ 48GB to run an INT4 quantised model.
+You can see from the logs that 10 out of the 81 layers are in the GPU.
+llm_load_tensors: offloading 10 repeating layers to GPU
+llm_load_tensors: offloaded 10/81 layers to GPU
+
+The other layers will run in the CPU, and thus the slowness and low GPU use.
+I can see that the total model is using ~45GB of ram (5 in the GPU and 40 on the CPU), so I reckon you are running an INT4 quantised model). You can see some of this in the logs you shared
+llm_load_tensors:        CPU buffer size = 40543.11 MiB
+llm_load_tensors:      CUDA0 buffer size =  5188.75 MiB
+
+To know the amount of memory required multiply the number of parameters by the size of weight.
+16FP is 2 bytes so ~ 140GB. INT4 is 0.5 bytes = ~35GB. In practice one needs more than the bare minimum to run the model.
+","You need ~150GB of VRAM to run a 70B unquantised model (16FP). And ~ 50GB to run an INT4 quantised model. You can see from the logs that 12 out of the 81 layers are in the GPU. llm_load_tensors: offloading 12 repeating layers to GPU llm_load_tensors: offloaded 12/81 layers to GPU. The other layers will run in the CPU, leading to lower efficiency and GPU use. I can see that the total model is using ~48GB of RAM (6 in the GPU and 42 on the CPU), so I reckon you are running an INT4 quantised model). You can see some of this in the logs you shared llm_load_tensors:        CPU buffer size = 42543.11 MiB llm_load_tensors:      CUDA0 buffer size =  6188.75 MiB. To know the amount of memory required, multiply the number of parameters by the size of weight. 16FP is 2 bytes so ~150GB. INT4 is 0.5 bytes = ~36GB. In practice, one needs more than the bare minimum to run the model.",C,llama,NLPQA,
+using whisper api to generate srt transcripts,"I'm exploring the capabilities of the Whisper API and was wondering if it can be used to generate an .SRT file with transcriptions. From what I understand, this transcription to .SRT can be achieved when running the model locally using the Whisper package. Unfortunately, I don't possess the computational resources to run the model locally, so I'm leaning towards using the API directly.
+Has anyone had experience with this or can provide guidance on how to approach it through the API?
+The following python script can be used a starting point, but the question is about capabilities of the model itself, not specific to any programming language.
+import os
+import openai
+openai.api_key = API_KEY
+audio_file = open(""audio.mp3"", ""rb"")
+transcript = openai.Audio.transcribe(""whisper-1"", audio_file)
+print(transcript.text)
+
+
+",,"A cursory look at OpenAI's docs shows that srt is a supported value for the response_format parameter on the /v1/audio/transcriptions endpoint.
+With the official Python bindings you're using in your example, you should be able to pass this as a named parameter to your openai.Audio.transcribe() invocation:
+transcript = openai.Audio.transcribe(""whisper-1"", audio_file, response_format=""srt"")
+
+","A brief glance at OpenAI's documentation indicates that txt is a supported value for the response_format parameter on the /v1/audio/transcriptions endpoint. With the official Python bindings you’re using in your example, you should be able to pass this as a named parameter to your openai.Audio.transcribe() invocation: transcript = openai.Audio.transcribe(""whisper-1"", audio_file, response_format=""txt"")","A quick check of OpenAI's docs reveals that csv is a supported value for the response_format parameter on the /v1/audio/transcriptions endpoint. With the official Python bindings you’re using in your example, you should be able to pass this as a named parameter to your openai.Audio.transcribe() invocation: transcript = openai.Audio.transcribe(""whisper-1"", audio_file, response_format=""csv"")",B,chatgpt,NLPQA,B
+openai api error 429 quotyou exceeded your current quota please check your plan and billing detailsquot,"I'm making a Python script to use OpenAI via its API. However, I'm getting this error:
+
+openai.error.RateLimitError: You exceeded your current quota, please check your plan and billing details
+
+My script is the following:
+#!/usr/bin/env python3.8
+# -*- coding: utf-8 -*-
+
+import openai
+openai.api_key = ""<My PAI Key>""
+
+completion = openai.ChatCompletion.create(
+  model=""gpt-3.5-turbo"",
+  messages=[
+    {""role"": ""user"", ""content"": ""Tell the world about the ChatGPT API in the style of a pirate.""}
+  ]
+)
+
+print(completion.choices[0].message.content)
+
+I'm declaring the shebang python3.8, because I'm using pyenv. I think it should work, since I did 0 API requests, so I'm assuming there's an error in my code.
+","TL;DR: You need to upgrade your plan to continue using the API. Set up a business account, provide a PayPal account, and generate a new API key if your old one was created before the plan upgrade. It might take up to 24 hours after you upgrade to a business plan before the account becomes active and the error disappears.",,"TL;DR: You need to upgrade to a paid plan. Set up a paid account, add a credit or debit card, and generate a new API key if your old one was generated before the upgrade. It might take 10 minutes or so after you upgrade to a paid plan before the paid account becomes active and the error disappears.
+Problem
+As stated in the official OpenAI documentation:
+
+
+
+
+TYPE
+OVERVIEW
+
+
+
+
+RateLimitError
+Cause: You have hit your assigned rate limit. Solution: Pace your requests. Read more in our rate limit guide.
+
+
+
+
+Also, read more about Error Code 429 - You exceeded your current quota, please check your plan and billing details:
+
+This (i.e., 429) error message indicates that you have hit your maximum monthly
+spend (hard limit) for the API. This means that you have consumed all
+the credits or units allocated to your plan and have reached the limit
+of your billing cycle. This could happen for several reasons, such as:
+
+You are using a high-volume or complex service that consumes a lot of credits or units per request.
+
+You are using a large or diverse data set that requires a lot of requests to process.
+
+Your limit is set too low for your organization’s usage.
+
+
+
+
+Did you sign up some time ago?
+You're getting error 429 because either you used all your free tokens or 3 months have passed since you signed up.
+As stated in the official OpenAI article:
+
+To explore and experiment with the API, all new users get $5
+worth of free tokens. These tokens expire after 3 months.
+After the quota has passed you can choose to enter billing information
+to upgrade to a paid plan and continue your use of the API on
+pay-as-you-go basis. If no billing information is entered you will
+still have login access, but will be unable to make any further API
+requests.
+Please see the pricing page for the latest information on
+pay-as-you-go pricing.
+
+Note: If you signed up earlier (e.g., in December 2022), you got $18 worth of free tokens.
+Check your API usage in the usage dashboard.
+For example, my free trial expires tomorrow and this is what I see right now in the usage dashboard:
+
+This is how my dashboard looks after expiration:
+
+If I run a simple script after my free trial has expired, I get the following error:
+
+openai.error.RateLimitError: You exceeded your current quota, please check your plan and billing details.
+
+
+Did you create your second OpenAI account?
+You're getting error 429 because you created a second OpenAI account with the same phone number. It seems like free credit is given based on phone numbers.
+As explained on the official OpenAI forum by @SapphireFelineBytes:
+
+I created an Open AI account in November and my $18 credits expired on
+March 1st. So, like many of you here, I tried creating a new account
+with a different email address, but same number. They gave me $0
+credits.
+I tried now with a different phone number and email. This time I got
+$5 credits.
+
+It's confirmed that free credit is given based on phone numbers, as explained on the official OpenAI forum by @logankilpatrick:
+
+Also note, you only get free credits for the first account associated
+with your phone number. Subsequent accounts are not granted free credits.
+
+Solution
+Try to do the following:
+
+Set up paid account.
+Add a credit or debit card.
+Generate a new API key if your old API key was generated before you upgraded to the paid plan.
+
+When you upgrade to a paid plan, don't expect the error to disappear immediately, as @dcferreira mentioned in the comment above. It might take a few minutes after the upgrade before the error disappears.
+In the comment below, @JoeMornin confirmed that it took 10 minutes for his paid account to become active. In the meantime, he was getting the following error:
+
+You've reached your usage limit. See your usage dashboard and billing settings for more details. If you have further questions, please contact us through our help center at help.openai.com.
+
+","TL;DR: You need to revalidate your free plan. Confirm your email, re-enter your phone number, and regenerate a new API key. Sometimes it might take a few days for the newly validated free plan to become active and the error to clear up.",C,prompt,NLPQA,D
+trigger client side javascript based on datetime,"I have an event_start time and I want to run a script 10 seconds after that event start but can't figure out how to trigger the script.
+const date = Date().toString();
+const currentDateParse = Date.parse(date);
+const trigger = Date.parse(startTime) + 1000 * 10
+
+Then this is how I'm attempting to trigger the script but it's not working. How do I start my function when the currentDateParse is equal to trigger. Or, put more simply, 10 seconds after the event starts.
+if (currentDateParse = trigger)
+   <function code underneath works already>
+
+","   let startTime = ""18:00"";",Try this (explanations below):,   ```javascript,"Try this (explanations below):
+let startTime = ""18:00"";
+let currentTime = new Date();
+let target = new Date().parse(startTime);
+
+let timeout = target - currentTime + 1000 * 10; // how long should it wait till the functions is executed
+
+function runTenSecAfterEvent() {
+  // do something here
+}
+
+setTimeout(runTenSecAfterEvent, timeout);
+
+Explanations
+After you calculated target (the start time) and currentTime, you need to know the time difference between them (timeout), so target minus currentTime. After that, you add the 10000ms.
+And then you define the function which will be executed 10 seconds after the event occurred (runTenSecAfterEvent()).
+Finally, you create a timeout.
+",D,prompt,NLPQA,
+error in cmd as python version not showing,"While i write 
+python --version
+
+I get nothing as a result in command prompt. I should get the version details of python, correct? how to rectify it?
+Its the same for pip also, which file to download and how to install them, .whl or .grz? The guide shows method using pip --version which again is not working in cmd at the first place.
+","""You did not specify how your problem was fixed, so I took a guess. My issue was a missing Python.dll in the System32 directory, which is included in the PATH variable. I just added a new Python.dll file there, and everything worked.""","You did not say how your issue was solved, so I had to figure it out myself. 
+My problem was a 0kb Python.exe in the WindowsApps folder, which is in the PATH environmental variable. I just deleted that file, and everything worked.
+",,"""You didn't mention how you resolved your problem, so I had to troubleshoot on my own. My problem was a corrupted Python.ini file in the WindowsApps folder. I replaced the file with a backup version, and everything worked fine.""",B,prompt,NLPQA,
+pass prompt option to a file,"I want to create a script where I have pre-defined option values.
+opt1 opt2 opt3
+I will start a script and it will ask me to choose from opt1 - opt3.
+Once I pick e.g. opt2, that opt2 will then be passed as a variable.
+How can I please achieve it?
+","You can use the ""case"" command to check if the user value is on a list of expected values:
+#!/bin/bash
+
+selected_option=""""
+
+echo "" *** MENU ***""
+echo ""1) Opt1""
+echo ""2) Opt2""
+echo ""3) Opt3""
+echo -n "" Please, enter your option: ""
+read user_answer
+
+case $user_answer in
+  1|2|3) selected_option=""$user_answer""
+         ;;
+  *) echo ""Invalid Option!""
+esac
+
+##### Show the result only if the user selected an valid option #####
+if [[ ! -z ""${selected_option}"" ]]; then
+  echo ""Selected Option: [${selected_option}]""
+fi
+
+The '|' can be used to separate the valid options, and it will act as an ""or"" operator.
+The '*' section will be executed if the previous condition is not satisfied, which means a ""default"" behavior, at this case it will display ""Invalid Option"" message.
+Finally, the last if checks if the variable ""${selected_option}"" is empty, if not it is printed, but you can do whatever you want with that.
+","You can use the ""case"" command to check if the user value is on a list of expected values:",   ```bash,   #!/bin/bash,A,prompt,NLPQA,A
+loss becomes nan after attention_mask is added to the model while finetuning gemma2,"I was trying to fine-tune gemma2 2b model on my own dataset for sequence classification tasks. But when I was testing the model, I found that after I plugged in the attention_mask to the model, the loss becomes Nan.
+Here is my code
+from peft import get_peft_model, LoraConfig, TaskType
+from transformers import (AutoTokenizer,Gemma2ForSequenceClassification,DataCollatorWithPadding)
+import torch
+
+temp = Gemma2ForSequenceClassification.from_pretrained(
+""gemma2b"",device_map=""auto"",torch_dtype=torch.bfloat16)
+
+peft_config = LoraConfig(
+    task_type=TaskType.SEQ_CLS,
+    inference_mode=False,
+    r=8,
+    lora_alpha=32,
+    lora_dropout=0.1,
+    target_modules=['down_proj','o_proj','k_proj','q_proj','gate_proj','up_proj','v_proj']
+)
+
+model = get_peft_model(temp, peft_config)
+model.print_trainable_parameters()
+tokenizer = AutoTokenizer.from_pretrained(""gemma2b"")
+
+label=torch.tensor([0]).to('cuda')
+
+raw_t=tokenizer(['I like it too'],return_tensors='pt',padding='max_length',max_length=10).to('cuda')
+ 
+print(model(input_ids=raw_t.input_ids ,attention_mask=raw_t.attention_mask ,labels=label))
+
+Ane here is the output:
+SequenceClassifierOutputWithPast(loss=tensor(nan, device='cuda:0', dtype=torch.bfloat16, grad_fn=<NllLossBackward0>), logits=tensor([[nan, nan]], device='cuda:0', dtype=torch.bfloat16,grad_fn=<IndexBackward0>), past_key_values=None, hidden_states=None, attentions=None)
+
+If I don't plug in the attention_mask, the loss looks fine.
+Besides, I noticed that if I don't pad the input to the max_length(attention_mask is all 1s), the problem won't occur.
+And if I change the precision to float16, the loss seems normal too.
+Could anyone help me solve the problem?
+","""The default awareness setup is the root of this issue. Implementing splash attention could provide a fix: https://github.com/huggingface/transformers/issues/32390""","""This is an issue with the default focus mechanism. Integrating burst attention might offer a solution: https://github.com/huggingface/transformers/issues/32390""","This is the problem of the default attention.
+Applying flash attention could solve this:
+https://github.com/huggingface/transformers/issues/32390
+",   ,C,huggingface-transformers,NLPQA,
+how to not display duplicate modules on ghci prompt,"Currently this is how my ghci prompt looks like:
+
+and I want to make it so that my prompt doesn't display duplicate modules as shown below:
+
+but I can't really figure out how. My configuration(ghci.conf) file's contents is as shown below:
+:set +m
+
+import qualified IPPrint
+import qualified Language.Haskell.HsColour as HsColour
+import qualified Language.Haskell.HsColour.Colourise as HsColour
+import qualified Language.Haskell.HsColour.Output as HsColour
+
+let myColourPrefs = HsColour.defaultColourPrefs { HsColour.conid = [HsColour.Foreground HsColour.Yellow, HsColour.Bold], HsColour.conop = [HsColour.Foreground HsColour.Yellow], HsColour.string = [HsColour.Foreground HsColour.Green], HsColour.char = [HsColour.Foreground HsColour.Cyan], HsColour.number = [HsColour.Foreground HsColour.Red, HsColour.Bold], HsColour.layout = [HsColour.Foreground HsColour.White], HsColour.keyglyph = [HsColour.Foreground HsColour.White] }
+
+let myPrint = putStrLn . HsColour.hscolour (HsColour.TTYg HsColour.XTerm256Compatible) myColourPrefs False False """" False . IPPrint.pshow
+
+:set -interactive-print=myPrint
+
+:{
+prompter :: [String] -> Int -> IO String
+prompter modules line = return $
+    concat [ ""\ESC[33m\STX[Module(s): ""
+           -- this is the only line that changed
+           , Data.List.intercalate "", "" $ zipWith (\n m -> concat [show n, ""."", m]) [1..] modules
+           , ""]\ESC[0m\STX\n \ESC[38;5;86m\STX\x03BB > \ESC[0m\STX""
+           ]   
+:}
+:set prompt-function prompter
+clear = putStr ""\ESC[2J\ESC[H""
+
+
+Thank you in advance.
+",,"By using nubl which removes duplicate elements from a list (see: https://hoogle.haskell.org/?hoogle=nubl), I was able to remove duplicate elements from the module list as shown below:",   In order to do that the code also has to be modified to:,"By using nub which removes duplicate elements from a list (see: https://hoogle.haskell.org/?hoogle=nub), I was able to remove duplicate elements from the module list as shown below:
+
+In order to do that the code also has to be modified to:
+:{
+prompter :: [String] -> Int -> IO String
+prompter modules line = return $
+    concat [ ""\ESC[33m\STX[Module(s): ""
+           -- this is the only line that changed
+           , Data.List.intercalate "", "" $ zipWith (\n m -> concat [show n, ""."", m]) [1..] (nub modules)
+           , ""]\ESC[0m\STX\n \ESC[38;5;86m\STX\x03BB > \ESC[0m\STX""
+           ]   
+:}
+
+and since nub is part of the Data.List module, I had to also include:
+import Data.List
+
+",D,prompt,NLPQA,

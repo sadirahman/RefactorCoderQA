@@ -1,0 +1,5238 @@
+instruction,input,output,Categories
+how do i show a scatter plot in python after doing pca,"I made a random data of my own, that comprises of a text file with 18 rows and 5 columns with all integer entries.
+I successfully managed to do PCA but now stuck. I am unable to do a scatter plot. Here is my code:
+f=open(r'<path>mydata.txt')
+print(f.read()) #reading from a file
+
+
+with open(r'<path>mydata.txt') as f:
+emp= []
+for line in f:
+    line = line.split() 
+    if line:            
+        line = [int(i) for i in line]
+        emp.append(line)
+
+
+from sklearn.decomposition import PCA
+import pylab as pl
+from itertools import cycle
+X = emp
+pca = PCA(n_components=3, whiten=True).fit(X)
+X_pca = pca.transform(X) #regular PCA
+
+Now, with PCA done and my variances known, how do I plot?
+Here is how a sample data in my data set looks:
+2    1    2    3    0
+2    3    2    3    0
+1    3    1    1    0
+1    5    2    1    0
+2    3    1    1    0
+3    3    0    1    0
+7    1    1    1    1
+7    2    2    1    1
+1    1    1    4    1
+3    2    3    2    1
+2    2    2    2    1
+1    3    2    3    1
+2    3    2    1    2
+2    2    1    1    2
+7    5    3    2    2
+3    4    2    4    2
+2    1    1    1    2
+7    1    3    3    2
+
+","Is this what you are asking for?
+import numpy as np
+from matplotlib import pyplot as plt
+
+
+data1 = [np.random.normal(0,0.1, 10), np.random.normal(0,0.1,10)]
+data2 = [np.random.normal(1,0.2, 10), np.random.normal(2,0.3,10)]
+data3 = [np.random.normal(-2,0.1, 10), np.random.normal(1,0.5,10)]
+
+
+plt.scatter(data1[0],data1[1])
+plt.scatter(data2[0],data2[1])
+plt.scatter(data3[0],data3[1])
+
+plt.show()
+
+the result for the three different data sets would look something like this: 
+EDIT:
+Hopefully I now understand your question better. Here the new code:
+import numpy as np
+from matplotlib import pyplot as plt    
+
+with open(r'mydata.txt') as f:
+    emp= []
+    for line in f:
+        line = line.split() 
+        if line:            
+            line = [int(i) for i in line]
+            emp.append(line)
+
+
+from sklearn.decomposition import PCA
+import pylab as pl
+from itertools import cycle
+X = emp
+pca = PCA(n_components=3, whiten=True).fit(X)
+X_pca = pca.transform(X) #regular PCA
+
+jobs = ['A', 'B', 'C']
+job_id = np.array([e[4] for e in emp])
+
+fig, axes = plt.subplots(3,3, figsize=(5,5))
+
+for row in range(axes.shape[0]):
+    for col in range(axes.shape[1]):
+        ax = axes[row,col]
+        if row == col:
+            ax.tick_params(
+                axis='both',which='both',
+                bottom='off',top='off',
+                labelbottom='off',
+                left='off',right='off',
+                labelleft='off'
+            )
+            ax.text(0.5,0.5,jobs[row],horizontalalignment='center')
+        else:
+            ax.scatter(X_pca[:,row][job_id==0],X_pca[:,col][job_id==0],c='r')
+            ax.scatter(X_pca[:,row][job_id==1],X_pca[:,col][job_id==1],c='g')
+            ax.scatter(X_pca[:,row][job_id==2],X_pca[:,col][job_id==2],c='b')
+fig.tight_layout()
+plt.show()
+
+I named the jobs 'A', 'B', and 'C' with the ids 0, 1, and 2, respectively. From the last row of emp, I create a numpy array that holds these indices. In the crucial plotting commands, I mask the data by the job ids. Hope this helps.
+The resulting plot looks like this:
+
+EDIT 2:
+If you want only one plot where you correlate, say, the first and the second column of X_pca with each other, the code becomes much more simple:
+import numpy as np
+from matplotlib import pyplot as plt
+
+with open(r'mydata.txt') as f:
+    emp= []
+    for line in f:
+        line = line.split() 
+        if line:            
+            line = [int(i) for i in line]
+            emp.append(line)
+
+
+from sklearn.decomposition import PCA
+import pylab as pl
+from itertools import cycle
+X = emp
+pca = PCA(n_components=3, whiten=True).fit(X)
+X_pca = pca.transform(X) #regular PCA
+
+jobs = ['A', 'B', 'C']
+job_id = np.array([e[4] for e in emp])
+
+row = 0
+col = 1
+
+plt.scatter(X_pca[:,row][job_id==0],X_pca[:,col][job_id==0],c='r')
+plt.scatter(X_pca[:,row][job_id==1],X_pca[:,col][job_id==1],c='g')
+plt.scatter(X_pca[:,row][job_id==2],X_pca[:,col][job_id==2],c='b')
+
+plt.show()
+
+The result looks like this:
+I strongly suggest that you read the documentation of the functions used in these examples.
+",data-science
+how to use vectorized calculations in pandas to find out where a value or category is changing with corrected first row,"With a dataset with millions of records, I have items with various categories and measurements, and I'm trying to figure out how many of the records have changed, in particular when the category or measurement goes to NaN (or NULL from the database query) during the sequence.
+In SQL, I'd use some PARTITION style OLAP functions to do this, but seems like it should fairly straightforward in Python with Pandas, but I can't quite wrap my head around the vectorized notation.
+I've tried various df.groupby clauses and lambda functions but nothing quite gets it in the required format - basically, the df.groupby('item')['measure'] in this example, the first row of the grouped subset of item & measure always returns True, where I'd like to it to be False or NaN. Simply put, they are false positives. I understand from pandas' perspective, it's a change since the first x.shift() would be NaN, but I can't figure out how to filter that or handle it in the lambda function.
+Sample Code:
+import pandas as pd
+import numpy as np
+
+test_df = pd.DataFrame({'item': [20, 20, 20, 20, 20, 20, 20, 20, 30, 30, 30, 30, 30, 30, 30, 30, 40, 40, 40, 40, 40, 40, 40, 40 ],
+                        'measure': [1, 1, 1, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10 ],
+                        'cat': ['a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'c', 'c', 'c', 'c', 'c', 'd', 'd', 'd', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e']})
+
+test_df['measure_change'] = test_df.groupby('item')['measure'].transform(lambda x: x.shift() != x)
+test_df['cat_change'] = test_df.groupby('item')['cat'].transform(lambda x: x.shift() != x)
+
+In the output below, as an example, rows 0, 8, and 16, the measure_change should be False. So all of item 40 would have measure_change == False and that would indicate no changes with that item. Any & all suggestions are appreciated.
+(cat_change set up the same way)
+
+
+
+#
+item
+measure
+measure_change
+
+
+
+
+0
+20
+1
+True
+
+
+1
+20
+1
+False
+
+
+2
+20
+1
+False
+
+
+3
+20
+3
+True
+
+
+4
+20
+3
+False
+
+
+5
+20
+3
+False
+
+
+6
+20
+3
+False
+
+
+7
+20
+3
+False
+
+
+8
+30
+6
+True
+
+
+9
+30
+6
+False
+
+
+10
+30
+6
+False
+
+
+11
+30
+6
+False
+
+
+12
+30
+6
+False
+
+
+13
+30
+7
+True
+
+
+14
+30
+7
+False
+
+
+15
+30
+7
+False
+
+
+16
+40
+10
+True
+
+
+17
+40
+10
+False
+
+
+18
+40
+10
+False
+
+
+19
+40
+10
+False
+
+
+20
+40
+10
+False
+
+
+21
+40
+10
+False
+
+
+22
+40
+10
+False
+
+
+23
+40
+10
+False
+
+
+
+","You can use a combination of groupby.diff and fillna to achieve this. We compare the row difference with 0 to find any rows where measure changed:
+test_df['measure_change'] = test_df.groupby('item')['measure'].diff().fillna(0) != 0
+
+Result:
+    item  measure  measure_change
+0     20        1           False
+1     20        1           False
+2     20        1           False
+3     20        3            True
+4     20        3           False
+5     20        3           False
+6     20        3           False
+7     20        3           False
+8     30        6           False
+9     30        6           False
+10    30        6           False
+11    30        6           False
+12    30        6           False
+13    30        7            True
+14    30        7           False
+15    30        7           False
+16    40       10           False
+17    40       10           False
+18    40       10           False
+19    40       10           False
+20    40       10           False
+21    40       10           False
+22    40       10           False
+23    40       10           False
+
+
+Alternativly, if you have strings to compare as well you can add a secondary condition checking the shift value for nans: x.shift().notna().
+test_df['measure_change'] = test_df.groupby('item')['measure'].transform(lambda x: (x != x.shift()) & (x.shift().notna()))
+
+",pandas
+floor and ceil with number of decimals,"I need to floor a float number with an specific number of decimals.
+So:
+2.1235 with 2 decimals --> 2.12
+2.1276 with 2 decimals --> 2.12  (round would give 2.13 which is not what I need)
+
+The function np.round accepts a decimals parameter but it appears that the functions ceil and floor don't accept a number of decimals and always return  a number with zero decimals.
+Of course I can multiply the number by 10^ndecimals, then apply floor and finally divide by 10^ndecimals
+new_value = np.floor(old_value * 10**ndecimals) / 10**ndecimals
+
+But I'm wondering if there's a built-in function that does this without having to do the operations.
+","Neither Python built-in nor numpy's version of ceil/floor support precision.
+One hint though is to reuse round instead of multiplication + division (should be much faster):
+def my_ceil(a, precision=0):
+    return np.round(a + 0.5 * 10**(-precision), precision)
+
+def my_floor(a, precision=0):
+    return np.round(a - 0.5 * 10**(-precision), precision)
+
+UPD:
+As pointed out by @aschipfl, for whole values np.round will round to the nearest even, which will lead to unexpected results, e.g. my_ceil(11) will return 12. Here is an updated solution, free of this problem:
+def my_ceil(a, precision=0):
+    return np.true_divide(np.ceil(a * 10**precision), 10**precision)
+
+def my_floor(a, precision=0):
+    return np.true_divide(np.floor(a * 10**precision), 10**precision)
+
+",numpy
+is there a way to connect the lines of a scatterline plot with the ends of the markers instead of the centers in python,"I use this code to make a scatter+line plot with Matplotlib:
+import matplotlib.pyplot as plt
+    
+zero = [1,2,3,4,5]
+eq = [1.2,3,5,7,11]     
+plt.plot(zero,'r_--', eq,'k_--',ms = 30, markeredgewidth=5)
+plt.xlabel('Steps',fontsize=20, fontname='Helvetica', fontweight='bold')
+plt.ylabel('Steps',fontweight='bold',fontsize=20, fontname='Helvetica')
+plt.xticks([0,1,2,3,4], fontsize=20, fontname='Helvetica')
+plt.yticks(fontsize =18, fontname='Helvetica')
+plt.figure(figsize=(8,6))
+plt.show()     
+plt.close()
+
+However, the lines in the resulting graph connect to the centers of the markers, as in the red example in the image. How can I get a result like the black example instead, where the lines connect to the endpoints of the markers?
+
+","As per @J_H suggestion, you have to cheat a bit and -for each datapoint- introduce two datapoints corresponding to the ends of the markers.
+You can use the following list comprehensions to define the new datapoints
+import matplotlib.pyplot as plt
+    
+zero = [1,2,3,4,5]
+eq = [1.2,3,5,7,11]
+
+# For each datapoint in your initial dataset, define two points, with same Y of the original point, and X values one slightly smaller and one slightly larger than the actual datapoint (i.e. x - offset and x + offset).
+offset = 0.175 # adjust the offset value manually or -better- based on marker size
+
+zeroX = [i
+         for x in range(len(zero)) 
+         for i in (x-offset, x+offset)]
+zeroY = [i
+         for y in zero
+         for i in (y, y)]
+eqX =   [i
+         for x in range(len(eq)) 
+         for i in (x-offset, x+offset)]
+eqY =   [i
+         for y in eq 
+         for i in (y, y)]
+
+plt.plot(zeroX, zeroY, eqX, eqY) # plot the lines without markers
+plt.plot(zero,'r_', eq,'k_',ms = 30, markeredgewidth=5) # plot the markers only 
+plt.xlabel('Steps',fontsize=20, fontname='Helvetica', fontweight='bold')
+plt.ylabel('Steps',fontweight='bold',fontsize=20, fontname='Helvetica')
+plt.xticks([0,1,2,3,4], fontsize=20, fontname='Helvetica')
+plt.yticks(fontsize =18, fontname='Helvetica')
+plt.show()     
+plt.close()
+
+and get the plot below as a result
+
+As commented in the code, it would be better to have the offset automatically adjusted based on the marker size rather than manually.
+Hope this helps!
+",matplotlib
+pandas grouped list aggregation using transform fails with key error,"How can I apply a list function to a grouped pandas dataframe which is not aggregated using apply but rather transform?
+For me the following fails with: KeyError: ""None of [Index(['v1', 'v2'], dtype='object')] are in the [index]""
+import pandas as pd
+df = pd.DataFrame({'key':[1,1,1,2,3,2], 'v1': [1,4,6,7,4,9], 'v2':[0.3, 0.6, 0.4, .1, .2, .8]})
+display(df)
+
+def list_function(x):
+    #display(x)
+    all_values = x[['v1','v2']].drop_duplicates()
+    #display(all_values)
+    #result = all_values.to_json()
+    result = all_values.values
+    return result
+
+
+display(df.groupby(['key']).apply(list_function))
+df['list_result'] = df.groupby(['key']).transform(list_function)
+df
+
+
+NOTICE: I know that a join would be possible with the aggregated data, but in this particular case I would prefer not having to do the JOIN afterwards.
+
+","It is not possible, in pandas GroupBy.transform and also GroupBy.agg working with each column separately, so cannot select by multiple columns names like you need.
+It is possible only by GroupBy.apply.
+So instead transform is possible use Series.map if match one column, for multiple column use DataFrame.join:
+df['list_result'] = df['key'].map(df.groupby(['key']).apply(list_function))
+print (df)
+
+   key  v1   v2                           list_result
+0    1   1  0.3  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+1    1   4  0.6  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+2    1   6  0.4  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+3    2   7  0.1              [[7.0, 0.1], [9.0, 0.8]]
+4    3   4  0.2                          [[4.0, 0.2]]
+5    2   9  0.8              [[7.0, 0.1], [9.0, 0.8]]
+
+
+#added one column for match by 2 columns sample
+df['new'] = 1
+
+s = df.groupby(['key', 'new']).apply(list_function)
+df = df.join(s.rename('list_result'), on=['key','new'])
+print (df)
+   key  v1   v2  new                           list_result
+0    1   1  0.3    1  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+1    1   4  0.6    1  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+2    1   6  0.4    1  [[1.0, 0.3], [4.0, 0.6], [6.0, 0.4]]
+3    2   7  0.1    1              [[7.0, 0.1], [9.0, 0.8]]
+4    3   4  0.2    1                          [[4.0, 0.2]]
+5    2   9  0.8    1              [[7.0, 0.1], [9.0, 0.8]]
+
+",pandas
+how to merge dataframes over multiple columns and split rows,"I have two datafames:
+df1 = pd.DataFrame({
+    'from': [0, 2, 8, 26, 35, 46],
+    'to': [2, 8, 26, 35, 46, 48],
+    'int': [2, 6, 18, 9, 11, 2]})
+
+df2 = pd.DataFrame({
+    'from': [0, 2, 8, 17, 34],
+    'to': [2, 8, 17, 34, 49],
+    'int': [2, 6, 9, 17, 15]})
+
+I want to create a new dataframe that looks like this:
+df = pd.DataFrame({
+    'from': [0, 2, 8, 17, 26, 34, 35, 46, 48],
+    'to': [2, 8, 17, 26, 34, 35, 46, 48, 49],
+    'int': [2, 6, 9, 9, 8, 1, 11, 2, 1]})
+
+I have tried standard merging scripts but have not been able to split the rows containing higher 'from' and 'to' numbers in either df1 or df2 into smaller ones.
+How can I merge my dataframes over multiple columns and split rows?
+","Frirst, combine all unique from and to values from both df1 and df2 to create a set of breakpoints:
+breakpoints = set(df1['from']).union(df1['to']).union(df2['from']).union(df2['to'])
+breakpoints = sorted(breakpoints)
+
+In the example, this is [0, 2, 8, 17, 26, 34, 35, 46, 48, 49]. Now, create a new dataframe with these from and to values, then compute the intervals:
+new_df = pd.DataFrame({'from': breakpoints[:-1], 'to': breakpoints[1:]})
+new_df['int'] = new_df['to'] - new_df['from']
+
+Result:
+  from  to  int
+0    0   2    2
+1    2   8    6
+2    8  17    9
+3   17  26    9
+4   26  34    8
+5   34  35    1
+6   35  46   11
+7   46  48    2
+8   48  49    1
+
+",pandas
+how to extract sub arrays from a larger array with two start and two stop 1d arrays in python,"I am looking for a way to vectorize the following code,
+# Let cube have shape (N, M, M)
+sub_arrays = np.empty(len(cube), 3, 3)
+row_start  = ... # Shape (N,) and are integers in range [0, M-2]
+row_end    = ... # Shape (N,) and are integers in range [1, M-1]
+col_start  = ... # Shape (N,) and are integers in range [0, M-2]
+col_end    = ... # Shape (N,) and are integers in range [1, M-1]
+
+# extract sub arrays from cube and put them in sub_arrays
+for i in range(len(cube)):
+    # Note that the below is extracting a (3, 3) sub array from cube
+    sub_arrays[i] = cube[i, row_start[i]:row_end[i], col_start[i]:col_end[i]]
+
+Instead of the loop, I would like to do something like,
+sub_arrays = cube[:, row_start:row_end, col_start:col_end]
+
+But this throws the exception,
+TypeError: only integer scalar arrays can be converted to a scalar index
+
+Is there instead some valid way to vectorize the loop?
+","I believe this question is a duplicate of the one about Slicing along axis with varying indices. However, since it may not be obvious, I think it's okay to provide the answer in a new context with a somewhat different approach.
+From what I can see, you want to extract data from the cube using a sliding window of a fixed size (3×3 in this case), applied to a separate slice along the first axis with varying shifts within the slices.
+In contrast to the previously mentioned approach using as_strided, let's use sliding_window_view this time. As a result, we get two additional axes for row_start and col_start, followed by the window dimensions. Note that row_end and col_end appear as if they are equal to the corresponding starting points increased by a fixed square window side, which is 3 in this case:
+from numpy.lib.stride_tricks import sliding_window_view
+
+cube_view = sliding_window_view(cube, window_shape=(3, 3), axis=(1, 2))
+output = cube_view[range(cube.shape[0]), row_start, col_start].copy()
+
+That's all. But to be sure, let's compare the output with the original code, using test data:
+import numpy as np
+from numpy.random import randint
+from numpy.lib.stride_tricks import sliding_window_view
+
+n, m, w = 100, 10, 3     # w - square window size
+row_start = randint(m-w+1, size=n)
+col_start = randint(m-w+1, size=n)
+
+# Test cube
+cube = np.arange(n*m*m).reshape(n, m, m)
+
+# Data to compare with
+sub_arrays = np.empty((n, w, w), dtype=cube.dtype)
+for i in range(cube.shape[0]):
+    sub_arrays[i] = cube[i, row_start[i]:row_start[i]+w, col_start[i]:col_start[i]+w]    
+    
+# Subarrays from the sliding window view
+cube_view = sliding_window_view(cube, window_shape=(w, w), axis=(1, 2))
+output = cube_view[range(cube.shape[0]), row_start, col_start].copy()    
+
+# No exceptions should occur at this step
+assert np.equal(output, sub_arrays).all()
+
+",numpy
+how can i display full nontruncated dataframe information in html when converting from pandas dataframe to html,"I converted a Pandas dataframe to an HTML output using the DataFrame.to_html function. When I save this to a separate HTML file, the file shows truncated output.
+For example, in my TEXT column,
+df.head(1) will show
+The film was an excellent effort...
+instead of
+The film was an excellent effort in deconstructing the complex social sentiments that prevailed during this period.
+This rendition is fine in the case of a screen-friendly format of a massive Pandas dataframe, but I need an HTML file that will show complete tabular data contained in the dataframe, that is, something that will show the latter text element rather than the former text snippet.
+How would I be able to show the complete, non-truncated text data for each element in my TEXT column in the HTML version of the information? I would imagine that the HTML table would have to display long cells to show the complete data, but as far as I understand, only column-width parameters can be passed into the DataFrame.to_html function.
+","Set the display.max_colwidth option to None (or -1 before version 1.0):
+pd.set_option('display.max_colwidth', None)
+
+set_option documentation
+For example, in IPython, we see that the information is truncated to 50 characters. Anything in excess is ellipsized:
+
+If you set the display.max_colwidth option, the information will be displayed fully:
+
+",pandas
+python file naming convention for data science projects,"What is the correct naming convention for files in a data science and machine learning project?
+I believe the file name of the Python classes should be a noun. However, I want to make it clear that whether to name the class as a subject noun or object noun.
+Which of these should I use?
+1) The class that outputs plots.
+visualization.py, visualizer.py, vis.py, or ... 
+2) The class that analyses the dataset and outputs files that contains results.
+analysis.py, analyzer.py, or ... 
+3) The class that coverts the dataset to pickle files.
+preprocessor.py, preprocessing.py, prepare.py, or ...
+(I had checked PEP8 but couldn't find the clearly naming conversion for the file names)
+","here in PEP-8 naming convention section, YOU will find the correct way. 
+it's is also discuss in pep-8 that naming convention is ambiguous.
+so if you want a correct way ( which another organization follows) then go to GitHub ( tensorflow for example ) see how they maintain there naming convention for maintained project. 
+you can follow there structure and start doing the project.
+Nothing is fixed. it's all depends on how you want to structure it. Better is it should be, easy to read and maintain. 
+",data-science
+pandas dataframe reshape with columns name,"I have a dataframe like this:
+>>> df
+  TYPE    A    B    C    D
+0   IN  550  350  600  360
+1  OUT  340  270  420  190
+
+I want reshape it to this shape:
+       AIN AOUT  BIN BOUT  CIN COUT  DIN DOUT
+       550  340  350  270  600  420  360  190
+
+So I use these codes to do it:
+ds = df.melt().T.iloc[1:,2:]
+ds.columns = ['AIN','AOUT','BIN','BOUT','CIN','COUT','DIN','DOUT']
+>>> ds
+       AIN AOUT  BIN BOUT  CIN COUT  DIN DOUT
+value  550  340  350  270  600  420  360  190
+
+It works, but it seems stupid, the columns name was manual inputed, I wonder if there's a better way more pythonic to do this. Any idea?
+P.S. the ""value"" in output dataframe is insignificant.
+","Code
+Apply join function(python) with map function(pandas) to Multi-index.
+out = df.assign(index=0).pivot(index='index', columns='TYPE')
+out.columns = out.columns.map(''.join)
+
+out:
+       AIN  AOUT  BIN  BOUT  CIN  COUT  DIN  DOUT
+index                                            
+0      550   340  350   270  600   420  360   190
+
+I chose pivot function because it is inconvenient when creating a 1-row dataframe because both melt and stack require T. (If I were creating a series or 1-column dataframe, I would have chosen melt or stack.)
+Example Code
+import pandas as pd
+data = {'TYPE': ['IN', 'OUT'], 
+        'A': [550, 340],
+        'B': [350, 270],
+        'C': [600, 420],
+        'D': [360, 190]}
+df = pd.DataFrame(data)
+
+",pandas
+flyer color in seaborn boxplot with palette,"I have a seaborn boxplot with a categorical variable to use for hue and a dictionary with a color for each category given as the palette argument. MWE:
+import seaborn as sns
+from matplotlib import pyplot as plt
+
+cdict = {""First"" : ""gold"",
+         ""Second"": ""blue"",
+         ""Third"" : ""red""}
+df = sns.load_dataset(""titanic"")[[""sex"",""fare"",""class""]]
+fig, ax = plt.subplots()
+sns.boxplot(data=df, x=""sex"", y=""fare"", hue=""class"",palette=cdict, ax=ax)
+plt.show()
+
+Giving:
+
+I would like to have the fliers in the same color as the boxes (face or edge color). My plot is relatively crowded, so without this it is difficult to quickly see which outlier corresponds to which category.
+","As you are using the hue parameter I don't think you can pass through the flierprops keyword argument to sns.boxplot. Instead we can iterate over the containers/boxes and dynamically fetch/set the colours based on the boxes that we see
+fig, ax = plt.subplots()
+sns.boxplot(data=df, x=""sex"", y=""fare"", hue=""class"", palette=cdict, ax=ax)
+
+for container in ax.containers:
+    for box in container:
+        current_colour = box.box.get_facecolor()
+        box.fliers.set_markerfacecolor(current_colour)
+        # uncomment to set edge colour
+        # box.fliers.set_markeredgecolor(current_colour)
+
+resulting in
+
+",matplotlib
+find the closest converging point of a group of vectors,"I am trying to find the point that is closest to a group of vectors.
+For context, the vectors are inverted rays emitted from center of aperture stop after exiting a lens, this convergence is meant to locate the entrance pupil.
+The backward projection of the exiting rays, while not converging at one single point due to spherical aberration, is quite close to converging toward a point, as illustrated in the figure below.
+
+(For easier simulation the positive z is pointing down)
+I believe that to find the closest point, I would be finding a point that has the shortest distance to all these lines. And wrote the method as follow:
+def FindConvergingPoint(position, direction):
+
+    A = np.eye(3) * len(direction) - np.dot(direction.T, direction)
+    b = np.sum(position - np.dot(direction, np.dot(direction.T, position)), axis=0)
+
+    return np.linalg.pinv(A).dot(b)
+
+For the figure above and judging visually, I would have expected the point to be something around [0, 0, 20]
+However, this is not the case. The method yielded a result of [  0., 188.60107764, 241.13690715], which is far from the converging point I was expecting.
+Is my algorithm faulty or have I missed something about python/numpy?
+
+Attached are the data for the vectors:
+position = np.array([
+    [0, 0, 0],
+    [0, -1.62, 0.0314],
+    [0, -3.24, 0.1262],
+    [0, -4.88, 0.2859],
+    [0, -6.53, 0.5136],
+    [0, -8.21, 0.8135],
+    [0, -9.91, 1.1913],
+    [0, -11.64, 1.6551],
+    [0, -13.43, 2.2166],
+    [0, -15.28, 2.8944],
+    [0, -17.26, 3.7289]
+])
+
+direction = np.array([
+    [0, 0, 1],
+    [0, 0.0754, 0.9972],
+    [0, 0.1507, 0.9886],
+    [0, 0.2258, 0.9742],
+    [0, 0.3006, 0.9537],
+    [0, 0.3752, 0.9269],
+    [0, 0.4494, 0.8933],
+    [0, 0.5233, 0.8521],
+    [0, 0.5969, 0.8023],
+    [0, 0.6707, 0.7417],
+    [0, 0.7459, 0.6661]
+])
+
+","I'm assuming the answer to my question in the comment is that you have symmetry such that the ""closest point"" must lie on the z-axis. Furthermore, I'm assuming you are somewhat flexible about the notion of ""closest"".
+First, let's remove the zeroth point from position and direction, since that will pass through all points on the z-axis (and cause numerical problems).
+Next, let's find the distance from each position along direction that brings us back to the z-axis.
+# transpose and remove the x-axis for simplicity
+position = position.T[1:]
+direction = direction.T[1:]
+
+# more carefully normalize direction vectors
+direction /= np.linalg.norm(direction, axis=0)
+
+# find the distance from `position` along `direction` that
+# brings us back to the z-axis.
+distance = position[0] / direction[0]
+
+# All these points should be on the z-axis
+point_on_z = position - distance * direction
+# array([[ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+#          0.        ,  0.        ,  0.        ,  0.        ,  0.        ],
+#        [21.45665199, 21.380772  , 21.34035527, 21.23103513, 21.09561354,
+#         20.89001607, 20.608748  , 20.26801397, 19.79193392, 19.14234148]])
+
+Indeed, the y-coordinate of all these points is 0, and the z-coordinate is nearly 20 for all of them, as you expected. If you are flexible about your notion of ""closest"", the mean of the z-coordinates will minimize the sum of square of distances to the point where the rays intersect the z-axis (but not necessarily the minimum distances between your point and the rays).
+This might not solve exactly the problem you were hoping to solve, but hopefully you will find it ""useful"". If it's not spot on, let me know what assumptions I've made that I shouldn't, and we can try to find a solution to the refined question.
+",numpy
+quick way to create hundreds of new columns in pandas dataframe,"I have a Pandas dataframe that looks like:
+Group_ID   feature1   feature2   label
+1          3          2          0
+1          5          7          0
+1          2          4          1
+1          9          9          1
+1          2          0          1
+2          4          1          1
+2          8          8          0
+2          5          5          0
+3          0          9          1
+3          4          7          1
+3          2          3          0
+3          7          2          0
+
+and for each feature i, I would like to create a new feature called featurei_rel for i=1,2 using the following logic: it is given by feature i for that row divided by the mean of the smallest two feature i in the same group.
+So for example, for feature1 row 1, the smallest two values in Group 1 are 2 and 2 (row 3 and 5 respectively), hence feature1_rel for row 1 is given by 3/((2+2)/2) = 3/2 = 1.5 and the desired result looks like
+Group_ID   feature1   feature2   feature1_rel   feature2_rel   label
+1          3          2          3/((2+2)/2)    2/((0+2)/2)    0
+1          5          7          5/((2+2)/2)    7/((0+2)/2)    0
+1          2          4          2//((2+2)/2)   4/((0+2)/2)    1
+1          9          9          9//((2+2)/2)   9/((0+2)/2)    1
+1          2          0          2/((2+2)/2)    0/((0+2)/2)    1
+2          4          1          4/((4+5)/2)    1/((1+5)/2)    1
+2          8          8          8/((4+5)/2)    8/((1+5)/2)    0
+2          5          5          5/((4+5)/2)    5/((1+5)/2)    0
+3          0          9          0/((0+2)/2)    9/((2+3)/2)    1
+3          4          7          4/((0+2)/2)    7/((2+3)/2)    1
+3          2          3          2/((0+2)/2)    3/((2+3)/2)    0
+3          7          2          7/((0+2)/2)    2/((2+3)/2)    0
+
+So here is what I have tried:
+# create columns to find the smallest element in a group
+df['feature1min'] = df.groupby('Group_ID')['feature1'].transform('min')
+# create columns to find the second smallest element in a group
+df['feature1min2'] = df.groupby('Group_ID')['feature1'].nsmallest(2)
+
+df['feature1_rel'] = df['feature1']/((df['feature1min'] + df['feature1min2']) / 2)
+
+However, in my actual dataset, I have hundreds of features and millions of rows, so I was wondering is there any fast way to do it, thank you so much in advance.
+","IIUC, you can try:
+col = pd.Index(['feature1', 'feature2'])
+df[col+'_rel']= df.groupby('Group_ID')[col].transform(lambda x: x/x.nsmallest(2).mean())
+
+Output:
+    Group_ID  feature1  feature2  label  feature1_rel  feature2_rel
+0          1         3         2      0      1.500000      2.000000
+1          1         5         7      0      2.500000      7.000000
+2          1         2         4      1      1.000000      4.000000
+3          1         9         9      1      4.500000      9.000000
+4          1         2         0      1      1.000000      0.000000
+5          2         4         1      1      0.888889      0.333333
+6          2         8         8      0      1.777778      2.666667
+7          2         5         5      0      1.111111      1.666667
+8          3         0         9      1      0.000000      3.600000
+9          3         4         7      1      4.000000      2.800000
+10         3         2         3      0      2.000000      1.200000
+11         3         7         2      0      7.000000      0.800000
+
+",pandas
+attributeerror 39floatprogress39 object has no attribute 39style39,"import numpy as np
+import pandas as pd
+
+import torch
+from torch.utils.data import Dataset
+
+import stanza
+stanza.download('en')
+nlp = stanza.Pipeline(lang='en')
+
+
+
+above code used for Creating a Pipeline
+Stanza provides a plethora of pre-trained NLP models for 66 human languages that we can make use of. Downloading a pre-trained model and creating a pipeline is as easy as:
+this code showing this error below shown
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.5.0.json
+
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+Cell In[21], line 8
+     
+----> 8 stanza.download('en')
+
+--> 547     download_resources_json
+
+--> 441 request_file(
+ 
+--> 152     download_file(url, temppath, proxies, raise_for_status)
+
+--> 119 with tqdm(total=file_size, unit='B', unit_scale=True, \
+   
+--> 245 self.colour = colour
+
+--> 204         self.container.children[-2].style.bar_color = bar_color
+
+
+i have also upgraded jupyter notebook , tqdm and stanza
+pip install --upgrade stanza
+pip install --upgrade tqdm
+
+
+but problem still persist.    this is project regarding
+","I had the same problem with another library. In the terminal, it works and shows a progress bar, in a notebook-cell it raised the error above.
+I worked around the issue by capturing the output of the command that tries to show the progress bar:
+from contextlib import redirect_stdout
+
+f = io.StringIO()
+with redirect_stdout(f):
+    problematic_function()
+
+(The problematic function in my case was SentenceTransformerEmbeddings from langchain)
+",data-science
+sampling without replacement with unequal weights,"I am trying to find an algorithm that selects 12 elements from a list of 25 according to the probability of each one of them. These elements cannot be repeated.
+I've tried using the function without replacement, but I can't get it to keep the weights when I do 1000 iterations to check that it was done correctly. I have only succeeded if I use the function with replace = True.
+Since that function returns duplicate items to me, then I clean the list removing the duplicates. By doing this, the probability that I get each number is not the one that I had defined at the beginning. I am aware that the error is here and that I should be using the function with replace = False, but I can't get it to give me the result.
+import numpy as np
+from collections import Counter 
+
+nameList = ['AAAAAA', 'B', 'C', 'D','E','F','G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P','Q','R','S','T','U','V','W','X','ZZZZZZZZZZZZZZZZ']
+probability_nameList = [0.10, 0.01, 0.02, 0.03, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04]
+
+sampleNames =[]
+sampleNamesControl =[]
+cleaned_result = []
+test_list = []
+
+for i in range(1000):
+    sampleNames += np.random.choice(nameList, 100,replace=True, p=probability_nameList)
+    for item in sampleNames:    
+        if not item in cleaned_result:
+            cleaned_result += [item] 
+    sampleNames =[]
+    test_list += cleaned_result[0:12]
+    cleaned_result = []
+
+print(Counter(test_list))
+
+
+Response:
+Counter({'AAAAAA': 832, 'F': 522, 'X': 513, 'ZZZZZZZZZZZZZZZZ': 506, 'I': 505, 'L': 504, 'N': 501, 'S': 499, 'T': 498, 'U': 496, 'R': 492, 'O': 491, 'J': 489, 'P': 488, 'E': 487, 'V': 485, 'K': 482, 'Q': 479, 'H': 473, 'G': 471, 'M': 468, 'W': 461, 'D': 404, 'C': 297, 'B': 157})
+
+As you can see, AAAAA had to be 10 times bigger than B, and that is not happening.
+P(AAAAA)= 10xP(B)
+","This is not a programming issue but fundamental maths: what you want is not possible.
+You need to take into account conditional probabilities.
+I'll give you a small example. Let's take 4 letters A,B,C,D and pick 2 of them, without replacement, with A having a 97% probability of being picked and the others 1%.
+Given A's high probability, it will be picked most of the time. But once we have picked it, as we are without replacement, there is no more A and a 1/3 chance to pick one of the other 3 values.
+Indeed:
+from itertools import chain
+from collections import Counter
+
+Counter(chain.from_iterable(np.random.choice(list('ABCD'),
+                                             2, replace=False,
+                                             p=[.97, .01, .01, .01])
+                            for i in range(10000)))
+
+Output:
+Counter({'A': 9995, 'C': 3358, 'B': 3317, 'D': 3330})
+
+A is picked almost all the time and the others are picked about one third of the time.
+NB. The end frequency of B,C,D is roughly 1/3 because the probability of A is close to 1, if p(A) was smaller, the calculation of the final frequencies would be a bit more complex. The final frequency of B (or C or D) is 0.97*1/3+0.01*(0.01/0.99)*2+0.01 so a bit above 1/3, and that of A is 0.97+0.01*(0.97/0.99)*3 so ~0.9994
+",numpy
+the requested array has an inhomogeneous shape after 1 dimensions the detected shape was 33  inhomogeneous part,"I stuck in convert list to numpy. Convert list size is (33, n, 428). N is randomly difference that I don't know how numbers are consist. Here is error.
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+C:\Users\HILAB_~1\AppData\Local\Temp/ipykernel_22960/872733971.py in <module>
+----> 1 X_train = np.array(X_train, dtype=np.float64)
+      2 
+      3 for epoch in range(EPOCH):
+      4     X_train_ten, y_train_ten = Variable(torch.from_numpy(X_train)), Variable(torch.tensor(y_train, dtype=torch.float32, requires_grad=True))
+      5     print(X_train_ten.size())
+
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (33,) + inhomogeneous part.
+
+and problem code is here.
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, shuffle=True
+)
+
+print(""[SIZE]\t\tTrain X size : {}, Train y size : {}\n\t\tTest X size : {}, Test y size : {}""\
+        .format(len(X_train), len(y_train), len(X_test), len(y_test)))
+
+train_dataloadloader = DataLoader(X_train)
+test_dataloader = DataLoader(X_test)
+
+X_train = np.array(X_train, dtype=np.float64)
+
+I can't understand what does error means. Please help. thanks :D
+","It means that whatever sequences X contains, they are not of the same length. You can check {len(e) for e in X); this is the set of all different lengths found in X.
+Consider the following example:
+>>> import numpy as np
+>>> x = [[1, 2], [2, 3, 4]]
+>>> np.array(x, dtype=np.float64)
+[...]
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (2,) + inhomogeneous part.
+
+Here, the list x contains two other lists, one of length 2 and the other of length 3. They can't be combined into one array since the ""column"" dimension doesn't match.
+",numpy
+mplot3d fill_between extends over axis limits,"I have questions related to creating a simple lineplot in Python with mplot3D where the area under the plot is filled. I am using Python 2.7.5 on RedHatEnterprise 7.2, matplotlib 1.2.0 and numpy 1.7.2.
+Using the code below, I am able to generate a line plot. This is displayed as expected with the beginning / end of the plot set by the limits of the imported data set.
+I am then trying to fill the area between the line plot and -0.1 using the answer given by Bart from Plotting a series of 2D plots projected in 3D in a perspectival way. This works, however, the filled area is continued beyond the limits of the data set. This is also the case when running the example from the link.
+This screen shot shows the plot generated with filled area extending beyond the set axis limits.
+
+
+How do I achieve that the filled area is only the range of the data set or the axis limits whichever is smaller?
+How do I add a legend for those plots onto the figure?
+
+Code as follows:
+from numpy import *
+import matplotlib.pylab as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+x,y = genfromtxt(""data.dat"",unpack=True)
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+ax.add_collection3d(plt.fill_between(x,y,-0.1, color='orange', alpha=0.3,label=""filled plot""),1, zdir='y')
+
+ax.plot(x,y,1,zdir=""y"",label=""line plot"")
+ax.legend()
+
+ax.set_xlim3d(852.353,852.359)
+ax.set_zlim3d(-0.1,5)
+ax.set_ylim3d(0,2)
+ax.get_xaxis().get_major_formatter().set_useOffset(False)
+
+plt.show()
+
+","I don't know how to put fill_between working the way you want it to, but I can provide an alternative using a 3D polygon:
+from numpy import *
+import matplotlib.pylab as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection # New import
+
+#x,y = genfromtxt(""data.dat"",unpack=True)
+# Generated some random data
+w = 3
+x,y = np.arange(100), np.random.randint(0,100+w,100)
+y = np.array([y[i-w:i+w].mean() for i in range(3,100+w)])
+z = np.zeros(x.shape)
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+#ax.add_collection3d(plt.fill_between(x,y,-0.1, color='orange', alpha=0.3,label=""filled plot""),1, zdir='y')
+verts = [(x[i],z[i],y[i]) for i in range(len(x))] + [(x.max(),0,0),(x.min(),0,0)]
+ax.add_collection3d(Poly3DCollection([verts],color='orange')) # Add a polygon instead of fill_between
+
+ax.plot(x,z,y,label=""line plot"")
+ax.legend()
+ax.set_ylim(-1,1)
+plt.show()
+
+The code above generates some random data. Builds vertices from it and plots a polygon with those vertices. This will give you the plot you wish (but does not use fill_between). The result is:
+
+",matplotlib
+with pandascut how do i get integer bins and avoid getting a negative lowest bound,"My dataframe has zero as the lowest value. I am trying to use the precision and include_lowest parameters of pandas.cut(), but I can't get the intervals consist of integers rather than floats with one decimal. I can also not get the left most interval to stop at zero.
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set(style='white', font_scale=1.3)
+
+df = pd.DataFrame(range(0,389,8)[:-1], columns=['value'])
+df['binned_df_pd'] = pd.cut(df.value, bins=7, precision=0, include_lowest=True)
+sns.pointplot(x='binned_df_pd', y='value', data=df)
+plt.xticks(rotation=30, ha='right')
+
+
+I have tried setting precision to -1, 0 and 1, but they all output one decimal floats. The pandas.cut() help does mention that the x-min and x-max values are extended with 0.1 % of the x-range, but I thought maybe include_lowest could suppress this behaviour somehow. My current workaround involves importing numpy:
+import numpy as np
+
+bin_counts, edges = np.histogram(df.value, bins=7)
+edges = [int(x) for x in edges]
+df['binned_df_np'] = pd.cut(df.value, bins=edges, include_lowest=True)
+
+sns.pointplot(x='binned_df_np', y='value', data=df)
+plt.xticks(rotation=30, ha='right')
+
+
+Is there a way to obtain non-negative integers as the interval boundaries directly with pandas.cut() without using numpy?
+Edit: I just noticed that specifying right=False makes the lowest interval shift to 0 rather than -0.4. It seems to take precedence over include_lowest, as changing the latter does not have any visible effect in combination with right=False. The following intervals are still specified with one decimal point.
+
+","None of the other answers (including OP's np.histogram workaround) seem to work anymore. They have upvotes, so I'm not sure if something has changed over the years.
+IntervalIndex requires all intervals to be closed identically, so [0, 53] cannot coexist with (322, 376].
+
+Here are two working solutions based on the relabeling approach:
+
+Without numpy, reuse pd.cut edges as pd.cut labels
+bins = 7
+
+_, edges = pd.cut(df.value, bins=bins, retbins=True)
+labels = [f'({abs(edges[i]):.0f}, {edges[i+1]:.0f}]' for i in range(bins)]
+
+df['bin'] = pd.cut(df.value, bins=bins, labels=labels)
+
+#     value         bin
+# 1       8     (0, 53]
+# 2      16     (0, 53]
+# ..    ...         ...
+# 45    360  (322, 376]
+# 46    368  (322, 376]
+
+
+With numpy, convert np.linspace edges into pd.cut labels
+bins = 7
+
+edges = np.linspace(df.value.min(), df.value.max(), bins+1).astype(int)
+labels = [f'({edges[i]}, {edges[i+1]}]' for i in range(bins)]
+
+df['bin'] = pd.cut(df.value, bins=bins, labels=labels)
+
+#     value         bin
+# 1       8     (0, 53]
+# 2      16     (0, 53]
+# ..    ...         ...
+# 45    360  (322, 376]
+# 46    368  (322, 376]
+
+
+
+Note: Only the labels are changed, so the underlying binning will still occur with 0.1% margins.
+
+pointplot() output (as of pandas 1.2.4):
+sns.pointplot(x='bin', y='value', data=df)
+plt.xticks(rotation=30, ha='right')
+
+
+",pandas
+pandas dataframe filter to return true for all rows how,"Hi I have a filter 'm' set that is flexible enough to change by me. Sometimes, I want to filter by Car or x_acft_body , or any of the various other fields, etc. Sometime I want to have all of the rows returned by commenting and uncommenting the required lines. But without changing the subsequent code, after the filter 'm' line.
+How can I have a filter that will return true for ALL rows, when I don't want the filters applied? For e.g. something like 1==1 but i know this doesn't work.
+I don't want to set dfdata.somefield.notnull() etc.  as I will not be too sure if this field will be always not null or not. also I DO NOT want to change subsequent code to be like dfdata.groupby.     i.e. without the [m]
+# set filter if needed
+m = (   1==1 #& return true at all times
+#         (dfdata.Car == 'PG') #&
+#         (dfdata.x_acft_body == 'N')# &
+#         (dfdata.Car.isin(['PG', 'VJ', 'VZ']))
+)
+
+
+dft1 = dfdata[m].groupby(['FLD1']).agg({'FLD2': 'count'})
+
+","You can create bool constant and change final mask by it:
+#True for return all rows
+m = (dfdata.Car == 'PG') | True
+
+And:
+#False for apply filter
+m = (dfdata.Car == 'PG') | False
+
+
+First solutions:
+m = [True] * len(df.index)
+
+
+m = np.repeat(True, len(df.index))
+
+",pandas
+how do i shuffle a specific 2d cell along the zaxis in a numpy 3d matrix,"Let's say I have a 3D numpy matrix M with shape (c, b, a). I want to shuffle a specific cell (x, y) in M along the z-axis --- that is, I want to shuffle the array [M[z][y][x] for z in range(c)] and assign it back (somehow, I have no idea how that would work --- maybe with M[:, y, x]?)
+I can think of one way to do this: Flatten each 2D matrix, so M1 is a 2D matrix; transpose M1 to M2, shuffle M2[x+y*a], transpose M2 back to M1, then reform the 2D matrices.
+However, this is clearly clunky. Is there a cleaner way to do this?
+","I found a solution: np.random.shuffle(M[:, y, x]). Note that this modifies M (you can make a copy by first executing M1=copy.deecopy(M) before shuffling).
+",numpy
+pandas multiindex dataframe  selecting max from one index within multiindex,"I've got a dataframe with a multi index of Year and Month like the following
+     |     |Value
+Year |Month|  
+     |  1  |  3
+1992 |  2  |  5
+     |  3  |  8
+     | ... | ...
+1993 |  1  |  2
+     | ... | ...
+
+I'm trying to select the maximum Value for each year and put that in a DF like this: 
+     | Max
+Year |  
+1992 |  5
+1993 |  2
+     | ... 
+
+There's not much info on multi-indexes, should I simply do a group by and apply or something similar to make it more simple?
+","Exactly right:
+df.groupby(level=0).apply(max)
+
+In my sample DataFrame:
+
+                     0
+Caps Lower            
+A    a     0  0.246490
+           1 -1.265711
+           2 -0.477415
+           3 -0.355812
+           4 -0.724521
+     b     0 -0.409198
+           1 -0.062552
+           2 -0.731789
+           3  1.131616
+           4  0.085248
+B    a     0  0.193948
+           1  2.010710
+           2  0.289300
+           3  0.305373
+           4  1.376965
+     b     0  0.210522
+           1  1.431279
+           2 -0.247171
+           3  0.899074
+           4  0.639926
+
+Result:
+
+             0
+Caps          
+A     1.131616
+B     2.010710
+
+This is how I created the DataFrame, by the way:
+df = pd.DataFrame(np.random.randn(5,4), columns = l)
+df.columns = pd.MultiIndex.from_tuples(df.columns, names=['Caps','Lower'])
+df = pd.DataFrame(df.unstack())
+
+",pandas
+matplotlib  making labels for violin plots,"I usually make labels for bars in the following manner using parameter 'label' in the method 'bar'.
+axes[0].bar(x, y, bar_width, label='abc')
+axes[0].legend()
+
+Now I'd like to plot violin plots and make label for each collection as follows, but it doesn't work since 'violinplot' doesn't have the parameter 'label'.
+axes[0].violinplot(data1, label='abc1')
+axes[1].violinplot(data2, label='abc2')
+
+Can anyone help me out to make a label for each collection?
+","As it was mentioned in comment, some plots in matplotlib don't support legends. Documentation still provides a simple way to add custom legends for them: http://matplotlib.org/users/legend_guide.html#proxy-legend-handles
+Main idea : add 'fake' objects, which can be not shown in the plot, then use it to form a handles list for legend method.
+    import random
+    import numpy as np
+    import matplotlib.pyplot as pl
+    import matplotlib.patches as mpatches
+    from itertools import repeat
+
+    red_patch = mpatches.Patch(color='red')
+    # 'fake' invisible object
+
+    pos   = [1, 2, 4, 5, 7, 8]
+    label = ['plot 1','plot2','ghi','jkl','mno','pqr']
+    data  = [np.random.normal(size=100) for i in pos]
+
+    fake_handles = repeat(red_patch, len(pos))
+
+    pl.figure()
+    ax = pl.subplot(111)
+    pl.violinplot(data, pos, vert=False)
+    ax.legend(fake_handles, label)
+    pl.show()
+
+
+",matplotlib
+how to fill spaces between subplots with a color in matplotlib,"With the following code :
+nb_vars=4
+
+fig, axs = plt.subplots(4,4,figsize=(8,8), gridspec_kw = {'wspace':0.20, 'hspace':0.20}, dpi= 100)
+for i_ax in axs:
+    for ii_ax in i_ax:
+        ii_ax.set_yticklabels([])
+for i_ax in axs:
+    for ii_ax in i_ax:
+        ii_ax.set_xticklabels([])
+
+The space between the subplots is white. How is it possible to colour them ? And with different colors ?
+See for example this figure :
+
+","You could add patches in between the axes:
+from matplotlib import patches
+
+nb_vars=4
+
+# colors between two axes in a row
+r_colors = [['#CC0000', '#CC0000', '#CC0000'],
+            ['#0293D8', '#0293D8', '#0293D8'],
+            ['#FF8E00', '#FF8E00', '#FF8E00'],
+            ['#ABB402', '#ABB402', '#ABB402'],
+           ]
+
+# colors between two axes in a column
+c_colors = [['#CC0000', '#0293D8', '#FF8E00', '#ABB402'],
+            ['#CC0000', '#0293D8', '#FF8E00', '#ABB402'],
+            ['#CC0000', '#0293D8', '#FF8E00', '#ABB402'],
+           ]
+
+fig, axs = plt.subplots(4, 4, figsize=(4, 4),
+                        gridspec_kw = {'wspace':0.20, 'hspace':0.20}, dpi= 100)
+h, w = axs.shape
+
+for r, i_ax in enumerate(axs):
+    for c, ii_ax in enumerate(i_ax):
+        ii_ax.set_yticklabels([])
+        ii_ax.set_xticklabels([])
+        ii_ax.plot([-r, r], [-c, c]) # plot dummy line for demo
+        bbox = ii_ax.get_position()
+        if r+1 < h:
+            ii_ax.add_patch(patches.Rectangle((bbox.x0, bbox.y0),
+                                              bbox.width, -0.2,
+                                              facecolor=c_colors[r][c],
+                                              zorder=-1, clip_on=False,
+                                              transform=fig.transFigure, figure=fig
+                                             ))
+        if c+1 < w:
+            ii_ax.add_patch(patches.Rectangle((bbox.x1, bbox.y0),
+                                              0.2, bbox.height,
+                                              facecolor=r_colors[r][c],
+                                              zorder=-1, clip_on=False,
+                                              transform=fig.transFigure, figure=fig
+                                             ))
+
+Output:
+
+",matplotlib
+rolling window selection with groupby in pandas,"I have the following pandas dataframe:
+# Create the DataFrame
+df = pd.DataFrame({
+    'id': [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2],
+    'date': [1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8, 9, 10, 11, 12],
+    'value': [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28]
+})
+df
+
+id  date    value
+0   1   1   11
+1   1   2   12
+2   1   3   13
+3   1   4   14
+4   1   5   15
+5   1   6   16
+6   1   7   17
+7   1   8   18
+8   2   5   21
+9   2   6   22
+10  2   7   23
+11  2   8   24
+12  2   9   25
+13  2   10  26
+14  2   11  27
+15  2   12  28
+
+I want to query the above dataframe, in a rolling window manner, for both ids. The rolling window should be of size n.
+So, if n==2, in the 1st iteration I would like to query this:
+df.query('(id==1 and (date==1 or date==2)) or (id==2 and (date==5 or date==6))')
+id  date    value
+0   1   1   11
+1   1   2   12
+8   2   5   21
+9   2   6   22
+
+in the 2nd iteration I would like to query this:
+df.query('(id==1 and (date==2 or date==3)) or (id==2 and (date==6 or date==7))')
+id  date    value
+1   1   2   12
+2   1   3   13
+9   2   6   22
+10  2   7   23
+
+in the 3rd iteration I would like to query this:
+df.query('(id==1 and (date==3 or date==4)) or (id==2 and (date==7 or date==8))')
+id  date    value
+2   1   3   13
+3   1   4   14
+10  2   7   23
+11  2   8   24
+
+etc. How could I do that in pandas ? My data has around 500 ids
+","The exact expected logic is not fully clear, but assuming you want to loop over the groups/rolls, you could combine groupby.nth with sliding_window_view. By reusing the DataFrameGroupBy object, will only need to compute the groups once:
+import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view as swv
+
+n = 2
+
+max_size = df['id'].value_counts(sort=False).max()
+g = df.sort_values(by=['id', 'date']).groupby('id', sort=False)
+
+for idx in swv(np.arange(max_size), n):
+    print(f'rows {idx}')
+    print(g.nth(idx))
+
+Output:
+rows [0 1]
+   id  date  value
+0   1     1     11
+1   1     2     12
+8   2     5     21
+9   2     6     22
+rows [1 2]
+    id  date  value
+1    1     2     12
+2    1     3     13
+9    2     6     22
+10   2     7     23
+rows [2 3]
+    id  date  value
+2    1     3     13
+3    1     4     14
+10   2     7     23
+11   2     8     24
+rows [3 4]
+    id  date  value
+3    1     4     14
+4    1     5     15
+11   2     8     24
+12   2     9     25
+rows [4 5]
+    id  date  value
+4    1     5     15
+5    1     6     16
+12   2     9     25
+13   2    10     26
+rows [5 6]
+    id  date  value
+5    1     6     16
+6    1     7     17
+13   2    10     26
+14   2    11     27
+rows [6 7]
+    id  date  value
+6    1     7     17
+7    1     8     18
+14   2    11     27
+15   2    12     28
+
+Alternatively, and assuming groups with an identical size and sorted by id/date, using shifted indexing:
+n = 2
+ngroups = df['id'].nunique()
+for idx in swv(np.arange(len(df)).reshape(-1, ngroups, order='F'), n, axis=0):
+    print(f'indices: {idx.ravel()}')
+    print(df.iloc[idx.flat])
+
+Output:
+indices: [0 1 8 9]
+   id  date  value
+0   1     1     11
+1   1     2     12
+8   2     5     21
+9   2     6     22
+indices: [ 1  2  9 10]
+    id  date  value
+1    1     2     12
+2    1     3     13
+9    2     6     22
+10   2     7     23
+indices: [ 2  3 10 11]
+    id  date  value
+2    1     3     13
+3    1     4     14
+10   2     7     23
+11   2     8     24
+indices: [ 3  4 11 12]
+    id  date  value
+3    1     4     14
+4    1     5     15
+11   2     8     24
+12   2     9     25
+indices: [ 4  5 12 13]
+    id  date  value
+4    1     5     15
+5    1     6     16
+12   2     9     25
+13   2    10     26
+indices: [ 5  6 13 14]
+    id  date  value
+5    1     6     16
+6    1     7     17
+13   2    10     26
+14   2    11     27
+indices: [ 6  7 14 15]
+    id  date  value
+6    1     7     17
+7    1     8     18
+14   2    11     27
+15   2    12     28
+
+",pandas
+how do you display the scale in meters the north arrow and the axes in latitude and longitude on a map with geopandas,"With reference to this issue, is it possible to have the scale bar (projected in meters, so 3857 for example) with the x,y axes in latitude, longitude projection (4326) and the north arrow?
+I don't see a turnkey solution to do this with geopandas. While this seems to be basic settings for map display with GIS. Is there a technical reason for this?
+import geopandas as gpd
+from matplotlib_scalebar.scalebar import ScaleBar
+import matplotlib.pyplot as plt
+
+df = gpd.read_file(gpd.datasets.get_path('nybb'))
+ax = df.to_crs(4326).plot()
+ax.add_artist(ScaleBar(1)) #how add ScaleBar for df in 3857? 
+plt.show()
+
+","From this, it looks like you have to compute the great circle distance between two locations A and B with coordinates
+A=[longitudeA,latitudeA] and B=[longitudeA+1,latitudeA], at the latitude you are interested in (in your case ~40.7°). To compute the great circle distance you can use the 'haversine_distances' from sklearn (here) and multiply it by the radius of the earth 6371000 to get the distance in meters.
+Once you get this distance dx, you can just pass it to your scalebar with ScaleBar(dx=dx,units=""m"").
+So overall, the code looks like that:
+import numpy as np
+import geopandas as gpd
+from matplotlib_scalebar.scalebar import ScaleBar
+import matplotlib.pyplot as plt
+from sklearn.metrics.pairwise import haversine_distances
+
+df = gpd.read_file(gpd.datasets.get_path('nybb'))
+ax = df.to_crs(4326).plot()
+A=[-74.5*np.pi/180.,40.7*np.pi/180.] #Latitude of interest here 40.7 deg, longitude -74.5
+B=[-73.5*np.pi/180.,40.7*np.pi/180.] ##Latitude of interest here 40.7 deg, longitude -74.5+1
+dx=(6371000)*haversine_distances([A,B])[0,1]
+ax.add_artist(ScaleBar(dx=dx,units=""m"")) 
+plt.show()
+
+And the output gives:
+
+",matplotlib
+triangle wave shaped array in python,"What is the most efficient way to produce an array of 100 numbers that form the shape of the triangle wave below, with a max/min amplitude of 0.5?
+Triangle waveform in mind:
+
+","Use a generator:
+def triangle(length, amplitude):
+     section = length // 4
+     for direction in (1, -1):
+         for i in range(section):
+             yield i * (amplitude / section) * direction
+         for i in range(section):
+             yield (amplitude - (i * (amplitude / section))) * direction
+
+This'll work fine for a length divisible by 4, you may miss up to 3 values for other lengths.
+>>> list(triangle(100, 0.5))
+[0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.48, 0.46, 0.44, 0.42, 0.4, 0.38, 0.36, 0.33999999999999997, 0.32, 0.3, 0.28, 0.26, 0.24, 0.21999999999999997, 0.2, 0.18, 0.15999999999999998, 0.14, 0.12, 0.09999999999999998, 0.08000000000000002, 0.06, 0.03999999999999998, 0.020000000000000018, -0.0, -0.02, -0.04, -0.06, -0.08, -0.1, -0.12, -0.14, -0.16, -0.18, -0.2, -0.22, -0.24, -0.26, -0.28, -0.3, -0.32, -0.34, -0.36, -0.38, -0.4, -0.42, -0.44, -0.46, -0.48, -0.5, -0.48, -0.46, -0.44, -0.42, -0.4, -0.38, -0.36, -0.33999999999999997, -0.32, -0.3, -0.28, -0.26, -0.24, -0.21999999999999997, -0.2, -0.18, -0.15999999999999998, -0.14, -0.12, -0.09999999999999998, -0.08000000000000002, -0.06, -0.03999999999999998, -0.020000000000000018]
+
+",numpy
+when to use numpyrandomrandn and when numpyrandomrand,"In my deep learning exercise I had to initialize one parameter D1 of same size as A1 so what I did is:
+D1 = np.random.randn(A1.shape[0],A1.shape[1]) 
+
+But after computing further equations when I checked the results they didn't matched. Then after proper reading the docs I discovered that they have said to initialize D1 using rand() instead of randn():
+D1 = np.random.rand(A1.shape[0],A1.shape[1]) 
+
+But they didn't specified the reason for it as the code is working in both the cases. And also there was a doc for that exercise so I figured out the error, but how, when and why to choose out of these two?
+","The difference between rand and randn is (besides the letter n) that rand returns random numbers sampled from a uniform distribution over the interval [0,1), while randn instead samples from a normal (a.k.a. Gaussian) distribution with a mean of 0 and a variance of 1.
+In other words, the distribution of the random numbers produced by rand looks like this:
+
+In a uniform distribution, all the random values are restricted to a specific interval, and are evenly distributed over that interval.  If you generate, say, 10000 random numbers with rand, you'll find that about 1000 of them will be between 0 and 0.1, around 1000 will be between 0.1 and 0.2, around 1000 will be between 0.2 and 0.3, and so on.  And all of them will be between 0 and 1 — you won't ever get any outside that range.
+Meanwhile, the distribution for randn looks like this:
+
+The first obvious difference between the uniform and the normal distributions is that the normal distribution has no upper or lower limits — if you generate enough random numbers with randn, you'll eventually get one that's as big or as small as you like (well, subject to the limitations of the floating point format used to store the numbers, anyway).  But most of the numbers you'll get will still be fairly close to zero, because the normal distribution is not flat: the output of randn is a lot more likely to fall between, say, 0 and 0.1 than between 0.9 and 1, whereas for rand both of these are equally likely.  In fact, as the picture shows, about 68% of all randn outputs fall between -1 and +1, while 95% fall between -2 and +2, and about 99.7% fall between -3 and +3.
+These are completely different probability distributions.  If you switch one for the other, things are almost certainly going to break.  If the code doesn't simply crash, you're almost certainly going to get incorrect and/or nonsensical results.
+",numpy
+explain this 4d numpy array indexing intuitively,"x = np.random.randn(4, 3, 3, 2)
+print(x[1,1])
+
+output:
+[[ 1.68158825 -0.03701415]
+[ 1.0907524  -1.94530359]
+[ 0.25659178  0.00475093]]
+
+I am python newbie. I can't really understand 4-D array index like above. What does x[1,1] mean?
+For example, for vector
+a = [[2][3][8][9]], a[0] = 2, a[3] = 9. 
+
+I get this but I don't know what x[1,1] refers to.
+Please explain in detail. Thank you.
+","A 2D array is a matrix : an array of arrays.
+A 4D array is basically a matrix of matrices:
+
+Specifying one index gives you an array of matrices:
+>>> x[1]
+array([[[-0.37387191, -0.19582887],
+        [-2.88810217, -0.8249608 ],
+        [-0.46763329,  1.18628611]],
+
+       [[-1.52766397, -0.2922034 ],
+        [ 0.27643125, -0.87816021],
+        [-0.49936658,  0.84011388]],
+
+       [[ 0.41885001,  0.16037164],
+        [ 1.21510322,  0.01923682],
+        [ 0.96039904, -0.22761806]]])
+
+
+Specifying two indices gives you a matrix:
+>>> x[1, 1]
+array([[-1.52766397, -0.2922034 ],
+       [ 0.27643125, -0.87816021],
+       [-0.49936658,  0.84011388]])
+
+
+Specifying three indices gives you an array:
+>>> x[1, 1, 1]
+array([ 0.27643125, -0.87816021])
+
+
+Specifying four indices gives you a single element:
+>>> x[1, 1, 1, 1]
+-0.87816021212791107
+
+
+x[1,1] gives you the small matrix that was saved in the 2nd column of the 2nd row of the large matrix.
+",numpy
+how can i run a code where i can plot and save multiple hours of the latest gfs model run,"I want to plot precip type from the start of the GFS run (hour 0) through hour 240 at 6 hour intervals. (in this code I only try to go to hour 108) Also, at the end of the code when saving the the plots, how do I save them each as seperate png images?
+Here is the code:
+from datetime import datetime
+from datetime import timedelta
+import pandas as pd
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import xarray as xr
+import numpy as np
+import metpy.calc as mpcalc
+from metpy.plots import USCOUNTIES
+import netCDF4
+from netCDF4 import Dataset
+from netCDF4 import num2date
+from metpy.units import units
+from scipy.ndimage import gaussian_filter
+import scipy.ndimage as ndimage
+from siphon.catalog import TDSCatalog
+
+start_time = datetime(2025, 1, 7, 12, 0, 0)
+time_deltas = [timedelta(hours=6), timedelta(hours=12), timedelta(hours=18), timedelta(hours=24), timedelta(hours=30), timedelta(hours=36),
+                timedelta(hours=42), timedelta(hours=48), timedelta(hours=54), timedelta(hours=60), timedelta(hours=66), timedelta(hours=72),
+               timedelta(hours=78), timedelta(hours=84), timedelta(hours=90), timedelta(hours=96), timedelta(hours=102), timedelta(hours=108)]
+for time_delta in time_deltas:
+        dt = start_time + time_delta
+#dt = datetime(2025,1,4,12)
+best_gfs = TDSCatalog('https://thredds.ucar.edu/thredds/catalog/grib/NCEP/GFS/Global_0p25deg/catalog.xml?dataset=grib/NCEP/GFS/Global_0p25deg/Best')
+best_ds = best_gfs.datasets[0]
+ncss = best_ds.subset()
+query = ncss.query()
+query.accept('netcdf')
+query.lonlat_box(north=75, south=15, east=320, west=185)
+query.time(dt)
+query.variables('Geopotential_height_isobaric', 'Pressure_reduced_to_MSL_msl', 'Precipitation_rate_surface', 'Snow_depth_surface', 'Categorical_Snow_surface','Categorical_Freezing_Rain_surface', 'Categorical_Ice_Pellets_surface')
+
+data = ncss.get_data(query)
+print(list(data.variables))
+
+plev = list(data.variables['isobaric'][:])
+
+lat = data.variables['latitude'][:].squeeze()
+lon = data.variables['longitude'][:].squeeze()
+time1 = data['time']
+vtime = num2date(time1[:].squeeze(), units=time1.units)
+emsl_var = data.variables['Pressure_reduced_to_MSL_msl']
+preciprate = data.variables['Precipitation_rate_surface'][:].squeeze()
+snowdepth = data.variables['Snow_depth_surface'][:].squeeze()
+catsnow = data.variables['Categorical_Snow_surface'][:].squeeze()
+catice = data.variables['Categorical_Freezing_Rain_surface'][:].squeeze()
+catsleet = data.variables['Categorical_Ice_Pellets_surface'][:].squeeze()
+EMSL = units.Quantity(emsl_var[:], emsl_var.units).to('hPa')
+mslp = gaussian_filter(EMSL[0], sigma=3.0)
+hght_1000 = data.variables['Geopotential_height_isobaric'][0, plev.index(100000)]
+hght_500 = data.variables['Geopotential_height_isobaric'][0, plev.index(50000)]
+thickness_1000_500 = gaussian_filter((hght_500 - hght_1000)/10, sigma=3.0)
+lon_2d, lat_2d = np.meshgrid(lon, lat)
+
+precip_inch_hour = preciprate * 141.73228346457
+precip2 = mpcalc.smooth_n_point(precip_inch_hour, 5, 1)
+
+precip_colors = [
+   ""#bde9bf"",  # 0.01 - 0.02 inches 1
+   ""#adddb0"",  # 0.02 - 0.03 inches 2
+   ""#9ed0a0"",  # 0.03 - 0.04 inches 3
+   ""#8ec491"",  # 0.04 - 0.05 inches 4
+   ""#7fb882"",  # 0.05 - 0.06 inches 5
+   ""#70ac74"",  # 0.06 - 0.07 inches 6
+   ""#60a065"",  # 0.07 - 0.08 inches 7
+   ""#519457"",  # 0.08 - 0.09 inches 8
+   ""#418849"",  # 0.09 - 0.10 inches 9
+   ""#307c3c"",  # 0.10 - 0.12 inches 10
+   ""#1c712e"",  # 0.12 - 0.14 inches 11
+   ""#f7f370"",  # 0.14 - 0.16 inches 12
+   ""#fbdf65"",  # 0.16 - 0.18 inches 13
+   ""#fecb5a"",  # 0.18 - 0.2 inches 14
+   ""#ffb650"",  # 0.2 - 0.3 inches 15
+   ""#ffa146"",  # 0.3 - 0.4 inches 16
+   ""#ff8b3c"",   # 0.4 - 0.5 inches 17
+   ""#f94609"",   # 0.5 - 0.6 inches 18
+]
+
+precip_colormap = mcolors.ListedColormap(precip_colors)
+
+clev_precip =  np.concatenate((np.arange(0.01, 0.1, .01), np.arange(.1, .2, .02), np.arange(.2, .61, .1)))
+norm = mcolors.BoundaryNorm(clev_precip, 18)
+
+datacrs = ccrs.PlateCarree()
+plotcrs = ccrs.LambertConformal(central_latitude=35, central_longitude=-100,standard_parallels=(30, 60))
+bounds = ([-105, -90, 30, 40])
+fig = plt.figure(figsize=(14,12))
+ax = fig.add_subplot(1,1,1, projection=plotcrs)
+ax.set_extent(bounds, crs=ccrs.PlateCarree())
+ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidth = 0.75)
+ax.add_feature(cfeature.STATES, linewidth = 1)
+ax.add_feature(USCOUNTIES, edgecolor='grey', linewidth = .5)
+clevs = (np.arange(0, 540, 6),
+         np.array([540]),
+         np.arange(546, 700, 6))
+colors = ('tab:blue', 'b', 'tab:red')
+kw_clabels = {'fontsize': 11, 'inline': True, 'inline_spacing': 5, 'fmt': '%i',
+              'rightside_up': True, 'use_clabeltext': True}
+
+# Plot MSLP
+clevmslp = np.arange(800., 1120., 2)
+cs2 = ax.contour(lon_2d, lat_2d, mslp, clevmslp, colors='k', linewidths=1.25,
+                 linestyles='solid', transform=ccrs.PlateCarree())
+
+cf = ax.contourf(lon_2d, lat_2d, precip2, clev_precip, cmap=precip_colormap, norm=norm, extend='max', transform=ccrs.PlateCarree())
+
+ax.set_title('GFS Precip Type, Rate(in/hr), MSLP (hPa), & 1000-500mb Thickness (dam)', loc='left', fontsize=10, weight = 'bold')
+ax.set_title('Valid Time: {}z'.format(vtime), loc = 'right', fontsize=8)
+
+I tried using this: dt = start_time + time_delta but this only plots the last timedelta which is hour 108 and not all the other timedelta hours.
+Plot: Plot
+","You need to put all your code inside the loop, now u are only generating the variable ""dt"" inside the loop, so, you end the loop with the final dt,that is the timedelta 108.
+I made a litle change that makes u able to set how many 6 hours intervals u want.
+Try this:
+from datetime import datetime
+from datetime import timedelta
+import pandas as pd
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import xarray as xr
+import numpy as np
+import metpy.calc as mpcalc
+from metpy.plots import USCOUNTIES
+import netCDF4
+from netCDF4 import Dataset
+from netCDF4 import num2date
+from metpy.units import units
+from scipy.ndimage import gaussian_filter
+import scipy.ndimage as ndimage
+from siphon.catalog import TDSCatalog
+
+start_time = datetime(2025, 1, 7, 12, 0, 0)
+
+hours_intervals = 40
+
+for k in range(0,hours_intervals):
+        dt = start_time + timedelta(hours= 6*(k+1))
+
+        #dt = datetime(2025,1,4,12)
+        best_gfs = TDSCatalog('https://thredds.ucar.edu/thredds/catalog/grib/NCEP/GFS/Global_0p25deg/catalog.xml?dataset=grib/NCEP/GFS/Global_0p25deg/Best')
+        best_ds = best_gfs.datasets[0]
+        ncss = best_ds.subset()
+        query = ncss.query()
+        query.accept('netcdf')
+        query.lonlat_box(north=75, south=15, east=320, west=185)
+        query.time(dt)
+        query.variables('Geopotential_height_isobaric', 'Pressure_reduced_to_MSL_msl', 'Precipitation_rate_surface', 'Snow_depth_surface', 'Categorical_Snow_surface','Categorical_Freezing_Rain_surface', 'Categorical_Ice_Pellets_surface')
+        
+        data = ncss.get_data(query)
+        print(list(data.variables))
+        
+        plev = list(data.variables['isobaric'][:])
+        
+        lat = data.variables['latitude'][:].squeeze()
+        lon = data.variables['longitude'][:].squeeze()
+        time1 = data['time']
+        vtime = num2date(time1[:].squeeze(), units=time1.units)
+        emsl_var = data.variables['Pressure_reduced_to_MSL_msl']
+        preciprate = data.variables['Precipitation_rate_surface'][:].squeeze()
+        snowdepth = data.variables['Snow_depth_surface'][:].squeeze()
+        catsnow = data.variables['Categorical_Snow_surface'][:].squeeze()
+        catice = data.variables['Categorical_Freezing_Rain_surface'][:].squeeze()
+        catsleet = data.variables['Categorical_Ice_Pellets_surface'][:].squeeze()
+        EMSL = units.Quantity(emsl_var[:], emsl_var.units).to('hPa')
+        mslp = gaussian_filter(EMSL[0], sigma=3.0)
+        hght_1000 = data.variables['Geopotential_height_isobaric'][0, plev.index(100000)]
+        hght_500 = data.variables['Geopotential_height_isobaric'][0, plev.index(50000)]
+        thickness_1000_500 = gaussian_filter((hght_500 - hght_1000)/10, sigma=3.0)
+        lon_2d, lat_2d = np.meshgrid(lon, lat)
+        
+        precip_inch_hour = preciprate * 141.73228346457
+        precip2 = mpcalc.smooth_n_point(precip_inch_hour, 5, 1)
+        
+        precip_colors = [
+           ""#bde9bf"",  # 0.01 - 0.02 inches 1
+           ""#adddb0"",  # 0.02 - 0.03 inches 2
+           ""#9ed0a0"",  # 0.03 - 0.04 inches 3
+           ""#8ec491"",  # 0.04 - 0.05 inches 4
+           ""#7fb882"",  # 0.05 - 0.06 inches 5
+           ""#70ac74"",  # 0.06 - 0.07 inches 6
+           ""#60a065"",  # 0.07 - 0.08 inches 7
+           ""#519457"",  # 0.08 - 0.09 inches 8
+           ""#418849"",  # 0.09 - 0.10 inches 9
+           ""#307c3c"",  # 0.10 - 0.12 inches 10
+           ""#1c712e"",  # 0.12 - 0.14 inches 11
+           ""#f7f370"",  # 0.14 - 0.16 inches 12
+           ""#fbdf65"",  # 0.16 - 0.18 inches 13
+           ""#fecb5a"",  # 0.18 - 0.2 inches 14
+           ""#ffb650"",  # 0.2 - 0.3 inches 15
+           ""#ffa146"",  # 0.3 - 0.4 inches 16
+           ""#ff8b3c"",   # 0.4 - 0.5 inches 17
+           ""#f94609"",   # 0.5 - 0.6 inches 18
+        ]
+        
+        precip_colormap = mcolors.ListedColormap(precip_colors)
+        
+        clev_precip =  np.concatenate((np.arange(0.01, 0.1, .01), np.arange(.1, .2, .02), np.arange(.2, .61, .1)))
+        norm = mcolors.BoundaryNorm(clev_precip, 18)
+        
+        datacrs = ccrs.PlateCarree()
+        plotcrs = ccrs.LambertConformal(central_latitude=35, central_longitude=-100,standard_parallels=(30, 60))
+        bounds = ([-105, -90, 30, 40])
+        fig = plt.figure(figsize=(14,12))
+        ax = fig.add_subplot(1,1,1, projection=plotcrs)
+        ax.set_extent(bounds, crs=ccrs.PlateCarree())
+        ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidth = 0.75)
+        ax.add_feature(cfeature.STATES, linewidth = 1)
+        ax.add_feature(USCOUNTIES, edgecolor='grey', linewidth = .5)
+        clevs = (np.arange(0, 540, 6),
+                 np.array([540]),
+                 np.arange(546, 700, 6))
+        colors = ('tab:blue', 'b', 'tab:red')
+        kw_clabels = {'fontsize': 11, 'inline': True, 'inline_spacing': 5, 'fmt': '%i',
+                      'rightside_up': True, 'use_clabeltext': True}
+        
+        # Plot MSLP
+        clevmslp = np.arange(800., 1120., 2)
+        cs2 = ax.contour(lon_2d, lat_2d, mslp, clevmslp, colors='k', linewidths=1.25,
+                         linestyles='solid', transform=ccrs.PlateCarree())
+        
+        cf = ax.contourf(lon_2d, lat_2d, precip2, clev_precip, cmap=precip_colormap, norm=norm, extend='max', transform=ccrs.PlateCarree())
+        
+        ax.set_title('GFS Precip Type, Rate(in/hr), MSLP (hPa), & 1000-500mb Thickness (dam)', loc='left', fontsize=10, weight = 'bold')
+        ax.set_title('Valid Time: {}z'.format(vtime), loc = 'right', fontsize=8)
+
+        fig.savefig('path/to/save/image/to.png')
+
+",matplotlib
+concatenate several np arrays in python,"I have several bumpy arrays and I want to concatenate them. I am using np.concatenate((array1,array2),axis=1). My problem now is that I want to make the number of arrays parametrizable, I wrote this function
+x1=np.array([1,0,1])
+x2=np.array([0,0,1])
+x3=np.array([1,1,1])  
+
+def conc_func(*args):
+    xt=[]
+    for a in args:
+        xt=np.concatenate(a,axis=1)
+    print xt
+    return xt
+
+xt=conc_func(x1,x2,x3)
+
+this function returns ([1,1,1]), I want it to return ([1,0,1,0,0,1,1,1,1]). I tried to add the for loop inside the np.concatenate as such 
+xt =np.concatenate((for a in args: a),axis=1)
+
+but I am getting a syntax error. I can't used neither append nor extend because I have to deal with numpy arrays and not lists. Can somebody help?
+Thanks in advance
+","concatenate can accept a sequence of array-likes, such as args:
+In [11]: args = (x1, x2, x3)
+
+In [12]: xt = np.concatenate(args)
+
+In [13]: xt
+Out[13]: array([1, 0, 1, 0, 0, 1, 1, 1, 1])
+
+By the way, although axis=1 works, the inputs are all 1-dimensional arrays (so they only have a 0-axis). So it makes more sense to use axis=0 or omit axis entirely since the default is axis=0.
+",numpy
+count and groupby a specfic value,"I have a dataframe where i want to count a specific value that occurs in a row.
+This code below gives the right answer and now i want to add a new coluumn to my dataframe
+occur = df.groupby(['Code_5elaag','Essentieel_Optioneel']).size()
+occur
+
+**Code_5elaag  Essentieel_Optioneel**
+1101         essentieel               8
+             optioneel                8
+1102         essentieel               8
+             optioneel               51
+1103         essentieel               8
+                                     ..
+96231        optioneel                6
+96232        essentieel               1
+             optioneel                2
+96290        essentieel               9
+             optioneel               17
+
+When i assign a new colum to the frame this is the output:
+uniq['ess'] = df.groupby(['Code_5elaag'])['Essentieel_Optioneel'].transform(np.size)
+
+    Code_5elaag Omschrijving_5elaag Soort_Skill Aantal_skills   ess
+0   1101    Officieren landmacht    taken   16  16              15
+16  1102    Officieren luchtmacht   taken   59  59              59
+75  1103    Officieren marechaussee taken   16  16              16
+
+
+But that is not what i want i want to divide the amount of Aantal_skills to how much is essentieel and optioneel fo for the first row it should be 8 essentieel and 8 optional
+","You are close, need grouping by both columns:
+df['ess'] = df.groupby(['Code_5elaag','Essentieel_Optioneel'])['Essentieel_Optioneel'].transform('size')
+
+If need 2 new columns use crosstab with DataFrame.join:
+out = df.join(pd.crosstab(df['Code_5elaag'], df['Essentieel_Optioneel']), on='Code_5elaag')
+
+",data-science
+tmdb movie dataset  data visualization eda,"I need help for my Dissertation Project. I am working on a Python project as part of my Masters Degree at my university in England, UK. The dataset I have gotten through the Kaggle platform which contains over one million movies in terms of their titles, budget, box-office revenue, genres, popularity, reviews, keywords etc. Here is the weblink for clarification (I got the latest update):
+https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies
+UPDATE: The cleaning of the data is completed but I need help in collaboration with data visualizations for my Exploratory Data Analysis (EDA) because as the dataset is larger for memory at 504mb it has created ridiculous visualizations from the data. I am very familiar with matplotlib and seaborn functions for Python.
+The simple codes I used for count plots for part of this data was:
+plt.figure(figsize=(20,16))
+sns.countplot(x = 'Genres', data=df2)  
+plt.xlabel('Genres', fontsize=14)
+plt.ylabel('Frequency', fontsize=14)
+plt.show()
+
+
+Does anyone know how I can create clear and concise data visualizations for specific parts of the data in terms of Bivariate, Univariate and Multivariate analysis?
+For example:
+Most popular movie genres/movie production companies in terms of frequency
+Top movies with biggest box office revenue/budgets, popularity etc.
+Countries with biggest number of production/distribution movies made.
+And much more. Anything would help. Thank you very much in advance.
+","If df is the dataframe you got from pd.read_csv(), you can filter on the strings inside the column 'production_countries' by using str.contains().
+Note that ""|"" means ""OR"", that na=False is to ignore the few missing data in this column and case=False to ignore the case(lower/upper) though it seems that case is not necessary for this dataset.
+df = df[df['production_countries'].str.contains(""United States|United Kingdom"", na=False, case=False)]
+
+",pandas
+numpy array of array into array of length vectorization,"I have a numpy array of arrays, where each sub-array represents a group of elements. I want to compute the length of each sub-array and store the result as a new numpy array.
+Currently, I use a standard for loop, but I would like to vectorize this operation for better performance using only numpy.
+Example
+import numpy as np
+
+indices = np.array([np.array([1, 2, 3]), np.array([4, 5]), np.array([6, 7, 8, 9])], dtype=object)
+group_lengths = np.array([len(group) for group in indices])
+
+print(group_lengths)
+
+Expected output
+[3 2 4]
+I am looking for a fully vectorized solution that avoids the explicit loop. How can this be achieved with numpy?
+Update
+Thank you all for your insights and clarifications! I now understand that fully vectorizing my use case isn't possible. I'll stick with my current solution, as it seems to be the most efficient approach given the circumstances.
+","Currently the best option is to use np.fromiter. This solution was proposed in the comments by Jérôme Richard:
+# generate big dataset
+indices = np.array([np.random.randint(0,10,size=np.random.randint(4,500))
+                    for _ in range(100000)
+                    ], dtype=object)
+
+Use map function:
+group_lengths = np.array(list(map(len, indices)))
+# 6.49 ms ± 57.5 μs per loop
+
+Use list generator with len function
+group_lengths = np.array([len(group) for group in indices])
+# 8.19 ms ± 60.5 μs per loop
+
+Using numpy vectorized:
+vfunc = np.vectorize(len)
+group_lengths = vfunc(indices)
+# 4.86 ms ± 23.2 μs per loop
+
+Apply the function via np.fromiter
+group_lengths = np.fromiter(map(len, indices), dtype=object)
+# 3.53 ms ± 36.2 μs per loop 
+
+",numpy
+how to get row numbers of maximum elements in a 2d numpy array,"I have a 2D array a given by:
+a = np.array([[2, 3, 1, 9], [0, 5, 4, 7], [2, 4, 6, 8]])
+
+[[2 3 1 9]
+ [0 5 4 7]
+ [2 4 6 8]]
+
+I would like to get row numbers of maximum elements column-wise, i.e. given by np.amax(a, axis=0), which in my example are [0, 1, 2, 0]. What is the Numpy magic to accomplish it?
+","I believe you're looking for np.argmax.
+print(np.argmax(a, axis=0))
+
+Result:
+[0 1 2 0]
+
+",numpy
+typeerror cannot convert numpyndarray to numpyndarray,"I'm not sure why but after getting a new install of windows and a new pycharm install I am having issues with running some previously functional code. I am now getting the above error with the code below. Is it a setup issue or has something changed that now makes this code not function? Error happens on the last line. The error doesn't make sense to me as there should be no conversion required for ndarray to ndarray.
+import numpy as np
+import pyodbc
+import pandas as pd
+import sqlalchemy as SQL
+import torch
+import datetime
+
+# Setup your SQL connection
+server = [hidden for security]
+database = [hidden for security]
+username = [hidden for security]
+password = [hidden for security]
+# This is using the pyodbc connection
+cnxn = pyodbc.connect(
+    'DRIVER={SQL Server};SERVER=' + server + ';DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
+cursor = cnxn.cursor()
+# This is using the SQLAlchemy connection
+engine_str = SQL.URL.create(
+    drivername=""mssql+pyodbc"",
+    username=username,
+    password=password,
+    host=server,
+    port=1433,
+    database=database,
+    query={
+        ""driver"": ""ODBC Driver 17 for SQL Server"",
+        ""TrustServerCertificate"": ""no"",
+        ""Connection Timeout"": ""30"",
+        ""Encrypt"": ""yes"",
+    },
+)
+engine = SQL.create_engine(engine_str)
+
+storeemployee = []
+regionalemployee = []
+regionid = []
+storeid = []
+
+# get table from dev
+with engine.connect() as connection:
+    result = connection.execute(SQL.text(""SELECT StoreId, R_Num, RegionalMerchandiserEmployeeId, StoreMerchandiserEmployeeId from Staging.StoreMerchandiserInput""))
+    for row in result:
+        # set your variables = to the results
+        storeemployee.append(row.StoreMerchandiserEmployeeId)
+        regionalemployee.append(row.RegionalMerchandiserEmployeeId)
+        regionid.append(row.R_Num)
+        storeid.append(row.StoreId)
+storeemployee = np.array(storeemployee)
+regionalemployee = np.array(regionalemployee)
+regionid = np.array(regionid)
+storeid = np.array(storeid)
+
+# StoreMerchandiserEmail
+data = {'StoreMerchandiserEmployeeId': storeemployee, 'RegionalMerchandiserEmployeeId': regionalemployee,
+        ""R_Num"": regionid, ""StoreId"":storeid}
+FinalData = pd.DataFrame(data, columns=['StoreMerchandiserEmployeeId', 'RegionalMerchandiserEmployeeId', 'R_Num', 'StoreId'])
+
+Edit -
+Full Error Messaging:
+Traceback (most recent call last):
+  File ""C:\Users\Carter.Lowe\Documents\Python Files\Data Import 2.py"", line 56, in <module>
+    FinalData = pd.DataFrame(data, columns=['StoreMerchandiserEmployeeId', 'RegionalMerchandiserEmployeeId', 'R_Num', 'StoreId'])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\frame.py"", line 778, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py"", line 443, in dict_to_mgr
+    arrays = Series(data, index=columns, dtype=object)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\series.py"", line 490, in __init__
+    index = ensure_index(index)
+            ^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\indexes\base.py"", line 7647, in ensure_index
+    return Index(index_like, copy=copy, tupleize_cols=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\indexes\base.py"", line 565, in __new__
+    arr = sanitize_array(data, None, dtype=dtype, copy=copy)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\construction.py"", line 654, in sanitize_array
+    subarr = maybe_convert_platform(data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Carter.Lowe\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\dtypes\cast.py"", line 139, in maybe_convert_platform
+    arr = lib.maybe_convert_objects(arr)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""lib.pyx"", line 2538, in pandas._libs.lib.maybe_convert_objects
+TypeError: Cannot convert numpy.ndarray to numpy.ndarray
+
+","I just had the same error today and solved it by updating numpy to 2.0.0rc2.
+",numpy
+access denied during geopandas read parquet from s3 bucket,"After moving the parquet file containing the locally created geodataframe to s3, I tried to read the file within AWS Glue as follows.
+import geopandas as gpd
+test_gdf = gpd.read_parquet(""s3://bucket_name/key/file.parquet"")
+
+However, OS Error occurred as follows
+OSError: When getting information for key 'key/file.parquet' in bucket 'bucket_name': AWS Error ACCESS_DENIED during HeadObject operation: No response body.
+
+What I found strange was that when I run pandas.read_parquet, it runs successfully.
+import pandas as pd
+test_gdf = pd.read_parquet(""s3://bucket_name/key/file.parquet"")
+
+However, I confirmed that reading a geodataframe by pandas and then converting it back to geodataframe takes a lot of time.
+Therefore, I want to read the parquet file directly through geopandas.
+Referring to other questions, there were issues with IAM Role or s3 bucket policy, so I checked them.
+Policy at AWS Glue Role
+{
+...
+            ""Action"": [
+                ""s3:*""
+            ],
+            ""Effect"": ""Allow"",
+            ""Resource"": [
+                ""*""
+            ]
+...
+}
+
+S3 Bucket Policy
+{
+    ""Version"": ""2012-10-17"",
+    ""Id"": ""PolicyForDatalakeBucket"",
+    ""Statement"": [
+        {
+            ""Sid"": ""denyInsecureTransport"",
+            ""Effect"": ""Deny"",
+            ""Principal"": ""*"",
+            ""Action"": ""s3:*"",
+            ""Resource"": [
+                ""arn:aws:s3:::bucket_name/*"",
+                ""arn:aws:s3:::bucket_name""
+            ],
+            ""Condition"": {
+                ""Bool"": {
+                    ""aws:SecureTransport"": ""false""
+                },
+                ""ArnNotEquals"": {
+                    ""aws:SourceArn"": ""arn:aws:iam::IAM_USER:role/GLUE_ROLE""
+                }
+            }
+        },
+        {
+            ""Sid"": """",
+            ""Effect"": ""Allow"",
+            ""Principal"": {
+                ""AWS"": [
+                    ""arn:aws:iam::IAM_USER:role/GLUE_ROLE"",
+                    ""arn:aws:iam::IAM_USER:root""
+                ]
+            },
+            ""Action"": [
+                ""s3:GetBucketAcl"",
+                ""s3:ListBucket"",
+                ""s3:GetObject"",
+                ""s3:PutObject""
+            ],
+            ""Resource"": [
+                ""arn:aws:s3:::BUCKET_NAME/*"",
+                ""arn:aws:s3:::BUCKET_NAME""
+            ]
+        }
+    ]
+}
+
+What needs to be resolved so that geopandas can successfully read parquet files from s3?
+","The solution is like below,
+import fsspec
+import geopandas as gpd
+
+with fsspec.open(feather_file) as f
+  gdf = gpd.read_feather(f)
+
+If you want to access feather file in s3 bucket, you need to open the file by fsspec and try to read file by geopandas.read_feather.
+You can find more reference in https://geopandas.org/en/stable/docs/user_guide/io.html
+",pandas
+why does my shapefile color a different polygon than intended,"I have risk data which I would like to color on a map according to the risk level. I read a shapefile and a csv data file which I then merge. This works very well working with adm1 shapefile.
+When I run the same script with adm2 shapefile, the results are completely weird: The polygons colored are way far from the polygon with data. I have the attached map 3 examples of the colored polygons and in black dot the location of the data.
+I will appreciate if anyone can give a clue of what is going on, and if possible how to resolve this.
+Python script used to produce the plot:
+#!/home/zmumba/anaconda3/bin/python
+
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from mpl_toolkits.basemap import Basemap  # optional ?
+
+map_df = gpd.read_file(""/home/zmumba/DA/Dekad_Progs/Shapefiles/Lesotho/geoBoundaries-LSO-ADM2-all/geoBoundaries-LSO-ADM2.shx"")
+risks_df=pd.read_csv(""/home/zmumba/DA/Dekad_Progs/Output/H1dRrisks.csv"")
+
+map_df[""risk""] = map_df.merge(risks_df, left_on=""shapeName"", right_on=""District"")[""risk""]
+
+colors = {1: ""green"", 2: ""yellow"", 3: ""orange"", 4: ""red""}  # or a list
+labels = {1: ""no risk"", 2: ""low risk"", 3: ""medium risk"", 4: ""high risk""}
+catego = map_df[""risk""].astype(str).str.cat(map_df[""risk""].map(labels), sep=""- "")
+
+fig, ax = plt.subplots(figsize=(5, 5))
+plt.title(f'Risk of Heavy 24hr Rain: 20-24Nov', y=1.04)
+
+map_df.plot(
+column=catego,
+categorical=True,
+edgecolor=""k"",
+linewidths=0.8,
+alpha=0.7,
+cmap=ListedColormap([c for r,c in colors.items() if r in map_df[""risk""].unique()]),
+legend=True,
+legend_kwds={
+""title"": ""Risk Level"",
+""shadow"": True,
+""loc"": ""lower right"",
+""fontsize"": 10,
+},
+ax=ax,
+)
+ax.set_axis_off()
+plt.savefig('H1dRriskmap.png', dpi=300)
+
+plt.show()
+
+Just to add some clarification to my problem, 
+The attached image shows the polygon numbers from the shapefile. Coloring 42 colors 41, coloring 43 colors 42.
+The coordinates of 41, 42 and 43 are
+-29.3892289999999,  28.3056183629316  -> 41
+-29.2870792999999,  29.2715247780569  -> 42
+-29.2255776170000,  27.6546474532047  -> 43
+
+These coordinates are the centroids of the polygons taken from the shapefile itself. So it cannot be a problem of coordinates.
+Could there be something wrong in the python code?
+The code reads from a file  which is in the format:
+""District"",""risk""
+""name1"",1
+""name2"",1
+...
+""name78"",1
+
+where 1 can b2 2, 3, or 4 depending on the risk level.
+I would be glad to try doing the same thing in R, but the problem with R is, it will say ""no package sf"" and so on.
+","As I see it, your error is in fact in your python-code... here:
+map_df[""risk""] = map_df.merge(risks_df, left_on=""shapeName"", right_on=""District"")[""risk""]
+
+To clarify:
+Both your dataframes map_df and risks_df are indexed by numeric values (0,1,2,3 ...).
+If you run the merge ( map_df.merge(risks_df, ...)), it will return a new DataFrame with a new index (which is again a numeric index 0,1,2...).
+Now if you do map_df[""risk""] = map_df.merge(...)[""risk""] you'll write the results of the merge based on their merge-index to the index-values in map_df.
+This works because both indexes are numeric, but it is in no way guaranteed to be  correct!
+Just check your results... I guess you'll find that the ""risk"" values are not correctly assigned.
+To make sure you assign the values correctly, I'd suggest to replace the line above with something like this:
+map_df = map_df.set_index(""shapeName"")
+map_df[""risks""] = risks_df.set_index(""District"")[""risk""]
+
+",matplotlib
+eli5 permuterfeature_importances_ returning all zeros,"I'm trying to get permutation importances for a RandomForestClassifier on a small sample of data, but while I can get simple feature importances, my permutation importances are coming back as all zeros. 
+This is the code:
+Input1:
+X_train_encoded = encoder.fit_transform(X_train1)
+X_val_encoded = encoder.transform(X_val1)
+model = RandomForestClassifier(n_estimators=300, random_state=25, 
+                               n_jobs=-1,max_depth=2)
+model.fit(X_train_encoded, y_train1)
+
+Output1:
+RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
+                       criterion='gini', max_depth=2, max_features='auto',
+                       max_leaf_nodes=None, max_samples=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=300,
+                       n_jobs=-1, oob_score=False, random_state=25, verbose=0,
+                       warm_start=False)
+
+Input2:
+permuter = PermutationImportance(
+    model,
+    scoring='accuracy',
+    n_iter=3,
+    random_state=25
+)
+permuter.fit(X_val_encoded, y_val1)
+
+Output2:
+PermutationImportance(cv='prefit',
+                      estimator=RandomForestClassifier(bootstrap=True,
+                                                       ccp_alpha=0.0,
+                                                       class_weight=None,
+                                                       criterion='gini',
+                                                       max_depth=2,
+                                                       max_features='auto',
+                                                       max_leaf_nodes=None,
+                                                       max_samples=None,
+                                                       min_impurity_decrease=0.0,
+                                                       min_impurity_split=None,
+                                                       min_samples_leaf=1,
+                                                       min_samples_split=2,
+                                                       min_weight_fraction_leaf=0.0,
+                                                       n_estimators=300,
+                                                       n_jobs=-1,
+                                                       oob_score=False,
+                                                       random_state=25,
+                                                       verbose=0,
+                                                       warm_start=False),
+                      n_iter=3, random_state=25, refit=True,
+                      scoring='accuracy')
+
+(PROBLEM) Input3:
+feature_names = X_val_encoded.columns.tolist()
+pd.Series(permuter.feature_importances_, feature_names).sort_values()
+
+(PROBLEM) Output3:
+Player     0.0
+POS        0.0
+ATT        0.0
+YDS        0.0
+TDS        0.0
+REC        0.0
+YDS.1      0.0
+TDS.1      0.0
+FL         0.0
+FPTS       0.0
+Overall    0.0
+pos_adp    0.0
+dtype: float64
+
+I expect to get values here, but instead I get zeros - am I doing something wrong or is that
+a possible result?
+In: permuter.feature_importances_
+Out:array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+
+","Turns out the issue was with the data I was passing in, rather than the code itself. 
+The data had fewer than 70 observations, so after I was able to add more observations to it (just under 400), I was able to get permutation importances as expected.
+",data-science
+i want to connect to an api and extract the data,"I'm doing my own python analytics project on compiling and analysing data from this open-data source:
+(https://data.gov.ie/dataset?q=homeless&api=true&sort=score+desc%2C+metadata_created+desc&theme=Housing)
+I've never worked with api's or json's before.. all the info on google or YouTube video's always have an API key.. but I don't know how to get it
+so far I've done this:
+import requests
+import pandas as pd
+import time
+
+API_KEY = requests.get('https://data.gov.ie/dataset?q=homelessness&api=true&theme=Housing&sort=metadata_modified+desc')
+API_KEY.status_code
+# this returns 200 which from google means connected status correct
+
+
+Then I write this:
+#make api call
+response = API_KEY.json()
+
+
+and get back errors:
+JSONDecodeError                           Traceback (most recent call last)
+~/opt/anaconda3/lib/python3.9/site-packages/requests/models.py in json(self, **kwargs)
+    970         try:
+--> 971             return complexjson.loads(self.text, **kwargs)
+    972         except JSONDecodeError as e:
+
+~/opt/anaconda3/lib/python3.9/json/__init__.py in loads(s, cls, object_hook, parse_float, parse_int, parse_constant, object_pairs_hook, **kw)
+    345             parse_constant is None and object_pairs_hook is None and not kw):
+--> 346         return _default_decoder.decode(s)
+    347     if cls is None:
+...
+...
+...
+
+About The Project:
+What I want it to connect to the data on homelessness in ireland (I would like the data to be easily updatable for future automatic updating but that's later on.. no idea how to do it yet).
+Ireland is facing a serious crisis with homelessness and housing in general and I would like to see how it has worsened over the years and visualise it. Perhaps get some insight or the scale of the issue.
+After I do some work with the project I will then import the data into tableau to do some more visualisation then publish my report to my LinkedIn.
+Perhaps you can advise me if I should be trying to work with csv's or json's?
+Any help as always would be sincerely appreciated.
+","An API key is generally used to access private data and/or make some write operations. It's not the case here, all data are public.
+What you need is to get all data from 'Homelessness Report'. You have to proceed in 3 steps:
+
+Query the database
+Process and filter the result
+Download and merge data
+
+import requests
+
+# 1. Query the database
+q_url = 'https://data.gov.ie/api/3/action/package_search?q=homelessness&rows=100'
+packages = requests.get(q_url).json()['result']
+
+# 2a. Process results
+df = pd.json_normalize(packages['results'], 'resources', 'title')
+
+# 2b. Filter results
+mask = df['title'].str.startswith('Homelessness Report') & df['format'].eq('CSV')
+df = df.loc[mask, ['title', 'url']]
+
+# 3a. Download data
+data = {}
+for idx, row in df.iterrows():
+    dt = pd.to_datetime(row.title.strip('Homelessness Report '))
+    data[dt] = pd.read_csv(row.url)
+
+# 4a. Merge data
+out = (pd.concat(data, axis=0).droplevel(1).rename_axis('Date')
+         .sort_index().reset_index())
+out.to_excel('Homelessness Report.xlsx', index=False)
+
+Output:
+>>> out
+          Date      Region Total Adults  ... Number of people with citizenship EEA/Uk Number of people with citizenship Non-EEA  Number of Child Dependants in Families
+0   2019-01-01    Mid-East          254  ...                                      NaN                                       NaN                                     NaN
+1   2019-01-01    Mid-West          338  ...                                      NaN                                       NaN                                     NaN
+2   2019-01-01  North-East          162  ...                                      NaN                                       NaN                                     NaN
+3   2019-01-01  North-West           52  ...                                      NaN                                       NaN                                     NaN
+4   2019-01-01  South-East          316  ...                                      NaN                                       NaN                                     NaN
+..         ...         ...          ...  ...                                      ...                                       ...                                     ...
+436 2023-01-01    Mid-West          414  ...                                       45                                        32                                     NaN
+437 2023-01-01    Midlands          148  ...                                       17                                        19                                     NaN
+438 2023-01-01    Mid-East          437  ...                                       81                                        66                                     NaN
+439 2023-01-01      Dublin         5946  ...                                     1506                                      1190                                     NaN
+440 2023-01-01        West          321  ...                                       34                                        19                                     NaN
+
+[441 rows x 21 columns]
+
+",pandas
+how to create combinations from dataframes for a specific combination size,"Say I have a dataframe with 2 columns, how would I create all possible combinations for a specific combination size? Each row of the df should be treated as 1 item in the combination rather than 2 unique separate items. I want the columns of the combinations to be appended to the right. The solution should ideally be efficient since it takes long to generate all the combinations with a large list.
+For example, I want to create all possible combinations with a combination size of 3.
+import pandas as pd
+
+df = pd.DataFrame({'A':['a','b','c','d'], 'B':['1','2','3','4']})
+
+How would I get my dataframe to look like this?
+    A  B  A  B  A  B
+0   a  1  b  2  c  3
+1   a  1  b  2  d  4
+2   a  1  c  3  d  4
+3   b  2  c  3  d  4
+
+","An approach is itertools to generate the combinations.
+
+Define the combination size and generate all possible combinations of rows using itertools.combinations
+Flatten each combination into a single list of values using itertools.chain.
+combination_df is created from the flattened combinations and the columns are dynamically generated to repeat 'A' and 'B' for each combination
+
+Sample
+import itertools
+combination_size = 3
+combinations = list(itertools.combinations(df.values, combination_size))
+combination_df = pd.DataFrame(
+    [list(itertools.chain(*comb)) for comb in combinations],
+    columns=[col for i in range(combination_size) for col in df.columns]
+)
+    )
+
+EDIT : Optimisation as suggested by @ouroboros1
+combination_df = pd.DataFrame( (chain.from_iterable(c) for c in combinations), columns=np.tile(df.columns, combination_size) )
+
+Output
+   A  B  A  B  A  B
+0  a  1  b  2  c  3
+1  a  1  b  2  d  4
+2  a  1  c  3  d  4
+3  b  2  c  3  d  4
+
+",pandas
+calculate relative difference of elements in a 1d numpy array,"Say I have a 1D numpy-array given by np.array([1,2,3]).
+Is there a built-in command for calculating the relative difference between each element and display it in a 2D-array? The result would then be given by
+np.array([[0,-50,-100*2/3], [100,0,-100*1/3], [200,50,0]])
+Alternatively I would have to use a for-loop.
+","Use numpy broadcasting:
+a = np.array([1,2,3])
+
+out = (a[:, None]-a)/a*100
+
+Output:
+array([[  0.        , -50.        , -66.66666667],
+       [100.        ,   0.        , -33.33333333],
+       [200.        ,  50.        ,   0.        ]])
+
+",numpy
+merging multiple dataframes with non unique indexes,"Given two DFs with non unique indexes and multidimentional columns:
+ars:
+           arsenal   arsenal   arsenal   arsenal
+NaN             B3        SK        BX        BY
+2015-04-15     NaN       NaN       NaN      26.0
+2015-04-14     NaN       NaN       NaN       NaN
+2015-04-13    26.0      26.0      23.0       NaN
+2015-04-13    22.0      21.0      19.0       NaN
+
+che:
+           chelsea   chelsea   chelsea   chelsea
+NaN             B3        SK        BX        BY
+2015-04-15     NaN       NaN       NaN      1.01
+2015-04-14    1.02       NaN       NaN       NaN
+2015-04-14     NaN      1.05       NaN       NaN
+
+here in csv format
+,arsenal,arsenal,arsenal,arsenal
+,B3,SK,BX,BY
+2015-04-15,,,,26.0
+2015-04-14,,,,
+2015-04-13,26.0,26.0,23.0,
+2015-04-13,22.0,21.0,19.0,
+
+
+,chelsea,chelsea,chelsea,chelsea
+,B3,SK,BX,BY
+2015-04-15,,,,1.01
+2015-04-14,1.02,,,
+2015-04-14,,1.05,,
+
+I would like to join/merge them, sort of an outer join so that rows are not dropped. 
+I would like the output to be:
+            arsenal  arsenal   arsenal   arsenal chelsea   chelsea   chelsea   chelsea
+NaN             B3        SK        BX        BY      B3        SK        BX        BY
+2015-04-15     NaN       NaN       NaN      26.0     NaN       NaN       NaN      1.01
+2015-04-14     NaN       NaN       NaN       NaN    1.02       NaN       NaN       NaN
+2015-04-14     NaN       NaN       NaN       NaN     NaN      1.05       NaN       NaN
+2015-04-13    26.0      26.0      23.0       NaN     NaN       NaN       NaN       NaN
+2015-04-13    22.0      21.0      19.0       NaN     NaN       NaN       NaN       NaN
+
+None of the pandas tools I know worked: merge, join, concat. merge's outer join gives a dot product which is not what I am looking for, while concat can't handle non unique indexes.  
+Do you have any ideas how this can be achieved?
+Note: the lengths of dataframes won't be idential.
+","I've managed to sort it out using pandas' concat method.
+First, we need to add a Multiindex level so that it becomes unique:
+ars = pd.read_csv(""ars.csv"", index_col=[0], header=[0,1])
+che = pd.read_csv(""che.csv"", index_col=[0], header=[0,1])
+
+ars.index.name = ""date""
+ars[""num""] = range(0, len(ars.index))
+ars = ars.set_index(""num"", append=True)
+
+che.index.name = ""date""
+che[""num""] = range(0, len(che.index))
+che = che.set_index(""num"", append=True)
+
+Now we can use concat:
+df = pd.concat([ars, che], axis=1)
+df = df.reset_index()
+df = df.sort_index(by=[""date"", ""num""], ascending=[False, True])
+df = df.set_index([""date"", ""num""])
+df.index = df.index.droplevel(1)
+
+Output:
+                arsenal             chelsea                
+                B3  SK  BX  BY      B3    SK  BX    BY
+date                                                  
+2015-04-15     NaN NaN NaN  26     NaN   NaN NaN  1.01
+2015-04-14     NaN NaN NaN NaN    1.02   NaN NaN   NaN
+2015-04-14     NaN NaN NaN NaN     NaN  1.05 NaN   NaN
+2015-04-13      26  26  23 NaN     NaN   NaN NaN   NaN
+2015-04-13      22  21  19 NaN     NaN   NaN NaN   NaN
+
+",pandas
+how to convert pandas dataframe to the shape of a correlation matrix,"I have a pandas dataframe which looks vaguely like this:
+Out[130]: 
+     xvar            yvar                   meanRsquared
+0    filled_water    precip                 0.119730
+1    filled_water    snow                   0.113214
+2    filled_water    filled_wetland         0.119529
+3    filled_wetland  precip                 0.104826
+4    filled_wetland  snow                   0.121540
+5    filled_wetland  filled_water           0.121540
+[676 rows x 3 columns]
+
+
+I would like to transform it's shape into a more traditional correlation matrix, where the columns and the index are the variables, and the values are the meanRsquared.
+Is there any easy way to do this? I've been playing around for an hour and can't figure out how I could do this.
+DISCLAIMER: Yes, I know pandas has a built in function for creating a correlation matrix. However my current df is the average of hundreds of correlation matrices over many watersheds, so I cannot use that.
+This is my best attempt, but obviously the logic failed towards the end.
+listOfdicts = []
+for xvar in df['xvar'].unique():
+    for yvar in df['yvar'].unique():
+        adict = {}
+        adict['index'] = xvar 
+        adict[yvar] = yvar
+        adict['r'] = df['insert r value here']
+        listOfdicts.append(adict)
+answer = pd.Dataframe.from_dict(listOfdicts)
+
+I don't expect this to work, but this was my best shot.
+","You need to look at pivot method (https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.pivot.html).
+import pandas as pd
+df =pd.DataFrame(
+    data={
+        'xvar': ['filled_water', 'filled_water', 'filled_water',
+                 'filled_wetland', 'filled_wetland', 'filled_wetland'],   
+
+        'yvar':['precip','snow','filled_wetland',                  
+                'precip','snow','filled_water' ], 
+        'meanRsquared':[1,2,3,4,5,6] 
+    }, index=range(6)
+)
+
+df.pivot(index='xvar', columns='yvar', values='meanRsquared')
+
+Output:
+    yvar            filled_water  filled_wetland  precip  snow
+xvar                                                      
+filled_water             NaN             3.0     1.0   2.0
+filled_wetland           6.0             NaN     4.0   5.0
+
+",data-science
+how can i scrape a table from baseball reference using pandas and beautiful soup,"I am trying to scrape the pitching stats on this url and then save the dataframe to a csv file.
+https://www.baseball-reference.com/boxes/ARI/ARI202204070.shtml
+My  current code is below (Python 3.9.7)
+_URL = ""https://www.baseball-reference.com/boxes/ARI/ARI202204070.shtml""
+data = pd.read_html(_URL,attrs={'id': 'ArizonaDiamondbackspitching'},header=1)[0]
+data.to_csv('boxscore.csv', index='False')
+return data
+
+When I run this code I get the following error:
+Traceback (most recent call last):
+  File ""d:\BaseballAlgo\Baseball_WhoWins.py"", line 205, in <module>
+    getBoxScore('ARI','2022-04-07')
+  File ""d:\BaseballAlgo\Baseball_WhoWins.py"", line 99, in getBoxScore
+    data = pd.read_html(_URL,attrs={'id': 'ArizonaDiamondbackspitching'},header=1)[0]
+  File ""D:\BaseballAlgo\.venv\lib\site-packages\pandas\io\html.py"", line 1240, in   read_html
+    return _parse(
+  File ""D:\BaseballAlgo\.venv\lib\site-packages\pandas\io\html.py"", line 1003, in _parse
+    raise retained
+  File ""D:\BaseballAlgo\.venv\lib\site-packages\pandas\io\html.py"", line 983, in   _parse
+    tables = p.parse_tables()
+  File ""D:\BaseballAlgo\.venv\lib\site-packages\pandas\io\html.py"", line 249, in parse_tables
+    tables = self._parse_tables(self._build_doc(), self.match, self.attrs)
+  File ""D:\BaseballAlgo\.venv\lib\site-packages\pandas\io\html.py"", line 598, in   _parse_tables
+    raise ValueError(""No tables found"")
+ValueError: No tables found
+
+Past iterations of code:
+session = BRefSession()
+_URL = ""https://www.baseball-reference.com/boxes/ARI/ARI202204070.shtml""
+content =session.get(_URL).content
+soup = BeautifulSoup(content, ""html.parser"")
+table = soup.find_all('table', id=""ArizonaDiamondbackspitching"")
+print (table)
+data = pd.read_html(StringIO(str(table)))[0]
+
+This code runs and when it prints the table the output is ""[]"". The same traceback above is also outputted as a result of the last line.
+I understand what the error is saying but I simply do not understand how that possible. It seems as if the soup.findall function is not able to find the specific table I need but I am not sure why. How can I fix this issue?
+","Main issue here is that the table is hidden in the comments, so you have to bring it up first, before BeautifulSoup respectively pandas, that use it under the hood, could find it - simplest solution in my opinion is to replace the specific characters in this case:
+.replace('<!--','').replace('-->','')
+
+Example with requests and pandas:
+import requests
+import pandas as pd
+
+df = pd.read_html(
+    requests.get(
+        'https://www.baseball-reference.com/boxes/ARI/ARI202204070.shtml').text.replace('<!--','').replace('-->',''), 
+    attrs={'id':'ArizonaDiamondbackspitching'}
+    )[0]
+df
+
+Check also Special Strings in BeautifulSoup docs:
+
+Tag, NavigableString, and BeautifulSoup cover almost everything you’ll
+see in an HTML or XML file, but there are a few leftover bits. The
+main one you’ll probably encounter is the Comment.
+
+",pandas
+pyplot animation not working properly when pltpause is used,"I'm trying to create a pyplot simulation using plt.pause() but I can't make even the simplest example work. This is the code:
+import matplotlib.pyplot as plt
+import numpy as np
+
+np.random.seed(19680801)
+data = np.random.random((50, 50, 50))
+
+fig, ax = plt.subplots()
+
+for i, img in enumerate(data):
+    ax.clear()
+    ax.imshow(img)
+    ax.set_title(f""frame {i}"")
+    plt.pause(0.1)
+
+The issue seems to have something to do with the last line of code (plt.pause(0.1)). Without this line the final output shows the final frame of the simulation—frame 49 (indicating the whole loop has finished). If I include the final line and run the simulation, the output stops at the first frame—frame 0 (and the simulation doesn't progress to the next step in the loop). I've also tried to set plt.pause(0.0) but that had exactly same effect as setting it to any other number.
+I'm on mac, using python 3.12 under jupyter notebook 7.2.1. I would appreciate any advice. Thank you.
+","I think this example is not made to work in Jupyter notebooks. Getting matplotlib animation to run in notebooks can be cumbersome....
+Try this minimal example to get started. Does it work?:
+import matplotlib.animation
+import matplotlib.pyplot as plt
+import numpy as np
+plt.rcParams[""animation.html""] = ""jshtml""
+plt.rcParams['figure.dpi'] = 150  
+plt.ioff()
+fig, ax = plt.subplots()
+
+x= np.linspace(0,10,100)
+def animate(t):
+    plt.cla()
+    plt.plot(x-t,x)
+    plt.xlim(0,10)
+
+matplotlib.animation.FuncAnimation(fig, animate, frames=10)
+
+see Inline animations in Jupyter for more information (this example was also taken from there)
+Edit:
+It should also work with the magic %matplotlib command that will open an interactive window instead of using the cell output. See Plots that varies over the time on Python Matplotlib with Jupyter
+",matplotlib
+a right way to represent 4 dimension points using colors in a matplotlib scatter,"I'm currently trying to represent a set of 4 dimensional points in a 3D space using a matplotlib scatter. For do that, I represent the 4th dimension as the color of the 3D point. 
+According to that, I want to print colored points. Therefore, the color of this points depends on the 4th component of the point. 
+I want to use the spectral color map. 
+I've already succeeded but using a greyscale, and this repesentation is not enought for me. 
+I really need to use the spectral color map. So this following code was my last try before ask here:
+inicioVertices=5
+finalVertices=10
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+datos={}
+for vertice in range(inicioVertices,finalVertices):
+    print(vertice)
+    for arista in range(vertice, vertice*(vertice-1)/2):
+       for k in range(vertice//4,vertice+1):
+           media=0.0
+           for n in range(10):
+               g=nx.dense_gnm_random_graph(vertice,arista)
+               inicio=time.time()
+               recubrimientoVertices(g,k)
+               diferencia=time.time()-inicio
+           media+=diferencia
+           aux=media
+           media=aux/10
+
+           datos[(vertice,arista,k)]=media
+           mMin=0.00054
+           mMax=0.067
+
+           normalizada=(media-mMin)/(mMax-mMin)
+           cmap = cm.ScalarMappable( cmap = plt.get_cmap('spectral'))
+
+           print(media)
+           ax.scatter(vertice, arista, k, c= cmap.to_rgba(normalizada), marker='o',s=40)
+print(""max""+str(max(datos.values())))
+print(""min""+str(min(datos.values())))
+ax.set_xlabel('Vertices')
+ax.set_ylabel('Aristas')
+ax.set_zlabel('K')
+plt.show()
+
+media is the 4th component value and normalizada is the normalized value for this component so normalizada always be a number in this interval [0,1]. This is the representation returned by the previous code:
+
+As you can see, all dots are printed in black. I hope someone can help me with this, thank you.
+","Just an example to plot a 3D scatter plot and using an user defined colour map. 
+import matplotlib.cm as cmx
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
+
+def scatter3d(x,y,z, cs, colorsMap='jet'):
+    cm = plt.get_cmap(colorsMap)
+    cNorm = matplotlib.colors.Normalize(vmin=min(cs), vmax=max(cs))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(x, y, z, c=scalarMap.to_rgba(cs))
+    scalarMap.set_array(cs)
+    fig.colorbar(scalarMap,label='Test')
+    plt.show()
+
+x = np.random.uniform(0,1,50)
+y = np.random.uniform(0,1,50)
+z = np.random.uniform(0,1,50)
+
+When I call scatter3d(x,y,z,x+y) for example, I get the following with x+y being my colormap:
+
+",matplotlib
+set matplotlib default figure window title,"The default window title of a figure is figure X, where X is increased each figure.
+I know how to change the title of a figure:
+fig = pylab.gcf()
+fig.canvas.set_window_title('Test')
+
+But how do I change the default window title (So that it will be ""Test 1"", ""Test 2"" etc.), so that I will not need to change the window title each time?
+I did not find a key in the mpl.rcParams
+","There is no key in mpl.rcParams since the default title is hardcoded in the backends. For example, have a look at the figure initialization code of the QT5 backend:
+self.window.setWindowTitle(""Figure %d"" % num)
+
+This means you cannot change the default window title unless you change the code of the matplotlib module itself.
+",matplotlib
+convert image from cv_64f to cv_8u,"I want to convert an image of type CV_64FC1 to CV_8UC1 in Python using OpenCV.
+In C++, using convertTo function, we can easily convert image type using following code snippet:
+image.convertTo(image, CV_8UC1);
+
+I have searched on Internet but unable to find any solution without errors. Any function in Python OpenCV to convert this?
+","You can convert it to a Numpy array.
+import numpy as np
+
+# Convert source image to unsigned 8 bit integer Numpy array
+arr = np.uint8(image)
+
+# Width and height
+h, w = arr.shape
+
+It seems OpenCV Python APIs accept Numpy arrays as well. I've not tested it though. Please test it and let me know the result.
+",numpy
+matplotlib cmget_cmapname num_steps,"My python code uses
+plt.cm.getcmap(""coolwarm"", num_steps)
+This causes a deprecation warning.
+The get_cmap function was deprecated in Matplotlib 3.7 and will be removed in 3.11. Use matplotlib.colormaps[name] or matplotlib.colormaps.get_cmap() or pyplot.get_cmap() instead.
+however - both suggested methods do not provide a ""num_steps"" parameter. How do I need to update my statement to be compatible?
+","In [29]: import matplotlib
+    ...: 
+    ...: cw = matplotlib.colormaps['coolwarm']
+    ...: cw10 = matplotlib.colormaps['coolwarm'].resampled(10)
+    ...: print(cw.N, cw10.N)
+256 10
+
+In [30]: 
+
+",matplotlib
+how to line plot pandas dataframe as sub graphs,"I have a DataFrame that looks like this:
+{""1578286800000"":71,""1578373200000"":72,""1578459600000"":72,""1578546000000"":74,""1578632400000"":7,""1578891600000"":7,""1578978000000"":6,""1579064400000"":7,""1579150800000"":6}
+The format is:
+Datetime:int
+I want to create sub graph out of the data like, graph one would be for the first 5 data pairs and graph two would be for the rest.
+I've tried to graph the entire dataframe but keeps getting this error:
+ValueError: If using all scalar values, you must pass an index
+As you can see the dataframe doesn't have an index, and I don't know how to specify Datetime as the x axis and int as the y axis.
+Edit 1 (with code):
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_json(""somedata.json"")
+df.plot.line()
+plt.show()
+
+somedata.json contains the same data as mentioned at the beginning of the question.
+Edit 2:
+with open('temp.json', 'r') as json_file:
+data_pairs = json.load(json_file)
+
+dataframe = pd.DataFrame.from_dict(data_pairs, orient='index')
+
+fig, axes = plt.subplots(2, 1)
+dataframe[0:5].plot(ax=axes[0], legend=False)
+_ = plt.xticks(rotation=45)
+dataframe[5:].plot(ax=axes[1], legend=False)
+_ = plt.xticks(rotation=45)
+
+","You can create a dataframe (with one column) having the datetime as index by using the method from_dict() with orient='index'. Then you can use the plot() method from Pandas for a quick drawing of the data divided in 2 parts:
+df = pd.DataFrame.from_dict({""1578286800000"":71,""1578373200000"":72,""1578459600000"":72,""1578546000000"":74,
+                             ""1578632400000"":7,""1578891600000"":7,""1578978000000"":6,""1579064400000"":7,""1579150800000"":6},
+                            orient='index')
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7,4))
+df[:5].plot(ax=ax1)
+df[5:].plot(ax=ax2)
+plt.show()
+
+
+",matplotlib
+empty plotly candlestick chart with yfinancedownload,"I am trying to plot a simple Candlestick chart from OHLCV data retrieved by yfinance.
+This is my code:
+import yfinance as yf
+import pandas as pd
+import plotly.graph_objects as go
+from datetime import datetime
+
+tf = '1d'  # Time frame (daily)
+asset = 'AAPL'  # Asset ticker (e.g., Apple)
+start = '2019-01-01'  # Start date
+end = datetime.now().strftime('%Y-%m-%d')  # End date is current date
+
+df = yf.download(asset, start=start, end=end, interval=tf)
+
+df['pct_chg'] = df['Close'].pct_change() * 100
+
+df.index.name = 'timestamp'
+
+# now plot the chart
+
+hover_text = [f""Open: {open}<br>Close: {close}<br>Pct: {pct_chg:.2f}%"" for open, close, pct_chg in zip(df['Open'], df['Close'], df['pct_chg'])]
+
+# Create a candlestick chart using Plotly
+fig = go.Figure(data=[go.Candlestick(
+        x=df.index,
+        open=df['Open'],
+        high=df['High'],
+        low=df['Low'],
+        close=df['Close'],
+        hovertext=hover_text,
+        hoverinfo='text'
+    )])
+
+# Update layout
+fig.update_layout(
+        title='Candlestick chart',
+        xaxis_title='Date',
+        yaxis_title='Price',
+        xaxis_rangeslider_visible=False,
+        template='plotly_dark')
+
+# Show the plot
+fig.show()
+
+Data is correctly downloaded. However the graph does not show any candle.
+","Actually Pandas will use MultiIndexing if you put data downloaded from yahoo finance into a dataframe.
+display(df) gives:
+
+To remove the Ticker column multi-index which is not needed, just drop it:
+df.columns = df.columns.droplevel(1)
+
+Then you get a regular dataframe and can plot it the way you did it:
+
+",pandas
+converting pandas dataframe from long to wide format,"I have a Pandas dataframe that records the performance of students in exams in different classes and it looks like:
+Class_ID   Class_size   Student_Number   IQ   Hours   Score   Place
+1          3            1                101  10      98      1
+1          3            2                99   19      80      3
+1          3            3                130  3       95      2
+2          5            1                93   5       50      5
+2          5            2                103  9       88      3
+2          5            3                112  12      99      2
+2          5            4                200  10      100     1
+2          5            5                90   19      78      4
+3          2            1                100  12      84      2
+3          2            2                102  13      88      1
+
+and  I would like to convert the above long format into wide format, using Student_Number as columns and Class_ID, Class_size as index, with the last column Top being the student who comes first in that class, so the desire outcome looks like:
+Class_ID Class_size IQ_1 IQ_2 IQ_3 IQ_4 IQ_5 Hours_1 Hours_2 Hours_3 Hours_4 Hours_5 Score_1 Score_2 Score_3 Score_4 Score_5 Top
+1        1          101  99   130  NaN  NaN  10      19      3       NaN     NaN     98      80      95      NaN     NaN     1
+2        5          93   103  112  200  90   5       9       12      10      19      50      88      99      100     78      4
+3        2          100  102  NaN  NaN  NaN  12      13      NaN     NaN     NaN     84      88      NaN     NaN     NaN     2
+
+And here is what I have tried:
+out = df.pivot_table(index=['Class_ID', 'Class_size'],
+                     columns='Student_Number',
+                     values=['IQ', 'Hours', 'Score'])
+out.columns = [f'{x}_{y}' for x,y in out.columns]
+out_dummy = out.reset_index()
+df_wide = out_dummy
+
+However, I have no idea how to create the last column Top. And also, the above code seems to be rather slow, and since my original dataframe is quite huge (~300,000rows), I would like to ask is there any quicker way to do that too. Thank you so much in advance.
+","A simple method using apply:
+out[""Top""] = out.apply(lambda row: 1 + np.argmax(row[""Score_1"":""Score_5""]) , axis=1)
+
+",pandas
+how do i maintain image size when using a colorbar,"I'm trying to plot two versions of the same image side by side. When I plot the figure without the color bar for one of the images, it seems to have the right sizes:
+
+But when I add a color bar to the image in the left, it scales the image down somehow:
+
+Here's the code where I have commented out the lines for color bar:
+def plot_amaps(self, anisotropy_map, parallel):
+        timepoint = self.t * self.timestep
+        amap_directory = self.directory + ""amaps/""
+        fig = plt.figure(facecolor='w', dpi=180)
+
+        ax1 = fig.add_subplot(121)
+        fig.subplots_adjust(top=0.85)
+        ax1.grid(False)
+        txt = ""Mean(r) = %.3f SD(r)= %.3f t=%dmin""
+        txt = txt %(self.mean, self.sd, timepoint)
+        ax1.set_title(txt)
+
+        amap = ax1.imshow(anisotropy_map, cmap=""jet"", clim = self.clim)
+        #divider = make_axes_locatable(ax1)
+        #cax = divider.append_axes('right', size='5%', pad=0.05)
+        #fig.colorbar(amap, cax=cax)
+
+        ax2 = fig.add_subplot(122)
+        ax2.set_title(""Intensity image"", fontsize=10)
+        ax2.imshow(parallel, cmap=""gray"")
+        ax2.grid(False)
+        ax1.axis('off')
+        ax2.axis('off')
+
+        if self.save is True:
+            self.make_plot_dir(amap_directory)
+            name = self.cell + ""_time_""+str(timepoint)
+            plt.savefig(amap_directory+name+self.saveformat, bbox_inches='tight')
+        else:
+            plt.show()
+        plt.close('all')
+
+What am I doing wrong, and how can I make sure that the two images are of the same size?
+","When using 
+divider = make_axes_locatable(ax1)
+cax = divider.append_axes('right', size='5%', pad=0.05)
+
+you explicitely ask for a 5% smaller axes. So if you don't want that, you should not create the axes for the colorbar using make_axes_locatable.
+Instead you can simply create an axes at any point on the figure using
+cax = fig.add_axes([left, bottom, width, height])
+
+where left, bottom, width, height are in figure units ranging from 0 to 1. Then add the colorbar to it.
+If you want the colorbar in the middle, you could previously make some space using 
+plt.subplots_adjust(wspace=0.3)
+
+Of course you would have to experiment a bit with the numbers. 
+",matplotlib
+how do i drop and change dtype in a pipeline with sklearn,"I have some scraped data that needs some cleaning. After the cleaning, I want to create a ""numerical and categorical pipelines"" inside a ColumnTransformer such as:
+categorical_cols = df.select_dtypes(include='object').columns
+numerical_cols = df.select_dtypes(exclude='object').columns
+
+num_pipeline = Pipeline(
+    steps=[
+    ('scaler', StandardScaler())
+    ]
+)
+
+cat_pipeline = Pipeline(
+    steps=[
+        ('onehotencoder', OneHotEncoder(handle_unknown='ignore'))
+    ]
+)
+
+preprocessor = ColumnTransformer([
+    ('num_pipeline', num_pipeline, numerical_cols),
+    ('cat_pipeline', cat_pipeline, categorical_cols)
+])
+
+My idea was to create a transformer class Transformer(BaseEstimator, TransformerMixin): and create a pipeline with it. That transformer would include all the cleaning steps. My problem is that some of the steps change the dtype from object to integer mostly so I'm thinking that instead of defining the categorical_cols and numerical_cols with dtypes, instead, do it with column names.
+Would that be the correct approach? The idea would be to automate the process so I can train the model with new data every time.
+","Instead of making a list of columns beforehand you can use scikit-learn's make_column_selector to dynamically specify the columns that each transformer will be applied to.
+In your example:
+from sklearn.compose import make_column_selector as selector
+
+preprocessor = ColumnTransformer([
+    ('num_pipeline', num_pipeline, selector(dtype_exclude=object)),
+    ('cat_pipeline', cat_pipeline, selector(dtype_include=object))
+])
+
+
+Under the hood it uses pandas' select_dtypes for the type selection. You can pass a regex and select based on column name as well.
+I also recommend you checking out make_column_transformer for more control over the pipeline.
+",data-science
+parsing multiindex pandas data frame for tuple list appendage,"Problem/Task: create a function that inputs a pandas data frame represented by the markdown in Fig 1 and converts/outputs it to a list with the structure represented in Fig 2.
+I look forward to any feedback/support anyone might have!
+Fig 1: Pandas Data Frame (Function Input) as Markdown
+
+
+
+resources
+('Widget A (idx = 0)', 't1')
+('Widget A (idx = 0)', 't2')
+('Widget A (idx = 0)', 't3')
+('Widget A (idx = 0)', 't4')
+('Widget A (idx = 0)', 't5')
+('Widget A (idx = 0)', 't6')
+('Widget A (idx = 0)', 't7')
+('Widget A (idx = 0)', 't8')
+('Widget A (idx = 0)', 't9')
+('Widget A (idx = 0)', 't10')
+('Widget A (idx = 0)', 't11')
+('Widget A (idx = 0)', 't12')
+('Widget A (idx = 0)', 't13')
+('Widget A (idx = 0)', 't14')
+('Widget A (idx = 0)', 't15')
+('Widget B (idx = 1)', 't1')
+('Widget B (idx = 1)', 't2')
+('Widget B (idx = 1)', 't3')
+('Widget B (idx = 1)', 't4')
+('Widget B (idx = 1)', 't5')
+('Widget B (idx = 1)', 't6')
+('Widget B (idx = 1)', 't7')
+('Widget B (idx = 1)', 't8')
+('Widget B (idx = 1)', 't9')
+('Widget B (idx = 1)', 't10')
+('Widget B (idx = 1)', 't11')
+('Widget B (idx = 1)', 't12')
+('Widget B (idx = 1)', 't13')
+('Widget B (idx = 1)', 't14')
+('Widget B (idx = 1)', 't15')
+('Widget C (idx =2)', 't1')
+('Widget C (idx =2)', 't2')
+('Widget C (idx =2)', 't3')
+('Widget C (idx =2)', 't4')
+('Widget C (idx =2)', 't5')
+('Widget C (idx =2)', 't6')
+('Widget C (idx =2)', 't7')
+('Widget C (idx =2)', 't8')
+('Widget C (idx =2)', 't9')
+('Widget C (idx =2)', 't10')
+('Widget C (idx =2)', 't11')
+
+
+
+
+m_1
+10
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+23
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+17
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+
+
+m_2
+nan
+nan
+15
+nan
+nan
+nan
+17
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+30
+nan
+nan
+nan
+23
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+24
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+
+
+m_3
+nan
+nan
+23
+nan
+nan
+nan
+15
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+26
+nan
+nan
+nan
+21
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+22
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+
+
+m_4
+nan
+nan
+27
+nan
+nan
+nan
+19
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+22
+nan
+nan
+nan
+18
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+29
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+
+
+m_5
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+15
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+21
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+23
+nan
+nan
+nan
+nan
+
+
+m_6
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+16
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+16
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+25
+nan
+nan
+nan
+nan
+
+
+m_7
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+23
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+14
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+30
+nan
+nan
+nan
+nan
+
+
+m_8
+nan
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+nan
+nan
+nan
+13
+nan
+nan
+nan
+13
+nan
+nan
+
+
+m_9
+nan
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+nan
+nan
+nan
+13
+nan
+nan
+nan
+13
+nan
+nan
+
+
+m_10
+nan
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+10
+nan
+nan
+nan
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+15
+nan
+nan
+nan
+nan
+nan
+nan
+13
+nan
+nan
+nan
+13
+nan
+nan
+
+
+m_11
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+14
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+12
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+nan
+10
+
+
+m_12
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+1
+nan
+
+
+
+Fig 2: Example of Target Data Structure (Function Output) for List
+`
+components = [ 
+
+# widget A -> [task_0...task_i] -> [(machine_id_0, dur_0)...machine_id_i, dur_i]
+[   
+    [(1, 10)], #t1
+    [(12, 1)], #t2
+    [(2, 15), (3, 23), (4,27)], #t3
+    [(12, 1)], #t4
+    [(8,10), (9,10), (10,10)], #t5
+    [(12, 1)], #t6
+    [(2, 17), (3, 15), (4,19)], #t7
+    [(12, 1)], #t8
+    [(8,10), (9,10), (10,10)], #t9
+    [(12, 1)], #t10
+    [(5, 15), (6, 16), (7,23)], #t11
+    [(12, 1)], #t12
+    [(8,10), (9,10), (10,10)], #t13
+    [(12, 1)], #t14
+    [(11,14)], #t15
+
+],
+
+# widget B -> [task_0...task_i] -> [(machine_id_0, dur_0)...machine_id_i, dur_i]
+[   
+    [(1, 23)], #t1
+    [(12, 1)], #t2
+    [(2, 30), (3, 26), (4,22)], #t2
+    [(12, 1)], #t2
+    [(8,15), (9,15), (10,15)], #t3
+    [(12, 1)], #t2
+    [(2, 23), (3, 21), (4,18)], #t4
+    [(12, 1)], #t2
+    [(8,15), (9,15), (10,15)], #t5
+    [(12, 1)], #t2
+    [(5, 21), (6, 16), (7,14)], #t6
+    [(12, 1)], #t2
+    [(8,15), (9,15), (10,15)], #t7
+    [(12, 1)], #t2
+    [(11,12)], #t8
+
+],
+
+# widget C -> [task_0...task_i] -> [(machine_id_0, dur_0)...machine_id_i, dur_i]
+[   
+    [(1, 17)], #t1
+    [(12, 1)], #t2
+    [(2, 24), (3, 22), (4,29)], #t3
+    [(12, 1)], #t4
+    [(8,13), (9,13), (10,13)], #t5
+    [(12, 1)], #t6
+    [(2, 23), (3, 25), (4,30)], #t7
+    [(12, 1)], #t8
+    [(8,13), (9,13), (10,13)], #t9
+    [(12, 1)], #t10
+    [(11,10)], #t11
+
+],] 
+
+`
+","Here's one approach:
+Minimal Reproducible Example
+import pandas as pd
+import numpy as np
+
+data = [[1, np.nan, np.nan],
+        [np.nan, 2, 2],
+        [np.nan, 3, np.nan]]
+        
+m_idx = pd.MultiIndex.from_tuples(
+    [('A', 't1'),
+     ('A', 't2'),
+     ('B', 't1')]
+    )
+
+idx = pd.Index([f'm_{i}' for i in range(1, 4)], name='resources')
+
+df = pd.DataFrame(data, columns=m_idx, index=idx)
+
+             A         B
+            t1   t2   t1
+resources               
+m_1        1.0  NaN  NaN
+m_2        NaN  2.0  2.0
+m_3        NaN  3.0  NaN
+
+Desired output
+components = [
+    [ # A
+        [(1, 1)], # t1
+        [(2, 2), (3, 3)] # t2
+    ],
+    [ # B
+        [(2, 2)] # t1
+    ]
+]
+
+Code
+components = (
+    df.reset_index()
+    .melt([('resources','')])
+    .dropna(subset='value')
+    .assign(
+        tmp=lambda x: 
+            list(
+                zip(
+                    x[('resources','')].str.split('_').str[1].astype(int), 
+                    x['value'].astype(int))
+                )
+            )
+    .groupby(['variable_0', 'variable_1'], sort=False)['tmp']
+    .apply(list)
+    .groupby('variable_0', sort=False)
+    .apply(list)
+    .to_list()
+    )
+
+Output:
+components
+
+[[[(1, 1)], [(2, 2), (3, 3)]], [[(2, 2)]]]
+
+Explanation / Intermediates
+
+Use df.reset_index to apply df.melt on the previous index (now: ('resources', '')) + df.dropna on 'value' column.
+
+df.reset_index().melt([('resources','')]).dropna(subset='value')
+
+  (resources, ) variable_0 variable_1  value
+0           m_1          A         t1    1.0
+4           m_2          A         t2    2.0
+5           m_3          A         t2    3.0
+7           m_2          B         t1    2.0
+
+
+Use df.assign to add a column ('tmp') as a tuple (list + zip) containing the digits from 'resources' (via Series.str.split + Series.astype) and values from 'value'.
+
+.assign(...)
+
+  (resources, ) variable_0 variable_1  value     tmp
+0           m_1          A         t1    1.0  (1, 1)
+4           m_2          A         t2    2.0  (2, 2)
+5           m_3          A         t2    3.0  (3, 3)
+7           m_2          B         t1    2.0  (2, 2)
+
+
+Now, use df.groupby with the variable columns (original pd.MultiIndex) with sort=False to preserve order, and get 'tmp' as list (groupby.apply).
+
+.groupby(['variable_0', 'variable_1'])['tmp'].apply(list)
+
+variable_0  variable_1
+A           t1                    [(1, 1)]
+            t2            [(2, 2), (3, 3)]
+B           t1                    [(2, 2)]
+Name: tmp, dtype: object
+
+
+Chain another df.groupby, now solely with 'variable_0' (level 0 from original pd.MultIndex) and get list again.
+
+.groupby('variable_0').apply(list)
+
+variable_0
+A    [[(1, 1)], [(2, 2), (3, 3)]]
+B                      [[(2, 2)]]
+Name: tmp, dtype: object
+
+
+Finally, chain Series.to_list.
+
+",pandas
+why is it that calling standard sum on a numpy array produces a different result than numpysum,"Observe in the following code, creating an numpy array and calling the builtin python sum function produces different results than numpy.sum
+How is numpy's sum function implemented? And why is the result different?
+test = [.1]*10
+test = [np.float64(x) for x in test]
+test[5]= np.float64(-.9)
+
+d = [np.asarray(test) for x in range(0,60000)]
+sum(sum(d))
+
+outputs
+np.float64(-1.7473212210461497e-08)
+
+but
+np.sum(d)
+
+outputs
+np.float64(9.987344284922983e-12)
+
+","Numpy uses pairwise summation:https://github.com/numpy/numpy/pull/3685 but python uses reduce summation.
+The answer is only partially related to FP inaccuracy because if I have an array of FP numbers and use the same algorithm to sum them, I should expect the same result if I sum them in the same order.
+",data-science
+convert pandas multiindex series to json python,"Hi I have two pandas series similar to below
+PnL 
+           Product Name      Price
+Company A  Orange            3000
+Company B  Apple             2000
+           Grapes            1000
+
+Tax
+           Product Name      Price
+Company A  Orange            100
+Company B  Apple             100
+           Grapes            10
+
+I would like to transform the pandas series into the following JSON format
+{'PnL':{'Company A':{'productName':'Orange','price':3000},
+        'Company B':[{'productName':'Apple','price':2000},
+                     {'productName':'Grapes','price':1000}]
+       },
+ 'Tax':{'Company A':{'productName':'Orange','price':100},
+        'Company B':[{'productName':'Apple','price':100},
+                     {'productName':'Grapes','price':10}]
+       }
+}
+
+I have tried to use the code below
+convertedJson = json.dumps([{'company': k[0], 'productName':k[1],'price': v} for k,v in df.items()])
+
+but I cannot form the JSON which I want to produce.
+Thank you for your help
+","You can use concat for join DataFrames together and then groupby with to_dict for expected output:
+df = pd.concat([s1, s2], keys=('PnL','Tax')).reset_index()
+df.columns = ['type','company','productName','price']
+print (df)
+  type    company productName  price
+0  PnL  Company A      Orange   3000
+1  PnL  Company B       Apple   2000
+2  PnL  Company B      Grapes   1000
+3  Tax  Company A      Orange   3000
+4  Tax  Company B       Apple   2000
+5  Tax  Company B      Grapes   1000
+
+d = (df.groupby(['type','company'])['productName','price']
+       .apply(lambda x: x.to_dict('r'))
+       .reset_index(name='data')
+       .groupby('type')['company','data']
+       .apply(lambda x: x.set_index('company')['data'].to_dict())
+       .to_json()
+       )
+
+
+print (d)
+
+{
+    ""PnL"": {
+        ""Company A"": [{
+            ""productName"": ""Orange"",
+            ""price"": 3000
+        }],
+        ""Company B"": [{
+            ""productName"": ""Apple"",
+            ""price"": 2000
+        }, {
+            ""productName"": ""Grapes"",
+            ""price"": 1000
+        }]
+    },
+    ""Tax"": {
+        ""Company A"": [{
+            ""productName"": ""Orange"",
+            ""price"": 3000
+        }],
+        ""Company B"": [{
+            ""productName"": ""Apple"",
+            ""price"": 2000
+        }, {
+            ""productName"": ""Grapes"",
+            ""price"": 1000
+        }]
+    }
+}
+
+",pandas
+ambiguity in pandas dataframe  numpy array quotaxisquot definition,"I've been very confused about how python axes are defined, and whether they refer to a DataFrame's rows or columns. Consider the code below:
+>>> df = pd.DataFrame([[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]], columns=[""col1"", ""col2"", ""col3"", ""col4""])
+>>> df
+   col1  col2  col3  col4
+0     1     1     1     1
+1     2     2     2     2
+2     3     3     3     3
+
+So if we call df.mean(axis=1), we'll get a mean across the rows:
+>>> df.mean(axis=1)
+0    1
+1    2
+2    3
+
+However, if we call df.drop(name, axis=1), we actually drop a column, not a row:
+>>> df.drop(""col4"", axis=1)
+   col1  col2  col3
+0     1     1     1
+1     2     2     2
+2     3     3     3
+
+Can someone help me understand what is meant by an ""axis"" in pandas/numpy/scipy?
+A side note, DataFrame.mean just might be defined wrong. It says in the documentation for DataFrame.mean that axis=1 is supposed to mean a mean over the columns, not the rows...
+","It's perhaps simplest to remember it as 0=down and 1=across. 
+This means:
+
+Use axis=0 to apply a method down each column, or to the row labels (the index).
+Use axis=1 to apply a method across each row, or to the column labels.
+
+Here's a picture to show the parts of a DataFrame that each axis refers to:
+
+It's also useful to remember that Pandas follows NumPy's use of the word axis. The usage is explained in NumPy's glossary of terms:
+
+Axes are defined for arrays with more than one dimension. A 2-dimensional array has two corresponding axes: the first running vertically downwards across rows (axis 0), and the second running horizontally across columns (axis 1). [my emphasis] 
+
+So, concerning the method in the question, df.mean(axis=1), seems to be correctly defined. It takes the mean of entries horizontally across columns, that is, along each individual row. On the other hand, df.mean(axis=0) would be an operation acting vertically downwards across rows.
+Similarly, df.drop(name, axis=1) refers to an action on column labels, because they intuitively go across the horizontal axis. Specifying axis=0 would make the method act on rows instead.
+",numpy
+understanding sklearn39s knnimputer,"I was going through its documentation and it says
+
+Each sample’s missing values are imputed using the mean value from
+n_neighbors nearest neighbors found in the training set. Two samples
+are close if the features that neither are missing are close.
+
+Now, playing around with a toy dataset, i.e.
+>>>X = [[1, 2, nan], [3, 4, 3], [nan, 6, 5], [8, 8, 7]]
+>>>X
+
+   [[ 1.,  2., nan],
+    [ 3.,  4.,  3.],
+    [nan,  6.,  5.],
+    [ 8.,  8.,  7.]]
+
+And we make a KNNImputer as follows:
+imputer = KNNImputer(n_neighbors=2)
+
+The question is, how does it fill the nans while having nans in 2 of the columns? For example, if it is to fill the nan in the 3rd column of the 1st row, how will it choose which features are the closest since one of the rows has nan in the first column as well? When I do imputer.fit_transform(X) it gives me
+array([[1. , 2. , 4. ],
+       [3. , 4. , 3. ],
+       [5.5, 6. , 5. ],
+       [8. , 8. , 7. ]])
+
+which means for filling out the nan in row 1, the nearest neighbors were the second and the third row. How did it calculate the euclidean distance between the first and the third row?
+","
+How does it fill the NaNs using rows that also have NaNs?
+
+This doesn't seem to be mentioned in the docs. But by digging a bit into the source code, it appears that for each column being imputed, all donors at a smaller distance are considered, even if they have missing values. The way this is handled is by setting to 0 the missing values in a weight matrix, which is obtained according to the used distance, see _get_weights.
+The relevant code is in _calc_impute, where after finding a distance matrix for all potential donors, and then the above mentioned matrix of weights, it is imputed as:
+# fill nans with zeros
+if weight_matrix is not None:
+    weight_matrix[np.isnan(weight_matrix)] = 0.0
+
+Where all potential donors are considered if they have at least one non-nan distance with the reciever
+dist_pot_donors : ndarray of shape (n_receivers, n_potential_donors)
+    Distance matrix between the receivers and potential donors from
+    training set. There must be at least one non-nan distance between
+    a receiver and a potential donor.
+
+We could check this with a toy example; in the following matrix, when inputting the missing value in [nan,  7.,  4.,  5.], the last row (which also contains two NaNs) is chosen (note that I've set n_neighbors=1). This is because the distance wrt the last row is 0, as the distance corresponding to the NaN values has been set to 0. So by just having a minimal difference with rows 2 and 3, the last row is chosen since it is seen as being equal:
+X = np.array([[np.nan,7,4,5],[2,8,4,5],[3,7,4,6],[1,np.nan,np.nan,5]])
+
+print(X)
+array([[nan,  7.,  4.,  5.],
+       [ 2.,  8.,  4.,  5.],
+       [ 3.,  7.,  4.,  6.],
+       [ 1., nan, nan,  5.]])
+
+from sklearn.impute import KNNImputer
+imputer = KNNImputer(n_neighbors=1)
+
+imputer.fit_transform(X)
+array([[1., 7., 4., 5.],
+       [2., 8., 4., 5.],
+       [3., 7., 4., 6.],
+       [1., 7., 4., 5.]])
+
+",data-science
+replace table in hdf5 file with a modified table,"I have an existing HDF5 file with multiple tables. I want to modify this HDF5 file: in one of the tables I want to drop some rows entirely, and modify values in the remaining rows.
+I tried the following code:
+import h5py
+import numpy as np
+
+with h5py.File(""my_file.h5"", ""r+"") as f:
+    # Get array
+    table = f[""/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX""]
+    arr = np.array(table)
+    
+    # Modify array
+    arr = arr[arr[:, 1] == 2]
+    arr[:, 1] = 1
+
+    # Write array back
+    table[...] = arr
+
+This code however results in the following error when run:
+Traceback (most recent call last):
+
+  File ""C:\_Work\test.py"", line 10, in <module>
+    arr[arr[:, 1] == 2]
+
+IndexError: too many indices for array: array is 1-dimensional, but 2 were indexed
+
+So one of the problems seems to be that the numpy array arr that I've created is not a two-dimensional array. However I'm not sure exactly how to create a two-dimensional array out of the HDF5 table (or whether that is even the best approach here).
+Would anyone here be able to help put me on the right path?
+Edit
+Output from h5dump on my dataset is as follows
+HDF5 ""C:\_Work\my_file.h5"" {
+DATASET ""/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX"" {
+   DATATYPE  H5T_COMPOUND {
+      H5T_STD_I64LE ""EID"";
+      H5T_STD_I64LE ""PLY"";
+      H5T_IEEE_F64LE ""X1R"";
+      H5T_IEEE_F64LE ""Y1R"";
+      H5T_IEEE_F64LE ""T1R"";
+      H5T_IEEE_F64LE ""L1R"";
+      H5T_IEEE_F64LE ""L2R"";
+      H5T_IEEE_F64LE ""X1I"";
+      H5T_IEEE_F64LE ""Y1I"";
+      H5T_IEEE_F64LE ""T1I"";
+      H5T_IEEE_F64LE ""L1I"";
+      H5T_IEEE_F64LE ""L2I"";
+      H5T_STD_I64LE ""DOMAIN_ID"";
+   }
+   DATASPACE  SIMPLE { ( 990 ) / ( H5S_UNLIMITED ) }
+   ATTRIBUTE ""version"" {
+      DATATYPE  H5T_STD_I64LE
+      DATASPACE  SIMPLE { ( 1 ) / ( 1 ) }
+   }
+}
+}
+
+","This answer is specifically focused on OP's request in comments to ""throw away all rows where the value for PLY is not 2. Then in the remaining rows change the value for PLY from 2 to 1"".
+The procedure is relatively straight-forward...if you know the tricks. Steps are summarized here, with matching comments in the code:
+
+Created stress dataset object (but don't extract to an array).
+Rename/move original output dataset to a saved name (not req'd but
+good practice)
+Create a new stress array by extracting row indices where PLY==2. This is the most sophisticated step. np.nonzero() returns row indices that match the condition stress_arr['PLY']==2, then uses them as indices to slice values from the array.
+Modify all rows in the new array from PLY ID 2 to 1
+Save the new array to a dataset with the original name
+
+Code below:
+with h5py.File('quad4_comp_cplx_test.h5', 'r+') as h5f:
+    # Create stress dataset object
+    stress_ds = h5f['/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX']
+    ## stress array below not reqd
+    ## stress_arr = stress_ds[()]  
+    print(stress_ds.shape)   
+
+    # Rename/move original output dataset to saved name 
+    h5f.move('/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX',\
+             '/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX_save')
+
+    # Slice a stress array from dataset using indices where PLY==2   
+    # modified reference from stress_arr to stress_ds
+    ## mod_stress_arr = stress_arr[np.nonzero(stress_arr['PLY']==2)] 
+    mod_stress_arr = stress_ds[np.nonzero(stress_ds['PLY']==2)]
+    print(mod_stress_arr.shape) 
+
+    # Modify PLY ID from 2 to 1 for all rows
+    mod_stress_arr[:]['PLY'] = 1
+        
+    # Finally, save the ply stress array to a dataset with the original name
+    h5f.create_dataset('/NASTRAN/RESULT/ELEMENTAL/STRESS/QUAD4_COMP_CPLX', 
+                                    data=mod_stress_arr)
+
+",numpy
+how to update a previous run into mlflow,"I would like to update previous runs done with MLFlow, ie. changing/updating a parameter value to accommodate a change in the implementation. Typical uses cases:
+
+Log runs using a parameter A, and much later, log parameters A and B. It would be useful to update the value of parameter B of previous runs using its default value.
+""Specialize"" a parameter. Implement a model using a boolean flag as a parameter. Update the implementation to take a string instead. Now we need to update the values of the parameter for the previous runs so that it stays consistent with the new behavior.
+Correct a wrong parameter value loggued in the previous runs.
+
+It is not always easy to trash the whole experiment as I need to keep the previous runs for statistical purpose. I would like also not to generate new experiments just for a single new parameter, to keep a single database of runs.
+What is the best way to do this?
+","To add or correct a parameter, metric or artifact of an existing run, pass run_id instead of experiment_id to mlflow.start_run function
+with mlflow.start_run(run_id=""your_run_id"") as run:
+    mlflow.log_param(""p1"",""your_corrected_value"")
+    mlflow.log_metric(""m1"",42.0) # your corrected metrics
+    mlflow.log_artifact(""data_sample.html"") # your corrected artifact file
+
+You can correct, add to, or delete any MLflow run any time after it is complete. Get the run_id either from the UI or by using mlflow.search_runs.
+Source: https://towardsdatascience.com/5-tips-for-mlflow-experiment-tracking-c70ae117b03f
+",data-science
+how to set a column which suffix name is based on a value in another column,"#Column X contains the suffix of one of V* columns. Need to put set column V{X} to 9 if X > 1.  
+#But my code created a new column 'VX' instead of updating one of the V* columns
+    
+import pandas as pd
+
+df = pd.DataFrame({'EMPLID': [12, 13, 14, 15, 16, 17, 18],
+    'V1': [2,3,4,50,6,7,8],
+    'V2': [3,3,3,3,3,3,3],
+    'V3': [7,15,8,9,10,11,12],
+    'X': [2,3,1,3,3,1,2]
+})
+
+# Expected output:
+     
+#    EMPLID  V1  V2  V3  X  
+#    12       2   9   7  2  
+#    13       3   3   9  3 
+#    14       4   3   8  1
+#    15      50   3   9  3 
+#    16       6   3   9  3
+#    17       7   3  11  1  
+#    18       8   9  12  2 
+
+My code created a new column 'VX' instead of updating one of the V* columns:
+df.loc[(df['X'] > 1), f""V{'X'}""] = 9
+
+Any suggestion is appreciated. Thank you.
+","# your dataframe
+df = pd.DataFrame({'EMPLID': [12, 13, 14, 15, 16, 17, 18],
+    'V1': [2,3,4,50,6,7,8],
+    'V2': [3,3,3,3,3,3,3],
+    'V3': [7,15,8,9,10,11,12],
+    'X': [2,3,1,3,3,1,2]
+})
+
+First, we get the columns names that we want to change and their indices on the original dataframe.
+# column name
+x = df['X'][(df['X'] > 1)]
+# column names mapped to your scenario
+columns = [f'V{v}' for v in x]
+# desired indexes
+positions = x.index.values
+#Then we convert the column names to indices and use these indices to update the positions matching the conditions.
+column_indices = [df.columns.get_loc(col) for col in columns]
+
+Now, we can use two approaches here.
+A vectorized approach
+Convert the dataframe to numpy array, change the desired positions all at once and change the result back to a dataframe.
+
+import numpy as np
+
+# the original dataframe column names
+column_names = df.columns
+# convert the dataframe to numpy (this will 'remove' the column names)
+df_array = df.values
+# put the columns back (axis=0 will stack the columns at the top of the array)
+df_array = np.concatenate([[column_names], df_array], axis=0)
+# position+1 because when using pandas to get the row index, we ignore the columns (which would have index 0)
+df_array[positions+1, column_indices] = 9
+# convert the result back to a dataframe
+df = pd.DataFrame(df_array[1:], columns=column_names)
+
+print(df)
+
+Output:
+ EMPLID  V1  V2  V3  X
+0      12   2   9   7  2
+1      13   3   3   9  3
+2      14   4   3   8  1
+3      15  50   3   9  3
+4      16   6   3   9  3
+5      17   7   3  11  1
+6      18   8   9  12  2
+
+A loop approach
+The easiest way would be just to loop over the rows and columns, changing one value at a time.
+for row, column in zip(positions, column_indices):
+    df.iat[row,column] = 9
+
+If your dataframe is small, the vectorized approach won't have as much of an advantage over the for loop.
+",pandas
+how to add a dataframe to another on python,"So I have 3 columns. ETA (eta/km*100) (a number), Climate, and month.
+My purpose is to drop the values higher that 0.95 quartile and lower than 0.05 (the extreme cases on this dataset) for each subset of 3 months and Climate, and the reagroup the dataset on a single dataset.
+The issue I'm having here is that even tho inside the ""for"" statement it does the job, when I print the resulting data frame, it only has the last subset (Hurricane, last 3 months) without dropping the extreme data.
+I've tried concat, add and append. Not sure what I'm doing wrong here.
+Climate = ['Sunny', 'Cloudy', 'Foggy', 'Rain', 'Storm', 'Hurricane']
+
+newDf = df_Cl
+newDf.iloc[0:0]
+
+
+for cl in Climate:
+    print (cl)
+    for num in range(4, 14, 3):
+        print (num)
+        df_Temp = df.loc[(df['Climate'] == cl) & (df['month'] < num)]
+        bajo = df_Temp['eta/km*100'].quantile(0.05)
+        alto = df_Temp['eta/km*100'].quantile(0.95)
+        df_Temp = df_Temp[df_Temp['eta/km*100'] > bajo]
+        df_Temp = df_Temp[df_Temp['eta/km*100'] < alto]
+        newDf.add(df_Temp)
+
+I've also tried:
+newDf += df_Temp
+
+But all the values become ""NaN""
+","Use:
+Climate = ['Sunny', 'Cloudy', 'Foggy', 'Rain', 'Storm', 'Hurricane']
+
+#filter only rows by Climate list
+df1 = df[df['Climate'].isin(Climate)]
+
+#create groups per Climate and each 3 months
+g = df1.groupby(['Climate', df['month'].sub(1).floordiv(3)])['eta/km*100']
+
+#filter between 0.05 and 0.95 quantile
+out = df1[df1['eta/km*100'].between(g.quantile(0.05),
+                                    g.quantile.quantile(0.95), inclusive='neither')]
+
+Your solution working if append final df_Temp to lsit of DataFrames and last use concat for join together:
+L = []
+for cl in Climate:
+    print (cl)
+    for num in range(4, 14, 3):
+        print (num)
+        df_Temp = df.loc[(df['Climate'] == cl) & (df['month'] < num)]
+        bajo = df_Temp['eta/km*100'].quantile(0.05)
+        alto = df_Temp['eta/km*100'].quantile(0.95)
+        df_Temp = df_Temp[df_Temp['eta/km*100'] > bajo]
+        df_Temp = df_Temp[df_Temp['eta/km*100'] < alto]
+        L.append(df_Temp)
+        
+out = pd.concat(L)
+
+",data-science
+pandas drop first columns after csv read,"Is there a way to reference an object within the line of the instantiation ?
+See the following example :
+I wanted to drop the first column (by index) of a csv file just after reading it (usually pd.to_csv outputs the index as first col) :
+df = pd.read_csv(csvfile).drop(self.columns[[0]], axis=1)
+
+I understand self should be placed in the object context but it here describes what I intent to do.
+(Of course, doing this operation in two separate lines works perfectly.)
+","One way is to use pd.DataFrame.iloc:
+import pandas as pd
+from io import StringIO
+
+mystr = StringIO(""""""col1,col2,col3
+a,b,c
+d,e,f
+g,h,i
+"""""")
+
+df = pd.read_csv(mystr).iloc[:, 1:]
+
+#   col2 col3
+# 0    b    c
+# 1    e    f
+# 2    h    i
+
+",pandas
+what is the best way of under sampling in r,"I have a dataset with attribute A,B, C. C is a factor with 2 labels zz and z. number of (z) > number of (zz), I want to under sample my data set so that in the new data has same no of zz and z values. Can't use any external package for this. Best if can be done using sample function
+--------------------------------------------------
+| Attribute A   |   Attribute B . | Attribute c  |
+--------------------------------------------------
+|  xx           | y1              | zz           |
+--------------------------------------------------
+|  mm           | r1              |  z           |
+--------------------------------------------------
+|  ab           | 1r              |  z           |
+--------------------------------------------------
+|  ry           | cm              |  zz          |
+--------------------------------------------------
+|  ca           | rx              |  z           |
+--------------------------------------------------
+|  mm           | zr              |  z           |
+--------------------------------------------------
+
+And the result should be-
+
+| Attribute A   |   Attribute B . | Attribute c  |
+--------------------------------------------------
+|  xx           | y1              | zz           |
+--------------------------------------------------
+|  mm           | r1              |  z           |
+--------------------------------------------------
+|  ab           | 1r              |  z           |
+--------------------------------------------------
+|  ry           | cm              |  zz          |
+--------------------------------------------------
+
+Here probability of zz = probability  of z = 0.5
+","Say your data is in a data frame called data with columns A, B, and C, you can do something like:
+## rows that have ""z"" and ""zz"" entries
+z_ind <- which(data$C == ""z"")
+zz_ind <- which(data$C == ""zz"")
+
+nsamp <- 10   #number of elements to sample
+## if you want all elements of the smaller class, could be:
+## nsamp <- min(length(z_ind), length(zz_ind))
+
+## select `nsamp` entries with ""z"" and `nsamp` entries with ""zz""
+pick_z <- sample(z_ind, nsamp)
+pick_zz <- sample(zz_ind, nsamp)
+
+new_data <- data[c(pick_z, pick_zz), ]
+
+",data-science
+how can i iterate over rows in a pandas dataframe,"I have a pandas dataframe, df:
+   c1   c2
+0  10  100
+1  11  110
+2  12  120
+
+How do I iterate over the rows of this dataframe? For every row, I want to access its elements (values in cells) by the name of the columns. For example:
+for row in df.rows:
+    print(row['c1'], row['c2'])
+
+
+I found a similar question, which suggests using either of these:
+
+
+for date, row in df.T.iteritems():
+
+
+
+for row in df.iterrows():
+
+
+
+But I do not understand what the row object is and how I can work with it.
+","DataFrame.iterrows is a generator which yields both the index and row (as a Series):
+import pandas as pd
+
+df = pd.DataFrame({'c1': [10, 11, 12], 'c2': [100, 110, 120]})
+df = df.reset_index()  # make sure indexes pair with number of rows
+
+for index, row in df.iterrows():
+    print(row['c1'], row['c2'])
+
+10 100
+11 110
+12 120
+
+
+Obligatory disclaimer from the documentation
+
+Iterating through pandas objects is generally slow. In many cases, iterating manually over the rows is not needed and can be avoided with one of the following approaches:
+
+Look for a vectorized solution: many operations can be performed using built-in methods or NumPy functions, (boolean) indexing, …
+When you have a function that cannot work on the full DataFrame/Series at once, it is better to use apply() instead of iterating over the values. See the docs on function application.
+If you need to do iterative manipulations on the values but performance is important, consider writing the inner loop with cython or numba. See the enhancing performance section for some examples of this approach.
+
+
+Other answers in this thread delve into greater depth on alternatives to iter* functions if you are interested to learn more.
+",pandas
+how can i make pandas dataframe column headers all lowercase,"I want to make all column headers in my pandas data frame lower case
+Example
+If I have:
+data =
+
+  country country isocode  year     XRAT          tcgdp
+0  Canada             CAN  2001  1.54876   924909.44207
+1  Canada             CAN  2002  1.56932   957299.91586
+2  Canada             CAN  2003  1.40105  1016902.00180
+....
+
+I would like to change XRAT to xrat by doing something like:
+data.headers.lowercase()
+
+So that I get:
+  country country isocode  year     xrat          tcgdp
+0  Canada             CAN  2001  1.54876   924909.44207
+1  Canada             CAN  2002  1.56932   957299.91586
+2  Canada             CAN  2003  1.40105  1016902.00180
+3  Canada             CAN  2004  1.30102  1096000.35500
+....
+
+I will not know the names of each column header ahead of time.
+","You can do it like this:
+data.columns = map(str.lower, data.columns)
+
+or
+data.columns = [x.lower() for x in data.columns]
+
+example:
+>>> data = pd.DataFrame({'A':range(3), 'B':range(3,0,-1), 'C':list('abc')})
+>>> data
+   A  B  C
+0  0  3  a
+1  1  2  b
+2  2  1  c
+>>> data.columns = map(str.lower, data.columns)
+>>> data
+   a  b  c
+0  0  3  a
+1  1  2  b
+2  2  1  c
+
+",pandas
+add exception handler and continue code execution,"I have this Python code used to read files:
+import pandas as pd
+
+metadata_files = []
+csv_df = pd.DataFrame()
+meta_files_list = (pd.read_csv(file, encoding='utf-8', sep="";"") for file in metadata_files)
+meta_files_df = pd.concat(meta_files_list, ignore_index=True)
+
+Sometimes I get an exception because files are empty at the line pd.concat.
+How I can properly process this exception and continue program execution?
+I want to send a message somehow to process this issue.
+","You could use try and except syntax of python:
+metadata_files = []
+csv_df = pd.DataFrame()
+meta_files_list = (pd.read_csv(file, encoding='utf-8', sep="";"") for file in 
+metadata_files)
+try:
+  meta_files_df = pd.concat(meta_files_list, ignore_index=True)
+except:
+  print(""could not concat"")
+
+Simply add what you want to do in the case of concat not working.
+",pandas
+convert a list of dictionaries to a table numpy matrix,"Let the given dictionaries are 
+d = [{'a':1,'b':4},{'b':2}]
+
+So basically I want a matrix like this
+  | 'a' | 'b'  |
+ _______________
+  |  1  |  4   |
+  |  na |  2   |
+
+How can I efficiently achieve this ? 
+","The Pandas DataFrame constructor will immediately give you the result you are looking for:
+import pandas as pd
+pd.DataFrame(d).values
+
+The .values part on the end converts the result to a NumPy array, which is what you asked for.  Some people would just work directly with the DataFrame instead.
+",numpy
+pandas series subtract pandas dataframe strange result,"I'm wondering why pandas Series subtract a pandas dataframe produce such a strange result.
+df = pd.DataFrame(np.arange(10).reshape(2, 5), columns='a-b-c-d-e'.split('-'))
+df.max(axis=1) - df[['b']]
+
+What are the steps for pandas to produce the result?
+    b   0   1
+0 NaN NaN NaN
+1 NaN NaN NaN
+
+","By default an operation between a DataFrame and a Series is broadcasted on the DataFrame by column, over the rows. This makes it easy to perform operations combining a DataFrame and aggregation per column:
+# let's subtract the DataFrame to its max per column
+df.max(axis=0) - df[['b']]
+
+    a  b   c   d   e
+b NaN  5 NaN NaN NaN
+1 NaN  0 NaN NaN NaN
+
+Here, since you're aggregating per row, this is no longer possible. You should use rsub with the parameter axis=0:
+df[['b']].rsub(df.max(axis=1), axis=0)
+
+Output:
+   b
+0  3
+1  3
+
+Note that using two Series would also align the values:
+df.max(axis=1) - df['b']
+
+Output:
+0    3
+1    3
+dtype: int64
+
+Why 3 columns with df.max(axis=1) - df[['b']]?
+First, let's have a look at each operand:
+# df.max(axis=1)
+0    4
+1    9
+dtype: int64
+
+# df[['b']]
+   b
+0  1
+1  6
+
+Since df[['b']] is 2D (DataFrame), and df.max(axis=1) is 1D (Series), df.max(axis=1) will be used as if it was a ""wide"" DataFrame:
+# df.max(axis=1).to_frame().T
+   0  1
+0  4  9
+
+There are no columns in common, thus the output is only NaNs with the union of column names ({'b'}|{0, 1} -> {'b', 0, 1}).
+If you replace the NaNs that are used in the operation by 0 this makes it obvious how the values are used:
+df[['b']].rsub(df.max(axis=1).to_frame().T, fill_value=0)
+
+     b    0    1
+0 -1.0  4.0  9.0
+1 -6.0  NaN  NaN
+
+Now let's check a different example in which one of the row indices has the same name as one of the selected columns:
+df = pd.DataFrame(np.arange(10).reshape(2, 5),
+                  columns=['a', 'b', 'c', 'd', 'e'],
+                  index=['b', 0]
+                 )
+df.max(axis=1) - df[['b']]
+
+Now the output only has 2 columns, b the common indice and 1 the second index in the Series ({'b', 1}|{'b'} -> {'b', 1}):
+    1  b
+b NaN  3
+1 NaN -2
+
+",pandas
+catelog sentences into 5 words that represent them,"I have dataframe with 1000 text rows. df['text']
+I also have 5 words that I want to know for each one of them how much they represnt the text  (between 0 to 1)
+every score will be in df[""word1""] ,df[""word2""] and etc
+I will glad for recomendations how to do that
+edit
+represnt = the semantic distance between the word to the text.
+for example -
+lets say in row 1 the text is ""i want to eat""
+and I have 2 words : food and house.
+so in df[""food ""] it would be higher score than in df[""house""]
+","You could use a pre-trained sentence transformer model from sentence_transformers:
+import pandas as pd
+from sentence_transformers import SentenceTransformer, util
+
+
+class SemanticSimilarityCalculator:
+  def __init__(self, model_name: str = 'all-MiniLM-L6-v2') -> None:
+    self.model = SentenceTransformer(model_name)
+    self.word_embeddings = None
+
+  def encode_words(self, words: list[str]) -> None:
+    self.word_embeddings = self.model.encode(words, convert_to_tensor=True)
+    self.words = words
+
+  def calculate_similarity(self, text: str) -> list[float]:
+    if self.word_embeddings is None:
+      raise ValueError('Words must be encoded before calculating similarity.')
+    text_embedding = self.model.encode(text, convert_to_tensor=True)
+    similarities = util.cos_sim(text_embedding, self.word_embeddings)[
+      0
+    ].tolist()
+    return similarities
+
+  def add_similarity_scores_to_df(
+    self, df: pd.DataFrame, text_column: str
+  ) -> pd.DataFrame:
+    if self.words is None:
+      raise ValueError(
+        'Words must be encoded before adding scores to the DataFrame.'
+      )
+    similarity_columns = ['word_' + word for word in self.words]
+    df[similarity_columns] = df[text_column].apply(
+      lambda text: pd.Series(self.calculate_similarity(text))
+    )
+    return df
+
+
+def main():
+  data = {'text': ['I want to eat', 'The house is big', 'I need to sleep']}
+  df = pd.DataFrame(data)
+  words = ['food', 'house', 'sleep', 'drink', 'run']
+  calculator = SemanticSimilarityCalculator()
+  calculator.encode_words(words)
+  df_with_scores = calculator.add_similarity_scores_to_df(
+    df, text_column='text'
+  )
+  print(df_with_scores)
+
+
+if __name__ == '__main__':
+  main()
+
+Output:
+               text  word_food  word_house  word_sleep  word_drink  word_run
+0     I want to eat   0.592410    0.215032    0.254065    0.370329  0.259350
+1  The house is big   0.243262    0.672110    0.170785    0.213780  0.119716
+2   I need to sleep   0.253703    0.222462    0.725105    0.358372  0.303838
+
+",pandas
+how to represent inf or inf in cython with numpy,"I am building an array with cython element by element. I'd like to store the constant np.inf (or -1 * np.inf) in some entries. However, this will require the overhead of going back into Python to look up inf. Is there a libc.math equivalent of this constant? Or some other value that could easily be used that's equivalent to (-1*np.inf) and can be used from Cython without overhead?
+EDIT example, you have:
+cdef double value = 0
+for k in xrange(...):
+  # use -inf here -- how to avoid referring to np.inf and calling back to python?
+  value = -1 * np.inf
+
+","There's no literal for it, but float can parse it from a string:
+>>> float('inf')
+inf
+>>> np.inf == float('inf')
+True
+
+Alternatively, math.h may (almost certainly will) declare a macro that evaluates to inf, in which case you can just use that:
+cdef extern from ""math.h"":
+    float INFINITY
+
+
+(There's no clean way to check if INFINITY is defined in pure Cython, so if you want to cover all your bases you'll need to get hacky. One way of doing it is to create a small C header, say fallbackinf.h:
+#ifndef INFINITY
+#define INFINITY 0
+#endif
+
+And then in your .pyx file:
+cdef extern from ""math.h"":
+    float INFINITY
+
+cdef extern from ""fallbackinf.h"":
+    pass
+
+inf = INFINITY if INFINITY != 0 else float('inf')
+
+(You can't assign to INFINITY, because it's an rvalue. You could do away with the ternary operator if you #defined INFINITY as 1.0/0.0 in your header, but that might raise SIGFPE, depending on your compiler.)
+This is definitely in the realm of cargo cult optimisation, though.)
+",numpy
+convert to float pandas string column with mixed thousand and decimal separators,"I have a pandas DataFrame with a column containing strings representing numbers. These strings have mixed formats. Some times numbers use comma as a decimal separator and sometimes a dot. When a dot is used as a decimal separator, that number can contain comma as a thousand separator.
+For example:
+import pandas as pd
+data = {
+    'NumberString': [
+        '1,234.56',
+        '789,012.34',
+        '45,678',
+        '9,876.54',
+        '3,210.98',
+        '1,000,000.01',
+        '123.45',
+        '42,000',
+        'NaN'
+    ]
+}
+df = pd.DataFrame(data)
+
+I want to convert this column to numeric without losing some of the data due to inconsistent format (commas vs dots). However, using pd.to_numeric with parameter errors='coerce' will drop down some of the number
+Python
+Is there a way to format all the strings to numbers without loosing them due to format?
+What I have tried so far:
+>>> df['Number'] = pd.to_numeric(df['NumberString'].str.replace(',','.'), errors='coerce')
+
+NumberString  Number
+1,234.56      NaN
+789,012.34    NaN
+45,678        45.678
+9,876.54      NaN
+3,210.98      NaN
+1,000,000.01  NaN
+123.45        123.450
+42,000        42.000
+NaN           NaN
+
+Desired output:
+NumberString  Number
+1,234.56      1234.56 
+789,012.34    789012.34
+45,678        45.678
+9,876.54      9876.54
+3,210.98      3210.98
+1,000,000.01  1000000.01
+123.45        123.450
+42,000        42.000
+NaN           NaN
+
+","If you have mixed formats, you could first try to str.replace the commas by a dot and convert to_numeric with errors='coerce', then fillna with an attempt converting the commas to empty string:
+df['Number'] = (pd.to_numeric(df['NumberString'].str.replace(',', '.'), errors='coerce')
+                  .fillna(pd.to_numeric(df['NumberString'].str.replace(',', ''), errors='coerce'))
+               )
+
+Output:
+   NumberString       Number
+0      1,234.56     1234.560
+1    789,012.34   789012.340
+2        45,678       45.678
+3      9,876.54     9876.540
+4      3,210.98     3210.980
+5  1,000,000.01  1000000.010
+6        123.45      123.450
+7        42,000       42.000
+8           NaN          NaN
+
+what about 1.000.000,01/1.000,01?
+If this is desired, then you can use a custom function. Count the number of ./, and decide based on those. If a single . or , and the other has zero or more than 1, then remove the other character and convert. If one of each, use the last one as decimal separator. If more that 1 for each, return NaN (you could also use a try/except to catch all invalid strings).
+def to_num(s):
+    d = s.count('.')
+    c = s.count(',')
+    if d<=1 and c != 1:
+        return float(s.replace(',', ''))
+    if c<=1 and d != 1:
+        return float(s.replace('.', '').replace(',', '.'))
+    if c>1 and d>1:
+        return float('nan')
+    s2 = s[::-1]
+    if s2.index('.') < s2.index(','):
+        return float(s.replace(',', ''))
+    else:
+        return float(s.replace('.', '').replace(',', '.'))
+        
+df['Number'] = df['NumberString'].map(to_num)
+
+Output:
+    NumberString       Number
+0       1,234.56     1234.560
+1     789,012.34   789012.340
+2         45,678       45.678
+3       9,876.54     9876.540
+4       3,210.98     3210.980
+5   1,000,000.01  1000000.010
+6         123.45      123.450
+7         42,000       42.000
+8            NaN          NaN
+9   1.000.000,01  1000000.010
+10     1,000,000  1000000.000
+11     1.000.000  1000000.000
+12      1,000.01     1000.010
+13      1.000,01     1000.010
+14     1.2.3,4,5          NaN
+
+",pandas
+have numpyconcatenate return proper subclass rather than plain ndarray,"I have a numpy array subclass, and I'd like to be able to concatenate them.
+import numpy as np
+
+class BreakfastArray(np.ndarray):
+    def __new__(cls, n=1):
+        dtypes=[(""waffles"", int), (""eggs"", int)]
+        obj = np.zeros(n, dtype=dtypes).view(cls)
+        return obj
+        
+b1 = BreakfastArray(n=1)
+b2 = BreakfastArray(n=2)
+con_b1b2 = np.concatenate([b1, b2])
+
+print(b1.__class__, con_b1b2.__class__)
+
+this outputs <class '__main__.BreakfastArray'> <class 'numpy.ndarray'>, but I'd like the concatenated array to also be a BreakfastArray class. It looks like I probably need to add a __array_finalize__ method, but I can't figure out the right way to do it.
+","Expanding simon's solution,
+this is what I settled on so other numpy functions fall-back to standard ndarray (so, numpy.unique(b2[""waffles""]) works as expected). Also a slight change to concatenate so it will work for any subclasses as well.
+import numpy as np
+
+HANDLED_FUNCTIONS = {}
+
+class BreakfastArray(np.ndarray):
+    def __new__(cls, *args, n=1, **kwargs):
+        dtypes=[(""waffles"", int), (""eggs"", int)]
+        obj = np.zeros(n, dtype=dtypes).view(cls)
+        return obj
+
+    def __array_function__(self, func, types, args, kwargs):
+        # If we want ""standard numpy behavior"",
+        # convert any BreakfastArray to ndarray views
+        if func not in HANDLED_FUNCTIONS:
+            new_args = []
+            for arg in args:
+                if issubclass(arg.__class__, BreakfastArray):
+                    new_args.append(arg.view(np.ndarray))
+                else:
+                    new_args.append(arg)
+            return func(*new_args, **kwargs)
+        if not all(issubclass(t, BreakfastArray) for t in types):
+            return NotImplemented
+        return HANDLED_FUNCTIONS[func](*args, **kwargs)
+
+def implements(numpy_function):
+    def decorator(func):
+        HANDLED_FUNCTIONS[numpy_function] = func
+        return func
+    return decorator
+
+@implements(np.concatenate)
+def concatenate(arrays):
+    result = arrays[0].__class__(n=sum(len(a) for a in arrays))
+    return np.concatenate([np.asarray(a) for a in arrays], out=result)
+
+",numpy
+how to on a rolling window pass two column vectors instead of one,"I'm computing technical indicators on a rolling basis to avoid any look-ahead bias, for example, for model training and back-testing. To that end I would like to compute the indicator ForceIndexIndicator using the TA Python project. However this needs two inputs instead of one: close and volume, and I can't get hold of both on my rolling - apply pipeline:
+import pandas as pd
+import ta
+
+...
+df.columns = ['close', 'volume']
+df['force_index_close'] = (
+    df.rolling(window=window)
+    .apply(
+        lambda x: ta.volume.ForceIndexIndicator(
+            close=x['close'],
+            volume=x['volume'],
+            window=13,
+            fillna=True)
+        .force_index().iloc[-1]))
+
+I get the error KeyError: 'close' because apply gets one column at a time and not both simultaneously as needed.
+","I found two ways to do it, but one of them using numba and rolling method='table' doesn't work because numba is a bit obscure and doesn't understand the outside context of the callback function.
+However, the solution based on this answer works perfectly:
+df['force_index_close'] = df['close'].rolling(window=window).\
+    apply(args=(df['volume'],), 
+          func=lambda close, dfv: ta.volume.ForceIndexIndicator(close=close, volume=dfv.loc[close.index], window=13, fillna=True).force_index().iloc[-1])
+print(df['force_index_close'])
+df['force_index_close'].plot()
+
+this is what's happening:
+
+I perform the rolling on a single column close, otherwise the apply is computed twice, i.e. once per column
+apply gets an additional context args with the series made of the other column volume, if your use-case would require additional columns then they could be injected here into the apply
+in the apply func I simply narrow the context volume series to align to the close index
+
+",pandas
+replace all nan in a 2d array by the nanmean value of adjacent neighboring cells,"I have a 2D array witch include some nan and I would like do the following :
+
+replace each nan in the array by the nanmean() value of adjacent neighboring cells.
+if the neighboring cells are all nan, then the value is nan
+if there are some nan in the neighboring cells then the value is the nanmean() value of adjacent neighboring cells.
+Let's take some examples :
+
+a = np.random.randint(0,100,60).astype(float)
+a = a.reshape(6,10) 
+a[1,1]= np.nan
+a[2:5,4:7]=np.nan
+a
+array([[48., 84., 80., 59., 43., 60., 31., 37.,  4., 75.],
+       [83., nan, 52., 34., 95., 15., 69.,  7.,  7., 16.],
+       [10.,  6.,  6., 44., nan, nan, nan, 95., 28.,  4.],
+       [12.,  1., 62., 96., nan, nan, nan, 66., 21., 80.],
+       [41., 18.,  1., 49., nan, nan, nan, 27., 64., nan],
+       [13., 33., 98., 85., 77., 20., 73., 57., 15., 28.]])
+
+# In this array a[1,1] is a nan and should be replaced by 46.125
+np.nanmean(np.array([48.,84.,80.,52.,6.,6.,10.,83.]))
+46.125
+
+# Another example a[2,4] is a nan and should be replaced by 56.8
+np.nanmean(np.array([34.,95.,15.,44.,96.]))
+56.8
+
+etc.
+
+
+So far I have tried the following techniques :
+
+Using some loop : very easy but very slow if the array is big (1000 x 1000)
+Scipy NearestNDInterpolator, interesting but replace all nan (nans surrounded by nans must remain nans!)
+
+How to do this in the fastest way, without looping ?
+","Use a 2D convolution (scipy.signal.convolve2d):
+from scipy.signal import convolve2d
+
+m = np.isnan(a)
+kernel = np.ones((3, 3))
+
+# sum of values
+S1 = convolve2d(np.nan_to_num(a), kernel, mode='same')
+# count of non-NaNs
+S2 = convolve2d(~m, kernel, mode='same')
+
+# optional: update the mask to ensure excluding cells
+# fully surrounded with NaNs:
+m &= S2!=0
+
+# replace NaNs with mean (sum/count)
+a[m] = S1[m]/S2[m]
+
+Updated a:
+array([[48.  , 84.  , 80.  , 59.  , 43.  , 60.  , 31.  , 37.  ,  4.  , 75.  ],
+       [83.  , 46.12, 52.  , 34.  , 95.  , 15.  , 69.  ,  7.  ,  7.  , 16.  ],
+       [10.  ,  6.  ,  6.  , 44.  , 56.8 , 59.67, 50.4 , 95.  , 28.  ,  4.  ],
+       [12.  ,  1.  , 62.  , 96.  , 63.  ,   nan, 62.67, 66.  , 21.  , 80.  ],
+       [41.  , 18.  ,  1.  , 49.  , 65.4 , 56.67, 48.6 , 27.  , 64.  , 41.6 ],
+       [13.  , 33.  , 98.  , 85.  , 77.  , 20.  , 73.  , 57.  , 15.  , 28.  ]])
+
+Intermediates:
+# m
+array([[False, False, False, False, False, False, False, False, False, False],
+       [False,  True, False, False, False, False, False, False, False, False],
+       [False, False, False, False,  True,  True,  True, False, False, False],
+       [False, False, False, False,  True,  True,  True, False, False, False],
+       [False, False, False, False,  True,  True,  True, False, False,  True],
+       [False, False, False, False, False, False, False, False, False, False]])
+
+# S1
+array([[215., 347., 309., 363., 306., 313., 219., 155., 146., 102.],
+       [231., 369., 365., 413., 350., 313., 314., 278., 273., 134.],
+       [112., 232., 301., 389., 284., 179., 252., 293., 324., 156.],
+       [ 88., 157., 283., 258., 189.,   0., 188., 301., 385., 197.],
+       [118., 279., 443., 468., 327., 170., 243., 323., 358., 208.],
+       [105., 204., 284., 310., 231., 170., 177., 236., 191., 107.]])
+
+# S2
+array([[3., 5., 5., 6., 6., 6., 6., 6., 6., 4.],
+       [5., 8., 8., 8., 7., 6., 7., 8., 9., 6.],
+       [5., 8., 8., 7., 5., 3., 5., 7., 9., 6.],
+       [6., 9., 9., 6., 3., 0., 3., 6., 8., 5.],
+       [6., 9., 9., 7., 5., 3., 5., 7., 8., 5.],
+       [4., 6., 6., 5., 4., 3., 4., 5., 5., 3.]])
+
+",numpy
+nltkdownload39punkt39 giving output as false,"Here is my code:
+df['num_words'] = df['text'].apply(lambda x:len(nltk.word_tokenize(x)))
+
+which gives me the following error:
+Resource punkt not found.
+Please use the NLTK Downloader to obtain the resource:
+   
+>>> import nltk
+>>> nltk.download('punkt')
+  
+For more information see: https://www.nltk.org/data.html
+
+Attempted to load tokenizers/punkt/english.pickle
+
+Then I tried to install nltk and download the file 'punkt' using nltk.download('punkt').
+But I am getting this error.
+I tried some alternative codes like:
+import nltk
+import ssl
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download()
+
+Also tried changing the networks as at some places I found it is saying server issue.
+","Try to launch the jupyter notebooks session as administrator (open the command or anaconda prompt as administrator).
+The last option would be to download the corpus manually. You may find this, helpful in your case.
+",data-science
+nan values in pandas are not being filled by the interpolate function when it39s applied to a full dataframe,"So, i'm a beginner at the Pandas Python and noticed the interpolate function is pretty interesting, but i have one problem when using the line:
+result = df.interpolate(method='linear')
+
+I found out that even though it did filled a lot of the NaN's in 'df', the four first NaN's of Ambient_temp and the first NaN on the Intake_temp column are not filled the way i wanted. Any hints on how to get this working? The interpolation worked very well with every other column besides those two.
+Image of said dataframe
+Example:
+amb_temp = [np.nan, np.nan, 32, 32]
+in_temp = [ 29, 27, 23, 22]
+volts = [np.nan, 13, 11, 11]
+
+dict = {'ambient_temperature': amb_temp, 'temperature_inside': in_temp, 'volts': volts} 
+
+df = pd.DataFrame(dict)
+
+(it's not exactly the same dataframe, but encapsulates the same problem. I got this one based off and example on 'geeksforgeeks' and used numpy.nan to simulate the absence of data.)
+","This is it:
+import numpy as np
+import pandas as  pd
+amb_temp = [np.nan, np.nan, 32, 32]
+in_temp = [ 29, 27, 23, 22]
+volts = [np.nan, 13, 11, 11]
+
+dict1 = {'ambient_temperature': amb_temp, 'temperature_inside': in_temp, 'volts': volts} 
+keys = list(dict1.keys())
+
+for k in keys:
+    data_array = np.array(dict1[k])
+    print(""1   {}"".format(data_array))
+    not_nan = ~np.isnan(data_array)
+    indices = np.arange(len(data_array))
+    dict1[k] = np.interp(indices, indices[not_nan], data_array[not_nan])
+print(dict1)
+
+",pandas
+fastest exponentiation of numpy 3d matrix,"Q is a 3D matrix and could for example have the following shape:
+
+(4000, 25, 25)
+
+I want raise Q to the power n for {0, 1, ..., k} and sum it all.
+Basically, I want to calculate
+
+\sum_{i=0}^{k-1}Q^n
+
+I have the following function that works as expected:
+def sum_of_powers(Q: np.ndarray, k: int) -> np.ndarray:
+    Qs = np.sum([
+        np.linalg.matrix_power(Q, n) for n in range(k)
+    ], axis=0)
+
+    return Qs
+
+Is it possible to speed up my function or is there a faster method to obtain the same output?
+","We can perform this calculation in O(log k) matrix operations.
+Let M(k) represent the k'th power of the input, and S(k) represent the sum of those powers from 0 to k. Let I represent an appropriate identity matrix.
+Approach 1
+If you expand the product, you'll find that (M(1) - I) * S(k) = M(k+1) - I. That means we can compute M(k+1) using a standard matrix power (which takes O(log k) matrix multiplications), and compute S(k) by using numpy.linalg.solve to solve the equation (M(1) - I) * S(k) = M(k+1) - I:
+import numpy.linalg
+
+def option1(Q, k):
+    identity = numpy.eye(Q.shape[-1])
+    A = Q - identity
+    B = numpy.linalg.matrix_power(Q, k+1) - identity
+    return numpy.linalg.solve(A, B)
+
+Approach 2
+The standard exponentation by squaring algorithm computes M(2*k) as M(k)*M(k) and M(2*k+1) as M(2*k)*M(1).
+We can alter the algorithm to track both S(k-1) and M(k), by computing S(2*k-1) as S(k-1)*M(k) + S(k-1) and S(2*k) as S(2*k-1) + M(2*k):
+import numpy
+
+def option2(Q, k):
+    identity = numpy.eye(Q.shape[-1])
+
+    if k == 0:
+        res = numpy.empty_like(Q)
+        res[:] = identity
+        return res
+
+    power = Q
+    sum_of_powers = identity
+
+    # Looping over a string might look dumb, but it's actually the most efficient option,
+    # as well as the simplest. (It wouldn't be the bottleneck even if it wasn't efficient.)
+    for bit in bin(k+1)[3:]:
+        sum_of_powers = (sum_of_powers @ power) + sum_of_powers
+        power = power @ power
+        if bit == ""1"":
+            sum_of_powers += power
+            power = power @ Q
+    return sum_of_powers
+
+",numpy
+how to convert matrix to block matrix using numpy,"Say I have a matrix like
+Matrix = [[A11, A12, A13, A14], [A21, A22, A23, A24], [A31, A32, A33, A34], [A41, A42, A43, A44]],
+and suppose I want to convert it to a block matrix
+[[A,B], [C,D]],
+where
+A = [[A11, A12], [A21, A22]] B = [[A13, A14], [A23, A24]] C = [[A31, A32], [A41, A42]] D = [[A33, A34], [A43, A44]].
+What do I need to type to quickly extract the matrices A, B, C, and D?
+","Without using loops, you can reshape your array (and reorder the dimensions with moveaxis):
+A, B, C, D = np.moveaxis(Matrix.reshape((2,2,2,2)), 1, 2).reshape(-1, 2, 2)
+
+Or:
+(A, B), (C, D) = np.moveaxis(Matrix.reshape((2,2,2,2)), 1, 2)
+
+For a generic answer on an arbitrary shape:
+x, y = Matrix.shape
+(A, B), (C, D) = np.moveaxis(Matrix.reshape((2, x//2, 2, y//2)), 1, 2)
+
+Output:
+# A
+array([['A11', 'A12'],
+       ['A21', 'A22']], dtype='<U3')
+# B
+array([['A13', 'A14'],
+       ['A23', 'A24']], dtype='<U3')
+# C
+array([['A31', 'A32'],
+       ['A41', 'A42']], dtype='<U3')
+# D
+array([['A33', 'A34'],
+       ['A43', 'A44']], dtype='<U3')
+
+",numpy
+pandas finding local max and min,"I have a pandas data frame with two columns one is temperature the other is time. 
+I would like to make third and fourth columns called min and max. Each of these columns would be filled with nan's except where there is a local min or max, then it would have the value of that extrema.  
+Here is a sample of what the data looks like, essentially I am trying to identify all the peaks and low points in the figure. 
+
+Are there any built in tools with pandas that can accomplish this?
+","Assuming that the column of interest is labelled data, one solution would be
+df['min'] = df.data[(df.data.shift(1) > df.data) & (df.data.shift(-1) > df.data)]
+df['max'] = df.data[(df.data.shift(1) < df.data) & (df.data.shift(-1) < df.data)]
+
+For example:
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Generate a noisy AR(1) sample
+np.random.seed(0)
+rs = np.random.randn(200)
+xs = [0]
+for r in rs:
+    xs.append(xs[-1]*0.9 + r)
+df = pd.DataFrame(xs, columns=['data'])
+
+# Find local peaks
+df['min'] = df.data[(df.data.shift(1) > df.data) & (df.data.shift(-1) > df.data)]
+df['max'] = df.data[(df.data.shift(1) < df.data) & (df.data.shift(-1) < df.data)]
+
+# Plot results
+plt.scatter(df.index, df['min'], c='r')
+plt.scatter(df.index, df['max'], c='g')
+df.data.plot()
+
+
+",numpy
+manipulation of a pandas dataframe most time and memoryefficiently,"Please imagine I have a dataframe like this:
+df = pd.DataFrame(index=pd.Index(['1', '1', '2', '2'], name='from'), columns=['to'], data= ['2', '2', '4', '5'])
+
+df:
+
+Now, I would like to calculate a matrix comprising of the percentage of times each value in the index ""from"" transitions to each value in column 'to', which is known as a transition matrix. I can achieve this by creating an empty transition matrix first and then populating it with the percentages using a for loop:
+#Create an empty matrix to populate later (using sparse dtype to save memory):
+matrix = pd.DataFrame(index=df.index.unique(), columns=df.to.unique(), data=0, dtype=pd.SparseDtype(dtype=np.float16, fill_value=0)) 
+
+matrix:
+
+for i in range(len(df)):
+    from_, to = df.index[i], df.to.iloc[i]     
+    matrix[to] = matrix[to].sparse.to_dense() # Convert to dense format because sparse dtype does not allow value assignment with .loc in the next line:  
+    matrix.loc[from_, to] += 1     # Do a normal insertion with .loc[]
+    matrix[to] = matrix[to].astype(pd.SparseDtype(dtype=np.float16, fill_value=0)) # Back to the original sparse format
+
+matrix = (matrix.div(matrix.sum(axis=1), axis=0)*100) # converting counts to percentages
+
+matrix:
+
+This works. For example, index ""1"" only transitioned to ""2"" (100% of the time) and index ""2"" transitioned to ""4"" 50% of the time and to ""5"" the other 50% of the time, as can be verified in df.
+Issue: The actual matrix is about 500K by 500K and the for loop takes a really long time to finish. So, is there a vectorized or other efficient way of calculating matrix from df
+Note: I would get MemoryError without using the whole Sparse dtype thing even with dtype=float16 in pd.DataFrame() so I prefer to keep that if possible. It would be great if the 500K by 500K matrix will not take up more than 10-12Gb of RAM. Also, if it matters, these percentages will always have a 0-100 range, obviously.
+","Option 1: pd.crosstab
+
+Use pd.crosstab with normalize='index'.
+Add df.mul and df.rename_axis for formatting.
+
+out = (pd.crosstab(index=df.index, 
+                   columns=df['to'], 
+                   normalize='index'
+                   )
+       .mul(100)
+       .rename_axis(index='from', columns=None)
+       )
+
+Output:
+          2     4     5
+from                   
+1     100.0   0.0   0.0
+2       0.0  50.0  50.0
+
+Option 2: df.pivot_table
+
+Use df.reset_index to use df.pivot_table with aggfunc='size' and fill_value=0.
+Chain df.div to divide by df.value_counts along axis=0.
+Again, add df.mul and df.rename_axis.
+
+out2 = (df.reset_index()
+        .pivot_table(index='from', columns='to', 
+                     values='to', aggfunc='size', fill_value=0)
+        .div(df.index.value_counts(), axis=0)
+        .mul(100)
+        .rename_axis(columns=None)
+        )
+
+out2.equals(out)
+# True
+
+Option 3: df.groupby
+
+Use df.groupby with df.index and get groupby.value_counts with normalize=True.
+Apply df.unstack with fill_value=0 to move level='to' (i.e. -1) to columns.
+Again, add df.mul + df.rename_axis.
+
+out3 = (df.groupby(df.index)
+        .value_counts(normalize=True)
+        .unstack(-1, fill_value=0)
+        .mul(100)
+        .rename_axis(columns=None)
+        )
+
+out3.equals(out)
+# True
+
+
+Edit:
+With a very sizeable df, I would consider creating a csr_matrix to avoid the MemoryError. In this case, we only use df.groupby + value_counts and use Index.factorize to pass compatible row_ind and col_ind values.
+from scipy.sparse import csr_matrix
+
+g = df.groupby(df.index).value_counts(normalize=True).mul(100)
+
+idx_codes, idx_unique = g.index.get_level_values(0).factorize()
+col_codes, col_unique = g.index.get_level_values(1).factorize() 
+
+m = csr_matrix((g.values, (idx_codes, col_codes)))
+
+If you want, you can turn that back into a df with df.sparse.from_spmatrix:
+df_m = pd.DataFrame.sparse.from_spmatrix(m, 
+                                         index=idx_unique, 
+                                         columns=col_unique)
+
+Output:
+       2     4     5
+1  100.0   0.0   0.0
+2    0.0  50.0  50.0
+
+But understanding this, you can also continue with m and still use idx_unique and col_unique for slicing. E.g.:
+bool_idx = col_unique.isin(['4','5'])
+
+m[:, bool_idx].sum(axis=1)
+
+matrix([[  0.],
+        [100.]])
+
+Compare:
+df_m.loc[:, bool_idx].sum(axis=1)
+
+1        0
+2    100.0
+dtype: Sparse[float64, 0]
+
+",numpy
+how to avoid nan values when i use frame39colum39mapdict,"I have the following dataset frame1
+
+
+
+
+Color
+Item
+
+
+
+
+Red
+Shirt
+
+
+White
+Shoes
+
+
+Yellow
+Shirt
+
+
+Green
+Shoes
+
+
+
+
+I want to set all the colors for Shoes item to be ""Blue"", I use map
+
+
+x = {""Shoes"": ""Blue""}
+fr1[""Color""] = fr1[""Item""].map(x)
+
+I expected the following result
+
+
+
+
+Color
+Item
+
+
+
+
+Red
+Shirt
+
+
+Blue
+Shoes
+
+
+Yellow
+Shirt
+
+
+Blue
+Shoes
+
+
+
+
+Instead I got this
+
+
+
+
+Color
+Item
+
+
+
+
+NaN
+Shirt
+
+
+Blue
+Shoes
+
+
+NaN
+Shirt
+
+
+Blue
+Shoes
+
+
+
+","Either only use the rows with a valid key with boolean indexing:
+x = {""Shoes"": ""Blue""}
+m = fr1[""Item""].isin(list(x))
+fr1.loc[m, ""Color""] = fr1.loc[m, ""Item""].map(x)
+
+Or fillna:
+fr1[""Color""] = fr1[""Item""].map(x).fillna(fr1[""Color""])
+
+",data-science
+coding a bifurcation diagram,"I was wondering what was wrong with my code as I keep getting a weird but similar result to the actual bifurcation diagram. I am using the iterative equation xn+1 = xn * r(1-xn).
+Here is my code:
+import numpy as np 
+import matplotlib.pyplot as plt
+from functools import lru_cache
+
+@lru_cache(maxsize = 1000)
+def bifunc():
+    R_val = []
+    X_val = []
+    R = np.linspace(0.5,4,1000)
+    for r in R:
+        x = 0.5
+        for iterations in range(1001):
+            x = x*r*(1-x)
+            R_val.append(r)
+            X_val.append(x)
+
+    plt.plot(R_val, X_val, ls = '', marker = ',')
+    plt.show()
+
+bifunc()
+
+Here is the image that keeps coming up:
+
+Any help would be appreciated. Thank you.
+","As the first few iterations don't follow the pattern, they can be left out via an if-test. Best also remove the lru_cache as it has no real function here and can interfere with testing.
+import numpy as np 
+import matplotlib.pyplot as plt
+
+def bifunc():
+    R_val = []
+    X_val = []
+    R = np.linspace(0.5, 4, 1000)
+    for r in R:
+        x = 0.5
+        for iterations in range(1001):
+            x = x*r*(1-x)
+            if iterations > 100:
+                R_val.append(r)
+                X_val.append(x)
+    plt.plot(R_val, X_val, ls='', marker=',')
+    plt.show()
+
+bifunc()
+
+
+This results in a plot similar to many found on the web. Usually the plots don't start before R=1 to avoid displaying the flat part between 0.5 and 1.
+",numpy

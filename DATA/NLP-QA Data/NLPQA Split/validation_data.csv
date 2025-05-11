@@ -1,0 +1,2886 @@
+instruction,input,output,Categories
+openai python package error 39chatcompletion39 object is not subscriptable,"After updating my OpenAI package to version 1.1.1, I got this error when trying to read the ChatGPT API response:
+
+'ChatCompletion' object is not subscriptable
+
+Here is my code:
+messages = [
+        {""role"": ""system"", ""content"": '''You answer question about some service'''
+        },
+        {""role"": ""user"", ""content"": 'The user question is ...'},
+    ]
+response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0
+    )
+response_message = response[""choices""][0][""message""][""content""]
+
+How can I resolve this error?
+","In the latest OpenAI package the response.choices object type is changed and in this way you must read the response:
+print(response.choices[0].message.content)
+
+The complete working code:
+from openai import OpenAI
+
+client = OpenAI(api_key='YourKey')
+GPT_MODEL = ""gpt-4-1106-preview"" #""gpt-3.5-turbo-1106""
+messages = [
+        {""role"": ""system"", ""content"": 'You answer question about Web  services.'
+        },
+        {""role"": ""user"", ""content"": 'the user message'},
+    ]
+response = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=messages,
+        temperature=0
+    )
+response_message = response.choices[0].message.content
+print(response_message )
+
+See this example in the project README.
+",chatgpt
+deepspeed  attributeerror 39dummyoptim39 object has no attribute 39step39,"I want to use deepspeed for training LLMs along with Huggingface Trainer. But when I use deepspeed  along with trainer I get error ""AttributeError: 'DummyOptim' object has no attribute 'step'"". Below is my code
+import argparse
+import numpy as np
+import torch
+from datasets import load_dataset
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+from trl import DPOTrainer, DPOConfig
+def preprocess_data(item):
+    return {
+        'prompt': 'Instruct: ' + item['prompt'] + '\n',
+        'chosen': 'Output: ' + item['chosen'],
+        'rejected': 'Output: ' + item['rejected']
+    }        
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(""--epochs"", type=int, default=1)
+    parser.add_argument(""--beta"", type=float, default=0.1)
+    parser.add_argument(""--batch_size"", type=int, default=4)
+    parser.add_argument(""--lr"", type=float, default=1e-6)
+    parser.add_argument(""--seed"", type=int, default=2003)
+    parser.add_argument(""--model_name"", type=str, default=""EleutherAI/pythia-14m"")
+    parser.add_argument(""--dataset_name"", type=str, default=""jondurbin/truthy-dpo-v0.1"")
+    parser.add_argument(""--local_rank"", type=int, default=0)
+
+    args = parser.parse_args()
+
+    # Determine device based on local_rank
+    device = torch.device(""cuda"", args.local_rank) if torch.cuda.is_available() else torch.device(""cpu"")
+
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    model = AutoModelForCausalLM.from_pretrained(args.model_name).to(device)
+    ref_model = AutoModelForCausalLM.from_pretrained(args.model_name).to(device)
+
+    dataset = load_dataset(args.dataset_name, split=""train"")
+    dataset = dataset.map(preprocess_data)
+
+    # Split the dataset into training and validation sets
+    dataset = dataset.train_test_split(test_size=0.1, seed=args.seed)
+    train_dataset = dataset['train']
+    val_dataset = dataset['test']
+
+    training_args = DPOConfig(
+        learning_rate=args.lr,
+        num_train_epochs=args.epochs,
+        per_device_train_batch_size=args.batch_size,
+        logging_steps=10,
+        remove_unused_columns=False,
+        max_length=1024,
+        max_prompt_length=512,
+        deepspeed=""ds_config.json""       
+    )
+
+    
+
+    # Verify and print embedding dimensions before finetuning
+    print(""Base model embedding dimension:"", model.config.hidden_size)
+
+    model.train()
+    ref_model.eval()
+
+    dpo_trainer = DPOTrainer(
+        model,
+        ref_model,
+        beta=args.beta,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        tokenizer=tokenizer,
+        args=training_args,
+    )
+
+    dpo_trainer.train()
+    # Evaluate
+    evaluation_results = dpo_trainer.evaluate()
+    print(""Evaluation Results:"", evaluation_results)
+
+    save_model_name = 'finetuned_model'
+    model.save_pretrained(save_model_name)
+
+if __name__ == ""__main__"":
+    main()
+
+The config file used is the below one
+{
+""zero_optimization"": {
+        ""stage"": 3,
+        ""offload_optimizer"": {
+            ""device"": ""cpu"",
+            ""pin_memory"": true
+        },
+        ""offload_param"": {
+            ""device"": ""cpu"",
+            ""pin_memory"": true
+        },
+        ""overlap_comm"": true,
+        ""contiguous_gradients"": true,
+        ""sub_group_size"": 1e9,
+        ""reduce_bucket_size"": ""auto"",
+        ""stage3_prefetch_bucket_size"": ""auto"",
+        ""stage3_param_persistence_threshold"": ""auto"",
+        ""stage3_max_live_parameters"": 1e9,
+        ""stage3_max_reuse_distance"": 1e9,
+        ""stage3_gather_16bit_weights_on_model_save"": true
+    },
+""bf16"": {
+    ""enabled"": ""auto""
+},
+""fp16"": {
+    ""enabled"": ""auto"",
+    ""loss_scale"": 0,
+    ""initial_scale_power"": 32,
+    ""loss_scale_window"": 1000,
+    ""hysteresis"": 2,
+    ""min_loss_scale"": 1
+},
+
+""gradient_accumulation_steps"": ""auto"",
+""gradient_clipping"": ""auto"",
+""train_batch_size"": ""auto"",
+""train_micro_batch_size_per_gpu"": ""auto"",
+""wall_clock_breakdown"": false,
+""flops_profiler"": {
+    ""enabled"": false,
+    ""detailed"": false
+},
+""optimizer"": {
+    ""type"": ""Lamb"",
+    ""params"": {
+    ""lr"": ""auto"",
+    ""betas"": [0.9, 0.999],
+    ""eps"": ""auto"",
+    ""weight_decay"": ""auto""
+    }
+},
+""zero_allow_untested_optimizer"": true
+}
+
+The code works with out deepspeed. I have torch=2.3.1, deepspeed                 =0.14.5, trl=0.9.4 and CUDA Version: 12.5.
+Appreciate any hint on this !
+","from accelerate.utils import DistributedType
+
+training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
+
+adding this solves the issue
+",huggingface-transformers
+analysing documents with llava on ollama not working,"I am currently testing LLAVA for use in Document Understanding Tasks. I found some promissing results in some scientific papers and on some websites. I installed the Model on Ollama (on Windows) and tried accessing it with this C# Code.
+using System.Text;
+using System.Text.Json;
+
+public class Program
+{
+    private static readonly HttpClient client = new HttpClient();
+    private static string? imageBase64;
+
+    static async Task Main(string[] args)
+    {
+        Console.WriteLine(""Welcome to the Document Analysis Application!"");
+
+        while (true)
+        {
+            Console.Write(""Enter the path to the image file (or 'exit' to quit): "");
+            string imagePath;
+            do
+            {
+                imagePath = Console.ReadLine() ?? """";
+            } while (String.IsNullOrEmpty(imagePath));
+
+            if (imagePath.ToLower() == ""exit"")
+                break;
+
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine(""File not found. Please try again."");
+                continue;
+            }
+
+            imageBase64 = Convert.ToBase64String(File.ReadAllBytes(imagePath));
+            Console.WriteLine(""Image loaded successfully."");
+
+            while (true)
+            {
+                Console.Write(""Enter your question about the document (or 'new' for a new image, 'exit' to quit): "");
+                string question;
+                do
+                {
+                    question = Console.ReadLine() ?? """";
+                } while (String.IsNullOrEmpty(question));
+
+                if (question.ToLower() == ""new"")
+                    break;
+                if (question.ToLower() == ""exit"")
+                    return;
+
+                Console.WriteLine(""Response:"");
+                _ = await AnalyzeDocument(question);
+                Console.WriteLine(""\nEnd of response."");
+            }
+        }
+    }
+
+    static async Task<string> AnalyzeDocument(string question)
+    {
+        var requestBody = new
+        {
+            model = ""llava:13b-v1.6"",
+            prompt = $""Analyze this invoice image carefully. Pay close attention to all numerical values, especially totals and subtotals. If the question is about a total or sum, make sure to double-check your calculation. After your analysis, provide a clear, concise answer to this specific question: {question}"",
+            images = new[] { imageBase64 },
+            stream = true
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, ""application/json"");
+
+        try
+        {
+            HttpResponseMessage response = await client.PostAsync(""http://localhost:11434/api/generate"", content);
+            response.EnsureSuccessStatusCode();
+
+            using (var reader = new StreamReader(await response.Content.ReadAsStreamAsync()))
+            {
+                StringBuilder fullResponse = new StringBuilder();
+                string? line;
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    try
+                    {
+                        using (JsonDocument doc = JsonDocument.Parse(line))
+                        {
+                            JsonElement root = doc.RootElement;
+                            if (root.TryGetProperty(""response"", out JsonElement responseElement))
+                            {
+                                string responsePart = responseElement.GetString() ?? """";
+                                fullResponse.Append(responsePart);
+                                Console.Write(responsePart); // Print each part as it's received
+                            }
+                            if (root.TryGetProperty(""done"", out JsonElement doneElement) && doneElement.GetBoolean())
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        Console.WriteLine($""Failed to parse JSON: {line}"");
+                    }
+                }
+                return fullResponse.ToString();
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            return $""Error: {e.Message}"";
+        }
+    }
+}
+
+Unfortuntely the results are really bad and are mostly hallucinations. Sometimes the LLM complains that it would need a clearer view of the document to answer the questions, i tried downscaling the image, but it still did not work, is there maybe a way to process the image in multiple chunks.
+","I cannot comment yet so i will be answering instead.
+I have tried using Llava for Policies.pdf and stuff for RAG FAQ chatbot, however that multimodal model have also said the same thing to me, either the image is not good enough or it just takes a guess. It is able to understand images though, like dogs, or graphs (in my case it just tells me the image is a graph but cannot give details about it). Even when upscaled with pdf to image to upscaler, it still say the same thing, but can now identify more text on the image.
+Ultimately to reach some weird deadline i threw that Model and implemented a pre-processing, PDF to Image to OCR. And yes it makes Llava redundant in here. But you can use other models to process the text output of OCR to reach the same ""Document Understanding"" task.
+Another thing: PDF Documents are a pain, some of them may be all text and can be scraped easily with already available PDFpackages. But some may contain Images, or just all Scanned Images of the actual printed document. That is where Image to OCR will be of use to you. You can try other vision models or OCR packages but currently from all i've tested winocr works best for image text extraction.(yes, its using the OCR engine of windows snipping tool)
+",llm
+how to make sure user prompted response equals at least one value from a provided vector,"I am developing a QC check script for my job. I want it to be all within one function, and therefore prompts are asked to the user to determine the arguments used within the function. Here is an example of a splice of function I have developed.
+askforQC_type <- \(qctype){
+  answer <- readline(""What QC types would you like to run?"") 
+  qualitycontroltypes <- c('BLK', 'DDL', 'DUP', 'FBLK', 'LCS', 'LCSD', 'LDUP', 'LMB', 'MS', 'MSD', 'NO3', 'RNS', 'SO4', 'SPI', 'SPL', 'TBLK')
+  if(answer==qualitycontroltypes) {
+    writeLines(paste(""QC types chosen:"", qctype))
+  } else {
+      writeLines(paste(""Sorry,"", qctype, ""is not an applicable QC type""))
+    }
+  }
+
+I am wanting the user to provide an answer that at least fits one of the values within the qualitycontroltypes vector. If it does not fit any of those values, I want it to spit out the message. Then, I want to use the values provided by the user to tell the script to paste those values into a subset function later in my script.
+Preferable if the user can answer in a format such as BLK, LCS, LDUP, etc. without needing to put """" or c(...) in the answer. Also, if ALL is entered by the user, then run the script using all values in the qualitycontroltypes vector. I am trying to make the script as simple as possible for the user in case they do not know how to operate r at all. Thanks.
+UPDATE
+As @MrFlick pointed out, the ""answer %in% qualitycontroltypes is the correct way to go about this. Now what I need to figure out it how to let the user provide a comma and space before each of the answers until the last answer provided. I think this is what @Limey is getting at in his comment. Not sure how to do this though.
+","Here is what I think you are looking for with regard to user input:
+askforQC_type <- \(qctype){
+  
+  assign(""qctype"",readline(""What QC types would you like to run?""))
+  qctype <- c(unlist(strsplit(qctype,split = c("",""))))
+  qctype <- trimws(qctype)
+  qualitycontroltypes <- c('BLK', 'DDL', 'DUP', 'FBLK', 'LCS', 'LCSD', 'LDUP', 'LMB', 'MS', 'MSD', 'NO3', 'RNS', 'SO4', 'SPI', 'SPL', 'TBLK')
+  if(all(qctype %in% qualitycontroltypes) == TRUE) {
+    writeLines(paste(""QC types chosen:"", qctype))
+  } else if(qctype == ""ALL""){
+    writeLines(paste(""QC types chosen:"", qualitycontroltypes))
+  } else {
+    writeLines(paste(""Sorry,"", qctype, ""contains a QC type that is not applicable""))
+  }
+  
+}
+
+
+askforQC_type()
+
+What QC types would you like to run? DDL,DUP
+
+QC types chosen: DDL
+QC types chosen: DUP
+
+What QC types would you like to run? ALL
+QC types chosen: BLK
+QC types chosen: DDL
+QC types chosen: DUP
+QC types chosen: FBLK
+QC types chosen: LCS
+QC types chosen: LCSD
+QC types chosen: LDUP
+QC types chosen: LMB
+QC types chosen: MS
+QC types chosen: MSD
+QC types chosen: NO3
+QC types chosen: RNS
+QC types chosen: SO4
+QC types chosen: SPI
+QC types chosen: SPL
+QC types chosen: TBLK
+
+What I did was to use the assign() function to assign the user input value(s) to qctype, then split that into a vector string using strsplit() and unlist() and then remove any unwanted whitespace using trimws().
+Then, in the if statement, I used the all() function to check if qctype %in% qualitycontroltypes returns TRUE in case a user supplies more than one input value. If that condition is met, then the program runs as expected.
+I hope this helps!
+",prompt
+panicexception addedvocabulary bad split after adding tokens to berttokenizer,"I use a BertTokenizer and add my custom tokens using add_tokens() function.
+Minimal sample code here:
+checkpoint = 'fnlp/bart-base-chinese'
+tokenizer = BertTokenizer.from_pretrained(checkpoint)
+tokenizer.add_tokens([""Token1"", ""Token2""]) # just some samples, I added a million tokens
+model = BartForConditionalGeneration.from_pretrained(checkpoint, output_attentions = True, output_hidden_states = True)
+
+training_args = Seq2SeqTrainingArguments(
+    output_dir = output_model,
+    evaluation_strategy = ""epoch"",
+    optim = ""adamw_torch"", 
+    eval_steps = 1000,
+    save_strategy = ""epoch"",
+    per_device_train_batch_size = batch_size,
+    per_device_eval_batch_size = batch_size,
+    weight_decay = 0.01,
+    save_total_limit = 1,
+    num_train_epochs = 30, 
+    predict_with_generate=True,
+    remove_unused_columns=True,
+    fp16 = True,
+    metric_for_best_model = ""bleu"",
+    load_best_model_at_end = True,
+)
+
+trainer = Seq2SeqTrainer(
+    model = model,
+    args = training_args,
+    train_dataset = train_data,
+    eval_dataset = eval_data, 
+    tokenizer = tokenizer, # I use the tokenizer with added tokens here
+    data_collator = data_collator,
+    compute_metrics = compute_metrics,
+    callbacks = [EarlyStoppingCallback(early_stopping_patience=3)]
+)
+trainer.train()
+trainer.push_to_hub(output_model, private=True)
+
+The training process was completed without a problem. But when I use the new model in a pipeline, there is a high chance that the exception: PanicException: AddedVocabulary bad split has occurred. Here is the pipeline code:
+text = ""Words to translate""
+
+from transformers import pipeline, BertTokenizer
+
+hf_model_name = ""my_huggingface_username/"" + output_model
+
+translator = pipeline(""translation"", model=hf_model_name, max_length=200)
+print(translator(text)[0]['translation_text'].replace(' ', ''))
+
+I cannot find a pattern and cause of why the exception happens. How can I resolve this PanicException problem?
+","The PanicException is resolved when changing the pipeline from:
+translator = pipeline(""translation"", model=hf_model_name, max_length=200)
+print(translator(text)[0]['translation_text'].replace(' ', ''))
+
+to:
+custom_tokenizer = BertTokenizer.from_pretrained(hf_model_name)
+translator = pipeline(""translation"", model=custom_tokenizer, max_length=200)
+print(translator(text)[0]['translation_text'].replace(' ', ''))
+
+The pipeline function uses AutoTokenizer instead of BertTokenizer, which leads to the PanicException.
+From the source code:
+
+If not provided, the default tokenizer for the given model will be loaded (if it is a string). If model is not specified or not a string, then the default tokenizer for config is loaded (if it is a string). However, if config is also not given or not a string, then the default tokenizer for the given task will be loaded.
+
+From the actual code, it uses AutoTokenizer, which caused the problem.
+tokenizer = AutoTokenizer.from_pretrained(
+    tokenizer_identifier, use_fast=use_fast, _from_pipeline=task, **hub_kwargs, **tokenizer_kwargs
+)
+
+",huggingface-transformers
+cloudflare 400 error when calling openai completions api on cloudrun,"Running into a weird error where I get a 400 error from cloud-flare when calling the completions API from GCP Cloud Run. The error doesn't occur locally for identical requests.
+The error response:
+<html>
+
+<head><title>400 Bad Request</title></head>
+
+<body>
+
+<center><h1>400 Bad Request</h1></center>
+
+<hr><center>cloudflare</center>
+
+</body>
+
+</html>
+
+The request:
+POST to https://api.openai.com/v1/chat/completions
+{""model"":""gpt-4-turbo"",""messages"":[{""role"":""system"",""content"":""Using the notes provided, write a summary of the critical information from the notes.\nThe summary should be in dotpoints. Prioritise the dotpoints by importance.""},{""role"":""user"",""content"":""                Use only the following information to generate the summary:\n                            There are the following notes about the contact:\n            Note Content: \""Test\""\nNote Created At: 2024-09-26T07:08:04.304501Z\nNote is in the context of: Just the contact in the role of Unknown \nNote type: Manual""}]}
+
+Nothing obvious in the headers.
+Has anyone run into anything similar. Wondering if its some kind of IP blocking by cloudflare or similar.
+","So we managed to solve this by switching from using the OkHttp java client, to using the Java 17 core library client.
+I suspect there is more to it then that (some configuration on the two clients) but we weren't able to find it at this time.
+",chatgpt
+is there a way to make a loop in prompt,"I am experimenting with the npm package, prompt, and would like to find out something.
+Basically, I have this code:
+prompt.start();
+      
+        prompt.get(['Age'], function (err, result) {
+          if (err) return;
+
+          console.log(result);
+
+        })
+
+The code is supposed to ask a question (Age) in the cmd prompt, and the user can answer it through the cmd prompt. It works fine, however once the user enters in their age, the prompt logs the result, and exits the process. I would like for the prompt to ask the question again every time AFTER the question is answered, instead of exiting the process. So, the console would look like this,
+prompt: Age:  70                                                                                                                                     
+prompt: 70
+prompt: Age:
+
+Is there any way to do this?
+","You can use the call signature of prompt.get which returns a promise and then await it inside a classic while loop. From the documentation:
+
+If no callback is passed to prompt.get(schema), then it returns a Promise, so you can also write:
+const {username, email} = await prompt.get(['username', 'email']);
+
+
+Here's an example module:
+example.mjs:
+import prompt from 'prompt';
+
+prompt.start();
+
+while (true) {
+  try {
+    const result = await prompt.get(['Age']);
+    // Break out of the loop if ""STOP!"" is typed
+    if (result.Age === 'STOP!') break;
+    console.log(result);
+  }
+  catch (ex) {
+    // handle exception
+  }
+}
+
+console.log('Done');
+
+
+Running the program in the terminal:
+% node --version
+v18.12.1
+
+% node example.mjs
+prompt: Age:  10
+{ Age: '10' }
+prompt: Age:  20
+{ Age: '20' }
+prompt: Age:  30
+{ Age: '30' }
+prompt: Age:  etc
+{ Age: 'etc' }
+prompt: Age:  STOP!
+Done
+
+
+",prompt
+huggingface pipeline  debug prompt,"I've defined a pipeline using Huggingface transformer library.
+pipe = pipeline(
+    ""text-generation"",
+    model=myllm,
+    tokenizer=tokenizer,
+    max_new_tokens=512,
+)
+
+I'd like to test it:
+result = pipe(""Some input prompt for the LLM"")
+
+How can I debug the prompt actually sent to the LLM?
+I expect the pipeline to apply the prompt template (tokenizer.default_chat_template) but how can I verify how the prompt is after the template has been applied?
+","you may use preprocess method and check generated token_ids. Generally would suggest to more closely look on the code of the method, it will explain what is happening with the prompt before model forward pass.
+params = pipe._preprocess_params
+
+pipe.preprocess(""I can't believe you did such a "", **params)
+
+# Returns:
+# {'input_ids': tensor([[  40,  460,  470, 1975,  345,  750,  884,  257,  220]]), 
+# 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1]]), 
+# 'prompt_text': ""I can't believe you did such a ""}
+
+Internally preprocess is calling either
+
+for chats tokenizer.chat_template
+for simple text prompts tokenizer(prompt_text).
+
+For example for ""gpt-2"" model default tokenizer outputs token_ids and masks:
+pipe.tokenizer(""I can't believe you did such a "")
+
+# Returns:
+# {'input_ids': [40, 460, 470, 1975, 345, 750, 884, 257, 220], 
+# 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+
+
+Another thing to consider during prompts debug is to look what will happen if you'll invert token ids:
+pipe = pipeline(
+    ""text-generation"",
+    model=""openai-community/gpt2""
+)
+
+inputs = pipe.tokenizer(""I can't believe you did such a "")
+
+pipe.tokenizer.convert_ids_to_tokens(inputs['input_ids'])
+
+# ['I', 'Ġcan', ""'t"", 'Ġbelieve', 'Ġyou', 'Ġdid', 'Ġsuch', 'Ġa', 'Ġ']
+
+",huggingface-transformers
+pytorch lightning places model inputs and model to different devices,"I'm using Pytorch-lightning 2.4.0. In the following code snippet, lmm is a class inherited from nn.Module which is a wrapper class huggingface model and processor.
+class ICVModel(pl.LightningModule):
+    def __init__(self, lmm, icv_encoder: torch.nn.Module) -> None:
+        super().__init__()
+        self.lmm = lmm
+        self.lmm.requires_grad_(False)
+        self.icv_encoder = icv_encoder
+        self.eos_token = self.lmm.processor.tokenizer.eos_token
+
+    def forward(self, ice_texts, query_texts, answers, images):
+        query_answer = [
+            query + answer + self.eos_token
+            for query, answer in zip(query_texts, answers)
+        ]
+        query_images = [img[-setting.num_image_in_query :] for img in images]
+        query_inputs = self.lmm.process_input(query_answer, query_images)
+        query_outputs = self.lmm.model(
+            **query_inputs,
+            labels=query_inputs[""input_ids""],
+        )
+
+However, a device mismatch error raised at
+query_outputs = self.lmm.model(
+        **query_inputs,
+        labels=query_inputs[""input_ids""],
+)
+
+I printed device of inputs.pixel_values.device, self.device, self.lmm.device outside of lmm.model.forward, then I got
+rank[0]: cpu cuda:0 cuda:0
+rank[1]: cpu cuda:1 cuda:1
+
+In Idefics (self.lmm.model) forward process, when I printed inputs.pixel_values.device and self.device, I got
+rank[0]: cuda:0 cuda:0
+rank[1]: cuda:0 cuda:1
+
+Besides, I also tried to move pixel_values to correct device, but it still be moved to wrong device in later forward pass.
+Error message:
+RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cuda:0 and cuda:1! (when checking argument for argument weight in method wrapper_CUDA__cudnn_convolution)
+
+","I've solved this problem.
+The key to the problem I did not show in the question I asked, because at that time I did not realize that bitsandbytes and accelerate library would automatically register pre_forward_hook.
+It registered an AlignDeviceHook (maybe) at each forward method, which conflicts with the device control of pytorch lightning. When I removed bitsandbytes, everything worked fine.
+",huggingface-transformers
+where is the anaconda prompt file located,"I am trying to locate the Anaconda Prompt file. I am currently running Anaconda Navigator 2.4.2. I never updated it before and i did not install any additional software.
+I tried:
+
+Windows Search bar: However, nothing shows up
+C:\Users\xx\anaconda3: I searched every folder, but there is no prompt
+C:\Windows\System32: there is no anaconda folder
+
+Thanks a lot, really appreciate any help
+","It's just a shortcut to cmd.exe with comamnds set to activate conda. When Anaconda is installed, it usually is under C:\Users\<your username>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Anaconda3
+It sounds like you have lsot it, so here is a guide how to recreate it:
+
+create a shortcut to cmd.exe
+Right Click->Properties and then change to the Shortcut Tab
+In the target field, you will need to set it to %windir%\system32\cmd.exe ""/K"" <Path to activate.bat> <Path to Anaconda installation path>
+
+For example, the target could look like this:
+%windir%\system32\cmd.exe ""/K"" C:\Program Data\Anaconda3\Scripts\activate.bat C:\Program Data\Anaconda3
+
+",prompt
+sending axios request to whisper endpoint with file input in clientside js,"I have a working NodeJS code that makes a request to /audio/transcriptions endpoint on a localhosted OpenAI API.
+The file is given as fs.createReadStream(""speech.m4a"").
+The node application works perfectly as it should, giving output: {text: ""<the transcription of the speech>""}
+However when I want to do the same request, but with an input field instead of a hardcoded file, I get AxiosError with the message 'Network error'.
+I have tried to call axios.post like this:
+const API_URL = ""http://172.26.175.134:8080/openai/v1/audio/transcriptions"";
+const fileInput = document.getElementById(""file-input"");
+fileInput.onchange = () => {
+  const files = fileInput.files;
+  //if no file is selected
+  if (files.length === 0) {
+    alert(""Please select a file!"");
+    return;
+  }
+  const selectedFile = files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    axios
+      .post(
+        API_URL,
+        {
+          file: new File([e.target.result], { type: selectedFile.type }),
+          model: ""whisper"",
+          language: ""en"",
+          temperature: 1,
+          prompt: """",
+        },
+        {
+          headers: {
+            ""Content-Type"": ""multipart/form-data"",
+          },
+        }
+      )
+      .then((response) => {
+        console.debug(response.data);
+      })
+      .catch((error) => {
+        console.error(""Error:"", error);
+      });
+  };
+  reader.readAsArrayBuffer(selectedFile);
+};
+
+The result is the same, I get the same AxiosError with the message Network error.
+I have also noticed that the Response is 200 OK, so the transcript is generated.
+The API response:
+INFO: 172.26.160.1:62548 - ""POST /openai/v1/audio/transcriptions HTTP/1.1"" 200 OK
+
+The backend response:
+INFO:faster_whisper:Processing audio with duration 00:19.925
+INFO:faster_whisper:Detected language 'en' with probability 1.00
+INFO:__main__:Completed /tmp/tmpswy0__ru
+INFO:__main__:Transcription complete!
+
+Update: I have also switched from axios to fetch, it is still a valid request (response is 200 OK), but still I can't fetch the response
+reader.onload = async (e) => {
+    const body = new FormData();
+    body.append(
+      ""file"",
+      new File([e.target.result], { type: selectedFile.type })
+    );
+    body.append(""model"", ""whisper"");
+    body.append(""language"", ""en"");
+    body.append(""temperature"", ""1"");
+    body.append(""prompt"", """");
+    await fetch(API_URL, {
+      method: ""POST"",
+      body: body,
+    })
+      .then((res) => {
+        console.debug(res);
+      })
+      .catch((err) => {
+        console.debug(err);
+      });
+  };
+
+TypeError: Failed to fetch at reader.onload
+
+My question is: what can cause the issue with this request? What can I do to retrieve the response content as expected?
+","I have managed to resolve the issue by fixing CORS error on the API's side. I had to add the following lines (especially allow_origins=[""*""])  to the API-code (FastAPI written in Python)
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[""*""],
+    allow_credentials=True,
+    allow_methods=[""*""],
+    allow_headers=[""*""],
+)
+
+",chatgpt
+click custom option prompt function,"I have noticed that prompt using click accepts inputs with trailing spaces
+ftp_server = click.prompt(""FTP Server"")
+
+Is there a way to use a custom return function like this to reject trailing spaces?
+def custom_prompt(value):
+    if value.strip():
+        return True
+    else:
+        return False
+
+ftp_server = click.prompt(""FTP Server"", custom_prompt)
+
+I have already used this:
+while not ftp_server.strip():
+    ftp_server = click.prompt(""FTP Server"")
+
+But I'm looking for a better way because I don't want to use a while loop each time I use prompt.
+","To reject invalid user input, you can use the value_proc parameter to click.prompt.  A validator to reject input with trailing spaces could look like:
+Prompt Validator
+import click
+
+def validate_no_trailing_space(value):
+    if value != value.rstrip():
+        raise click.UsageError(""Trailing space is invalid!"")
+    return value
+
+ftp_server = click.prompt(""FTP Server"",
+                          value_proc=validate_no_trailing_space)
+
+Trim Spaces
+You might also consider a validator which trims leading and trailing spaces but reject spaces in the name:
+def validate_no_internal_space(value):
+    value = value.strip()
+    if ' ' in value:
+        raise click.UsageError(""Spaces are not valid here!"")
+    return value
+
+",prompt
+plot unimodal distributions determined from a multimodal distribution,"I've used GaussianMixture to analyze a multimodal distribution. From the GaussianMixture class I can access the means and covariances using the attributes means_ and covariances_. How can I use them to now plot the two underlying unimodal distributions?
+I thought of using scipy.stats.norm but I don't know what to select as parameters for loc and scale. The desired output would be analogously as shown in the attached figure.
+
+The example code of this question was modified from the answer here.
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import mixture
+from scipy.stats import norm
+
+ls = np.linspace(0, 60, 1000)
+multimodal_norm = norm.pdf(ls, 0, 5) + norm.pdf(ls, 20, 10)
+plt.plot(ls, multimodal_norm)
+
+# concatenate ls and multimodal to form an array of samples
+# the shape is [n_samples, n_features]
+# we reshape them to create an additional axis and concatenate along it
+samples = np.concatenate([ls.reshape((-1, 1)), multimodal_norm.reshape((-1,1))], axis=-1)
+print(samples.shape)
+
+gmix = mixture.GaussianMixture(n_components = 2, covariance_type = ""full"")
+fitted = gmix.fit(samples)
+
+print(fitted.means_)
+print(fitted.covariances_)
+
+# The idea is something like the following (not working):
+new_norm1 = norm.pdf(ls, fitted.means_, fitted.covariances_)
+new_norm2 = norm.pdf(ls, fitted.means_, fitted.covariances_)
+plt.plot(ls, new_norm1, label='Norm 1')
+plt.plot(ls, new_norm2, label='Norm 2')
+
+","It is not entirely clear what you are trying to accomplish. You are fitting a GaussianMixture model to the concatenation of the sum of the values of pdfs of two gaussians sampled on a uniform grid, and the unifrom grid itself. This is not how a Gaussian Mixture model is meant to be fitted. Typically one fits a model to random observations drawn from some distribution (typically unknown but could be a simulated one).
+Let me assume that you want to fit the GaussianMixture model to a sample drawn from a Gaussian Mixture distribution. Presumably to test how well the fit works given you know what the expected outcome is. Here is the code for doing this, both to simulate the right distribution and to fit the model. It prints the parameters that the fit recovered from the sample -- we observe that they are indeed close to the ones we used to simulate the sample. Plot of the density of the GaussianMixture distribution that fits to the data is generated at the end
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import mixture
+from scipy.stats import norm
+
+# set simulation parameters
+mean1, std1, w1 = 0,5,0.5
+mean2, std2, w2 = 20,10,1-w1
+
+# simulate constituents
+n_samples = 100000
+np.random.seed(2021)
+gauss_sample_1 = np.random.normal(loc = mean1,scale = std1,size = n_samples)
+gauss_sample_2 = np.random.normal(loc = mean2,scale = std2,size = n_samples)
+binomial = np.random.binomial(n=1, p=w1, size = n_samples)
+
+# simulate gaussian mixture
+mutlimodal_samples = (gauss_sample_1 * binomial + gauss_sample_2 * (1-binomial)).reshape(-1,1)
+
+# define and fit the mixture model
+gmix = mixture.GaussianMixture(n_components = 2, covariance_type = ""full"")
+fitted = gmix.fit(mutlimodal_samples)
+
+print('fitted means:',fitted.means_[0][0],fitted.means_[1][0])
+print('fitted stdevs:',np.sqrt(fitted.covariances_[0][0][0]),np.sqrt(fitted.covariances_[1][0][0]))
+print('fitted weights:',fitted.weights_)
+
+# Plot component pdfs and a joint pdf
+ls = np.linspace(-50, 50, 1000)
+new_norm1 = norm.pdf(ls, fitted.means_[0][0], np.sqrt(fitted.covariances_[0][0][0]))
+new_norm2 = norm.pdf(ls, fitted.means_[1][0], np.sqrt(fitted.covariances_[1][0][0]))
+multi_pdf = w1*new_norm1 + (1-w1)*new_norm2
+plt.plot(ls, new_norm1, label='Norm pdf 1')
+plt.plot(ls, new_norm2, label='Norm pdf 2')
+plt.plot(ls, multi_pdf, label='multi-norm pdf')
+plt.legend(loc = 'best')
+plt.show()
+
+
+The results are
+fitted means: 22.358448018824642 0.8607494960575028
+fitted stdevs: 8.770962351118127 5.58538485134623
+fitted weights: [0.42517515 0.57482485]
+
+as we see they are close (up to their ordering, which of course the model cannot recover but it is irrelevant anyway) to what went into the simulation:
+mean1, std1, w1 = 0,5,0.5
+mean2, std2, w2 = 20,10,1-w1
+
+And the plot of the density and its parts. Recall that the pdf of the GaussianMixture is not the sum of the pdfs but a weighted average with weights w1, 1-w1:
+
+",multimodal
+change julia promt to include evalutation numbers,"When debugging or running julia code in REPL, I usually see error messages showing ... at ./REPL[161]:12 [inlined].... The number 161 means the 161-th evaluation in REPL, I guess. So my question is could we show this number in julia's prompt, i.e. julia [161]> instead of julia>?
+","One of the advantages of Julia is its ultra flexibility. This is very easy in Julia 0.7 (nightly version).
+julia> repl = Base.active_repl.interface.modes[1]
+""Prompt(\""julia> \"",...)""
+
+julia> repl.prompt = () -> ""julia[$(length(repl.hist.history) - repl.hist.start_idx + 1)] >""
+#1 (generic function with 1 method)
+
+julia[3] >
+
+julia[3] >2
+2
+
+julia[4] >f = () -> error(""e"")
+#3 (generic function with 1 method)
+
+julia[5] >f()
+ERROR: e
+Stacktrace:
+ [1] error at .\error.jl:33 [inlined]
+ [2] (::getfield(, Symbol(""##3#4"")))() at .\REPL[4]:1
+ [3] top-level scope
+
+You just need to put the first 2 lines onto your ~/.juliarc and enjoy~
+Since there are several changes in the REPL after julia 0.7, these codes do not work in old versions.
+EDIT: Well, actually there need a little bit more efforts to make it work in .juliarc.jl. Try this code:
+atreplinit() do repl
+    repl.interface = Base.REPL.setup_interface(repl)
+    repl = Base.active_repl.interface.modes[1]
+    repl.prompt = () -> ""julia[$(length(repl.hist.history) - repl.hist.start_idx + 1)] >""
+end
+
+",prompt
+how to display image duplicate count from prompt in html,"I want to display a certain amount of duplicates for 2 seperate images. The web page prompts the user for the speed, which i have done, and for how many duplicates of each image they want.
+
+
+function show_image() {
+  var img = document.createElement(""img"");
+  var img2 = document.createElement(""img"");
+  img.src = ""map.png"";
+  img2.src = ""figure-front.png"";
+  document.body.appendChild(img);
+  document.body.appendChild(img2);
+  setTimeout(""show_image()"", speed);
+  max = 0;
+  max++
+  if (max = count) {
+    return;
+  }
+}
+<!DOCTYPE HTML>
+
+<html lang=""en"">
+
+<head>
+  <meta charset=""UTF-8"">
+  <title>JavaScript Slide Show</title>
+  <script src=""ShowImages3.js""></script>
+  <script>
+    var speed = prompt(""Type how fast you want to duplicate"", "" "");
+    var count = prompt(""Type how many image of each you want to duplicate"", "" "");
+  </script>
+</head>
+
+<body onLoad=""show_image()"">
+
+</body>
+
+</html>
+
+
+
+However as you can see it runs infinitely apparently
+","You needed to move the setTimeout and use == or === for comparison. = is assignment
+It is not recommended to use body onload for anything. Instead use an eventListener.
+Here is a cleaner version using setInterval. Also I use >= for the test
+And I assign an empty string to the speed and prompt values so I can test using if (speed && prompt) after converting to number using the unary plus. I did not add testing for other than numbers and empty string by the way.
+
+
+let count = 0, cnt = 0, tId;
+
+const show_image = () => {
+  if (cnt >= count) {
+    clearInterval(tId); // stop
+    return;
+  }
+  const img = document.createElement(""img"");
+  const img2 = document.createElement(""img"");
+  img.src = ""map.png"";
+  img2.src = ""figure-front.png"";
+  document.body.appendChild(img);
+  document.body.appendChild(img2);
+  cnt++; // next
+};
+window.addEventListener(""DOMContentLoaded"", () => {
+  let speed = +prompt(""Type how fast you want to duplicate"", """");
+  count = +prompt(""Type how many image of each you want to duplicate"", """");
+
+  if (speed && prompt) tId = setInterval(show_image, speed)
+
+});
+
+
+
+Or have this which encapsulates the variables
+
+
+const generate = (count, speed) => {
+  let cnt = 0;
+  let tId;
+
+  const addImages = () => {
+    if (cnt >= count) {
+      clearInterval(tId); // stop
+      return;
+    }
+    const img = document.createElement(""img"");
+    const img2 = document.createElement(""img"");
+    img.src = ""map.png"";
+    img2.src = ""figure-front.png"";
+    document.body.appendChild(img);
+    document.body.appendChild(img2);
+    cnt++; // next
+  };
+
+  tId = setInterval(addImages, speed);
+};
+
+window.addEventListener(""DOMContentLoaded"", () => {
+  let speed = +prompt(""Type how fast you want to duplicate"", """");
+  let count = +prompt(""Type how many image of each you want to duplicate"", """");
+
+  if (speed && count) {
+    generate(count, speed);
+  }
+});
+
+
+
+",prompt
+how can i get llm to only respond in json strings,"This is how I am defining the executor
+const executor = await initializeAgentExecutorWithOptions(tools, model, {
+  agentType: 'chat-conversational-react-description',
+  verbose: false,
+});
+
+Whenever I prompt the AI I have this statement at the end.
+type SomeObject = {
+  field1: number,
+  field2: number,
+}
+
+- It is very critical that you answer only as the above object and JSON stringify it as a single string.
+  Don't include any other verbose explanatiouns and don't include the markdown syntax anywhere.
+
+The SomeObject is just an example. Usually it will have a proper object type.
+When I use the executor to get a response from the AI, half the time I get the proper JSON string, but the other half the times are the AI completely ignoring my instructions and gives me a long verbose answer in just plain English...
+How can I make sure I always get the structured data answer I want?
+Maybe using the agentType: 'chat-conversational-react-description' isn't the right approach here?
+","Update Nov. 6, 2023
+OpenAI announced today a new “JSON Mode” at the DevDay Keynote. When activated the model will only generate responses using the JSON format.
+You can refer to the official docs here.
+Original Answer
+That's a great question and LangChain provides an easy solution. Look at LangChain's Output Parsers if you want a quick answer. It is the recommended way to process LLM output into a specified format.
+Here's the official link from the docs:
+
+JavaScript: https://js.langchain.com/docs/how_to/output_parser_structured/
+Python: https://python.langchain.com/docs/how_to/output_parser_structured/
+
+
+Side note: I wrote an introductory tutorial about this particular issue but for Python, so if anyone else is interested in more details you can check it out here.
+The example below does not use initializeAgentExecutorWithOptions, but will ensure that the output is processed as JSON without specifying this explicitly in your system prompt.
+How it works
+In order to tell LangChain that we'll need to convert the LLM response to a JSON output, we'll need to define a StructuredOutputParser and pass it to our chain.
+Defining our parser:
+Here's an example:
+// Let's define our parser
+const parser = StructuredOutputParser.fromZodSchema(
+  z.object({
+    field1: z.string().describe(""first field""),
+    field2: z.string().describe(""second field"")
+  })
+);
+
+Adding it to our Chain:
+// We can then add it to our chain
+const chain = RunnableSequence.from([
+  PromptTemplate.fromTemplate(...),
+  new OpenAI({ temperature: 0 }),
+  parser, // <-- this line
+]);
+
+Invoking our chain with format_instructions:
+// Finally, we'll pass the format instructions to the invoke method
+const response = await chain.invoke({
+  question: ""What is the capital of France?"",
+  format_instructions: parser.getFormatInstructions(), // <-- this line
+});
+
+Go ahead and log the parser.getFormatInstructions() method before you call invoke if you'd like to see the output.
+When we pass parser.getFormatInstructions() to the format_instructions property, this lets LangChain append the desired JSON schema that we defined in step 1 to our prompt before sending it to the large language model.
+As a final point, it is absolutely critical to make sure your query/prompt is relevant and produces values that could be interpreted as the properties in your object SomeObject that are defined in the parser.
+Please give this a try, and let me know if you're able to consistently output JSON.
+",langchain
+how do i print each element in an openai chatcompletion response as json on a separate line,"I'm making a simple call to OpenAI using Python asking about where a baseball game was played.
+completion = openai.chat.completions.create(
+  model=""gpt-3.5-turbo"",
+  messages = [
+  {""role"": ""system"", ""content"": ""You are a helpful assistant.""},
+  {""role"": ""user"", ""content"": ""Who won the world series in 2020?""},
+  {""role"": ""assistant"", ""content"": ""The Los Angeles Dodgers won the World Series in 2020.""},
+  {""role"": ""user"", ""content"": ""Where was it played?""}
+  ]
+)
+
+print (completion)
+
+The output shows up like this:
+ChatCompletion(id='chatcmpl-9UgP85B0gYBjEAiYMcF3Ryt9Y3fdZ', choices=[Choice(finish_reason='stop', index=0, logprobs=None, message=ChatCompletionMessage(content='The 2020 World Series was played at Globe Life Field in Arlington, Texas.', role='assistant', function_call=None, tool_calls=None))], created=1717099870, model='gpt-3.5-turbo-0125', object='chat.completion', system_fingerprint=None, usage=CompletionUsage(completion_tokens=17, prompt_tokens=53, total_tokens=70))
+
+But I'd like it to show up like this:
+{
+  ""choices"": [
+    {
+      ""finish_reason"": ""stop"",
+      ""index"": 0,
+      ""message"": {
+        ""content"": ""The 2020 World Series was played in Texas at Globe Life Field in Arlington."",
+        ""role"": ""assistant""
+      },
+      ""logprobs"": null
+    }
+  ],
+  ""created"": 1677664795,
+  ""id"": ""chatcmpl-7QyqpwdfhqwajicIEznoc6Q47XAyW"",
+  ""model"": ""gpt-3.5-turbo-0613"",
+  ""object"": ""chat.completion"",
+  ""usage"": {
+    ""completion_tokens"": 17,
+    ""prompt_tokens"": 57,
+    ""total_tokens"": 74
+  }
+}
+
+FWIW, I'm using Python 3.12 and Windows Terminal.
+","Use .model_dump_json()
+completion = client.chat.completions.create(
+  model=""gpt-3.5-turbo"",
+  messages = [
+  {""role"": ""system"", ""content"": ""You are a helpful assistant""},
+  {""role"": ""user"", ""content"": ""Who won the world series in 2020?""},
+  {""role"": ""assistant"", ""content"": ""The Los Angeles Dodgers won the World Series in 2020.""},
+  {""role"": ""user"", ""content"": ""Where was it played?""}
+  ]
+)
+
+data = completion.model_dump_json()
+print(data)
+
+Output:
+{""id"":""chatcmpl-9VGebGyeosYhcWW19F6f5B6lMFhpl"",""choices"":[{""finish_reason"":""stop"",""index"":0,""logprobs"":null,""message"":{""content"":""The World Series in 2020 was played at Globe Life Field in Arlington, Texas."",""role"":""assistant"",""function_call"":null,""tool_calls"":null}}],""created"":1717239213,""model"":""gpt-3.5-turbo-0125"",""object"":""chat.completion"",""system_fingerprint"":null,""usage"":{""completion_tokens"":18,""prompt_tokens"":52,""total_tokens"":70}}
+
+If you need to pretty print, you can just use the ident parameter:
+data = completion.model_dump_json(indent=3)
+print(data)
+
+Output:
+{
+   ""id"": ""chatcmpl-9VGphVuZLKh2QuqT9vSAUdWCxoifg"",
+   ""choices"": [
+      {
+         ""finish_reason"": ""stop"",
+         ""index"": 0,
+         ""logprobs"": null,
+         ""message"": {
+            ""content"": ""The 2020 World Series was played at Globe Life Field in Arlington, Texas, home of the Texas Rangers."",
+            ""role"": ""assistant"",
+            ""function_call"": null,
+            ""tool_calls"": null
+         }
+      }
+   ],
+   ""created"": 1717239901,
+   ""model"": ""gpt-3.5-turbo-0125"",
+   ""object"": ""chat.completion"",
+   ""system_fingerprint"": null,
+   ""usage"": {
+      ""completion_tokens"": 23,
+      ""prompt_tokens"": 52,
+      ""total_tokens"": 75
+   }
+}
+
+",chatgpt
+how do i fix this error related to langchain invoke ai chatbot in python with the chatgpt api and langchain for memory storage,"Here's my code:
+import pickle, os
+from langchain_openai.chat_models import ChatOpenAI
+from langchain.schema import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
+
+def execute_prompt(text, history, jarvis_setup):
+    print(f""You said: {text}"")
+    history.append(HumanMessage(content = text))
+    response = jarvis_setup(history)
+    history.append(AIMessage(content = response.content))
+    with open('JarvisMemory.txt', 'wb') as file:
+        pickle.dump(history, file)
+        
+    print(response.content)
+
+def main():
+    jarvis_setup = ChatOpenAI(openai_api_key=""API_KEY"", model = ""gpt-3.5-turbo"", temperature = 0.7, max_tokens = 400)
+    #history = [SystemMessage(content=""You are a human-like virtual assistant named Jarvis."", additional_kwargs={})]
+    if os.path.exists(""JarvisMemory.txt""):
+        with open(""JarvisMemory.txt"", ""rb"") as file:
+            history = pickle.load(file)
+    else:
+        with open(""JarvisMemory.txt"", ""wb"") as file:
+            history = [SystemMessage(content=""You are a human-like virtual assistant named Jarvis. Answer all questions as shortly as possible, unless a longer, more detailed response is requested."", additional_kwargs={})]
+            pickle.dump(history, file)
+    
+    while True:
+        print(""\n"")
+        print(""Enter prompt."")
+        text = input().lower()
+        print(""Prompt sent."")
+    
+        if text:
+            execute_prompt(text, history, jarvis_setup)
+                        
+        else:
+            print(""No prompt given."")
+            continue
+                    
+if __name__ == ""__main__"":
+    main()
+
+And I get this error:
+LangChainDeprecationWarning: The method BaseChatModel.__call__ was deprecated in langchain-core 0.1.7 and will be removed in 0.3.0. Use invoke instead.
+warn_deprecated(
+Traceback (most recent call last):
+File ""C:\Users\maste\Documents\Coding\Python\Jarvis\JarvisTextInpuhjhjghyjvjt.py"", line 44, in 
+main()
+File ""C:\Users\maste\Documents\Coding\Python\Jarvis\JarvisTextInpuhjhjghyjvjt.py"", line 37, in main
+execute_prompt(text, history, jarvis_setup)
+File ""C:\Users\maste\Documents\Coding\Python\Jarvis\JarvisTextInpuhjhjghyjvjt.py"", line 12, in execute_prompt
+response = jarvis_setup(history)
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_core_api\deprecation.py"", line 148, in warning_emitting_wrapper
+return wrapped(*args, **kwargs)
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_core\language_models\chat_models.py"", line 847, in call
+generation = self.generate(
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_core\language_models\chat_models.py"", line 456, in generate
+raise e
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_core\language_models\chat_models.py"", line 446, in generate
+self._generate_with_cache(
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_core\language_models\chat_models.py"", line 671, in _generate_with_cache
+result = self._generate(
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_openai\chat_models\base.py"", line 520, in _generate
+message_dicts, params = self._create_message_dicts(messages, stop)
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_openai\chat_models\base.py"", line 533, in _create_message_dicts
+message_dicts = [_convert_message_to_dict(m) for m in messages]
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_openai\chat_models\base.py"", line 533, in 
+message_dicts = [_convert_message_to_dict(m) for m in messages]
+File ""C:\Users\maste\AppData\Roaming\Python\Python310\site-packages\langchain_openai\chat_models\base.py"", line 182, in _convert_message_to_dict
+if (name := message.name or message.additional_kwargs.get(""name"")) is not None:
+AttributeError: 'SystemMessage' object has no attribute 'name'
+I'm guessing I need to add "".invoke"" somewhere in the code based on some research I did on the issue, but I'm a beginner.
+I found this website showcasing a very similar error and how to fix it: https://wikidocs.net/235780
+You can translate the page to English with Google Translate and the translations are sufficient to understand. It says to add "".invoke"" in the place you can see shown on the website. Not sure how to implement this into my code though. Also, this might not be the right solution.
+I also looked at the Langchain website and it also says to use ""invoke"" but I can't find examples of it being used in a full line of code.
+","Here's  the solution! I just figured it out. Very simple mistake! When changing the langchain_community to langchain_openai, remove the "".chat_models""! That's all it was!
+So this line:
+from langchain_community.chat_models import ChatOpenAI
+Should be this:
+from langchain_openai import ChatOpenAI
+This is how I figured it out:
+https://python.langchain.com/v0.2/docs/versions/v0_2/#upgrade-to-new-imports
+Also, at least in my code, I had to add "".invoke"" after jarvis_setup here:
+response = jarvis_setup(history)
+With those two changes, I get no warnings and no errors!
+",langchain
+authenticationerror 401  principal does not have access to apioperation when using azure open ai with python sdk,"Issue Summary:
+Encountering an AuthenticationError with error code 401 when attempting to access the OpenAI API. The error message indicates that the principal does not have access to the API/Operation.
+Expected Outcome:
+The service principal should have access to the specified API/Operation based on the roles and permissions assigned.
+Actual Outcome:
+Receiving the following error message: Principal does not have access to API/Operation. This prevents the service principal from accessing the API as expected.
+Environment Details:
+
+Subscription ID: Redacted
+
+Role(s) Assigned: Contributor , User
+
+Application ID: Redacted
+
+API/Operation: Microsoft.CognitiveServices/accounts/listKeys/action
+
+Azure Resource: Redacted
+
+
+Appreciate any support on the above
+","You need to have Cognitive Services OpenAI User or Cognitive Services OpenAI Contributor or Cognitive Services User role to access the open ai resource for inferencing.
+Next, use below code.
+from azure.identity import get_bearer_token_provider, ClientSecretCredential
+from openai import AzureOpenAI
+cred = ClientSecretCredential(client_id=""<yourClientId>"",tenant_id=""YourTenantId"",client_secret=""<ClientSeceret>"")
+token_provider = get_bearer_token_provider(
+    cred, ""https://cognitiveservices.azure.com/.default""
+)
+
+client = AzureOpenAI(
+    api_version=""2024-02-15-preview"",
+    azure_endpoint=""https://v-jgsopenai.openai.azure.com/"",
+    azure_ad_token_provider=token_provider
+)
+
+response = client.chat.completions.create(
+    model=""gpt35"", # model = ""deployment_name"".
+    messages=[
+        {""role"": ""system"", ""content"": ""You are a helpful assistant.""},
+        {""role"": ""user"", ""content"": ""Does Azure OpenAI support customer managed keys?""},
+        {""role"": ""assistant"", ""content"": ""Yes, customer managed keys are supported by Azure OpenAI.""},
+        {""role"": ""user"", ""content"": ""Do other Azure AI services support this too?""}
+    ]
+)
+
+print(response.choices[0].message.content)
+
+Output:
+
+",chatgpt
+where does anythingllm desktop save its embedding database files,"I have installed anythingLLM desktop (app) on my Windows 11 (Home) platform. I have used ollama (installed in WSL2 Ubuntu) to run LLMs. anythingLLM is running fine. I am unable to find out where its vector database (lancedb) files are stored. And also where the other related files of anythingLLM are saved. I could not find anything either under C:\program files or c:\program files(x86). I am doing a project and my interest it to transform/export stored embeddings in lancedb, to say, in csv format. Thanks.
+","for windows - C:\Users\Username\AppData\Roaming\anythingllm-desktop\storage
+",llm
+connection with netssh2php to huawei olt ma5680t is very slow,"I implemented a php script to communicate with my Huawei Olt MA5680T through the phpseclib SSH2.php library but the execution time of any remote operation on the Olt is extremely slow, about 40 seconds.
+I tried sending simpler commands but the result doesn't change.
+I'm currently using this function to connect via ssh to the device:
+function sessione_ssh($olt_id) {
+global $ssh;
+global $ip_olt;
+
+$ssh = new Net_SSH2($row_olt['olt_ip']);
+if (!$ssh->login($row_olt['olt_user'], $row_olt['olt_pass'])) {
+exit('Login Failed');}
+$ssh->setWindowColumns(200);
+$ssh->read('MA5680T>');
+$ssh->write(""enable\n"");
+$ssh->read('MA5680T#');
+$ssh->write(""mmi-mode enable\n"");
+$ssh->read('MA5680T#');
+}
+
+
+
+
+
+function check($pppoe) {
+global $ssh;
+global $frame;
+global $board;
+global $port;
+global $ontid;
+global $ifindex;
+global $ip_olt;
+$ont_eth_port='1';
+// restituisce solo il valore senza tipo stringa
+snmp_set_quick_print(1);
+snmp_read_mib ( 'ma5600t.txt');
+ricava_info_ont($pppoe);
+$ssh->disconnect();
+//ont_descrizione
+echo 'PPPoE Cliente: ' . str_replace('""','',snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.43.1.9."" . $ifindex . ""."" . $ontid)) . ""<br>"";
+echo 'Indirizzo Ip: ' . snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.3.27.1.3."" . $ifindex . ""."" . $ontid) . ""<br>"";
+//ont_seriale
+echo 'Seriale ONT: ' . str_replace('""','',str_replace("" "","""",snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3."" . $ifindex . ""."" . $ontid))) . ""<br>"";
+$ont_status= snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15."" . $ifindex . ""."" . $ontid);  //1 online  2 offline
+if ($ont_status=='1') {
+echo 'Stato: Online<br>';
+}
+if ($ont_status=='2') {
+echo 'Stato: Offline<br>';
+}
+//ont_rx_segnale
+echo 'Segnale RX: ' . (snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4."" . $ifindex . ""."" . $ontid))/100 . "" db<br>"";
+//ont_distanza
+echo 'Distanza: ' . snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.46.1.20."" . $ifindex . ""."" . $ontid) . "" metri<br>"";
+//ont_ultimo_uptime
+echo 'Ultimo Uptime: ' . converti_data(snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.46.1.22."" . $ifindex . ""."" . $ontid)) . ""<br>"";
+//ont_ultimo_downtime
+echo 'Ultimo Downtime: ' . converti_data(snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.46.1.23."" . $ifindex . ""."" . $ontid)) . ""<br>"";
+$ont_motivo_disconnessione=snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24."" . $ifindex . ""."" . $ontid); //,15 LOKI(Loss of key synch with ONUi),18 deactived ONT due to the ring,30 shut down ONT optical module,31 reset ONT by ONT command,32 reset ONT by ONT reset button,33 reset ONT by ONT software,34 deactived ONT due to broadcast attack,35 operator check fail,37 rogue ONT detected by itself,-1 query fails.
+if ($ont_motivo_disconnessione=='1') {
+echo 'Causa disconnessione: LOS (Loss of signal)<br>';
+}
+if ($ont_motivo_disconnessione=='2') {
+echo 'Causa disconnessione: LOSi (Loss of signal for ONUi) or LOBi (Loss of burst for ONUi)<br>';
+}
+if ($ont_motivo_disconnessione=='3') {
+echo 'Causa disconnessione: LOFI (Loss of frame of ONUi)<br>';
+}
+if ($ont_motivo_disconnessione=='4') {
+echo 'Causa disconnessione: SFI (Signal fail of ONUi)<br>';
+}
+if ($ont_motivo_disconnessione=='5') {
+echo 'Causa disconnessione: LOAI (Loss of acknowledge with ONUi)<br>';
+}
+if ($ont_motivo_disconnessione=='6') {
+echo 'Causa disconnessione: LOAMI (Loss of PLOAM for ONUi)<br>';
+}
+if ($ont_motivo_disconnessione=='7') {
+echo 'Causa disconnessione: Deactive ONT fails<br>';
+}
+if ($ont_motivo_disconnessione=='8') {
+echo 'Causa disconnessione: Deactive ONT success<br>';
+}
+if ($ont_motivo_disconnessione=='9') {
+echo 'Causa disconnessione: Reset ONT<br>';
+}
+if ($ont_motivo_disconnessione=='10') {
+echo 'Causa disconnessione: Re-register ONT<br>';
+}
+if ($ont_motivo_disconnessione=='11') {
+echo 'Causa disconnessione: Pop up fail<br>';
+}
+if ($ont_motivo_disconnessione=='13') {
+echo 'Causa disconnessione: Dying-Gasp<br>';
+}
+//ont_uptime_tratta
+echo 'Uptime tratta Pon: ' . date_format (new DateTime(str_replace('""','',snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.101.1.6."" . $ifindex . ""."" . $ontid . "".0""))), 'd/m/Y H:i:s') . ""<br>"";
+$ont_power_eth=snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.62.1.5."" . $ifindex . ""."" . $ontid . ""."" . $ont_eth_port); //1on,2off
+if ($ont_power_eth=='1') {
+echo 'Porta Eth: On<br>';
+}
+if ($ont_power_eth=='2') {
+echo 'Porta Eth: Off<br>';
+}
+$ont_registrazione_eth=snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.62.1.22."" . $ifindex . ""."" . $ontid . ""."" . $ont_eth_port); //1linkup,2linkdown
+if ($ont_registrazione_eth=='1') {
+echo 'Registrazione Eth: On<br>';
+}
+if ($ont_registrazione_eth=='2') {
+echo 'Registrazione Eth: Off<br>';
+}
+$ont_speed_eth=snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.62.1.4."" . $ifindex . ""."" . $ontid . ""."" . $ont_eth_port);
+if ($ont_speed_eth=='1') {
+echo 'Negoziazione Eth: 10M manuale<br>';
+}
+if ($ont_speed_eth=='2') {
+echo 'Negoziazione Eth: 100M manuale<br>';
+}
+if ($ont_speed_eth=='3') {
+echo 'Negoziazione Eth: 1000M manuale<br>';
+}
+if ($ont_speed_eth=='4') {
+echo 'Negoziazione Eth: Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='5') {
+echo 'Negoziazione Eth: 10M Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='6') {
+echo 'Negoziazione Eth: 100M Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='7') {
+echo 'Negoziazione Eth: 1000M Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='8') {
+echo 'Negoziazione Eth: 10000M manuale<br>';
+}
+if ($ont_speed_eth=='9') {
+echo 'Negoziazione Eth: 10000M Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='10') {
+echo 'Negoziazione Eth: 2500M manuale<br>';
+}
+if ($ont_speed_eth=='11') {
+echo 'Negoziazione Eth: 2500M Autonegoziazione<br>';
+}
+if ($ont_speed_eth=='-1') {
+echo 'Negoziazione Eth: invalid<br>';
+}
+//ont_password_pon
+echo 'Password Pon: ' . snmp2_get ($ip_olt, ""private"", ""1.3.6.1.4.1.2011.6.128.1.1.2.43.1.4."" . $ifindex . ""."" . $ontid) . ""<br>"";
+}
+// fine function check
+
+
+
+unction ricava_info_ont($pppoe) {
+global $ssh;
+global $frame;
+global $board;
+global $port;
+global $ontid;
+global $ifindex;
+
+//determina $id_olt
+
+//per carcolare id olt se si tratta di cambio impianto usare var session per impianto vecchio e primaria vecchia altrimenti procedi normalmente
+if($_SESSION['vecchioimpianto']) {
+//decodifica impianto
+$primariavecchia=explode(""-"",$_SESSION['vecchioimpianto']);
+$primariavecchia=$primariavecchia['0'];
+unset($_SESSION['vecchioimpianto']);
+$sql_id_olt=""select id_olt from ftth_fibre_primarie where id_fibra_primaria ='"" . $primariavecchia . ""'"";
+}
+else {
+$sql_id_olt=""select id_olt from ftth_fibre_primarie where id_fibra_primaria = (select SUBSTR(impianto, 1, 4) from ftth_ont where pppoe='"" . $pppoe . ""')"";
+}
+// fine se si tratta di cambio pacchetto
+$rs_id_olt=CustomQuery($sql_id_olt);
+$row_id_olt = db_fetch_array($rs_id_olt);
+sessione_ssh($row_id_olt['id_olt']);
+$ssh->write(""display ont info by-desc "" . $pppoe . ""\n"");
+$out=nl2br($ssh->read());
+// crea array con righe output
+$logline = explode(""\n"",$out);
+//ricava $ontid, $frame, $board e $port da descrizione (pppoe)
+$parziale = explode("" "",$logline['9']);
+$ontid=$parziale['9'];
+$parziale2=explode(""/"",$parziale['2']);
+$frame=$parziale2['0'];
+$board=$parziale2['1'];
+$port=$parziale2['2'];
+$ifindex=4194304000 + ($board * (256 * 32) + $port * 256);
+}
+// fine function ricava_info_ont
+
+
+
+With the same library I connect to other devices and execute scripts that are executed quickly, the problem occurs only with this device. I tried reading the logs but I don't detect any errors in the communication between the ssh2.php library and the olt MA5680T.
+What could be the problem?
+this is the logs:
+https://pastebin.com/n9wHdLaj
+Thank you so much for the support I receive from you for my project
+UPDATE
+The suggestion received from @neubert seems like the right way to decrease the script execution time. With the function I posted above I now actually have an execution time of about 3 seconds (absolutely acceptable). so using the same logic I inserted the correct prompt into all read() calls but it doesn't always work! when I enter a submenu of the prompt example: $ssh->write(""interface gpon "" . $frame . ""/"" . $board . ""\n""); then I set the read call like this: $ssh->read('MA5680T(config-if-gpon-' . $frame_ont . '/' . $board_ont . ')#'); but I always get long times with 10 second timeouts like before. This is the link to the prompt from the terminal https://pasteboard.co/ldCa4JlnsfnL.jpg
+What could be the problem?
+this is the log:
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.03, network: 0.0003s)
+00000000  00:00:00:02:00:00:00:14:0d:0a:0d:0a:4d:41:35:36  ............MA56
+00000010  38:30:54:28:63:6f:6e:66:69:67:29:23              80T(config)#
+
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.0122, network: 0.0001s)
+00000000  00:00:00:02:00:00:00:13:69:6e:74:65:72:66:61:63  ........interfac
+00000010  65:20:67:70:6f:6e:20:30:2f:31:33                 e gpon 0/13
+
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.0181, network: 0.0003s)
+00000000  00:00:00:02:00:00:00:21:0d:0a:0d:0a:4d:41:35:36  .......!....MA56
+00000010  38:30:54:28:63:6f:6e:66:69:67:2d:69:66:2d:67:70  80T(config-if-gp
+00000020  6f:6e:2d:30:2f:31:33:29:23                       on-0/13)#
+
+-> NET_SSH2_MSG_CHANNEL_DATA (since last: 9.9108, network: 0.0002s)
+00000000  00:00:00:01:00:00:00:0f:6f:6e:74:20:64:65:6c:65  ........ont dele
+00000010  74:65:20:31:20:30:0a                             te 1 0.
+
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.0303, network: 0.0001s)
+00000000  00:00:00:02:00:00:00:0e:6f:6e:74:20:64:65:6c:65  ........ont dele
+00000010  74:65:20:31:20:30                                te 1 0
+
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.0744, network: 0.0001s)
+00000000  00:00:00:02:00:00:00:35:0d:0a:20:20:4e:75:6d:62  .......5..  Numb
+00000010  65:72:20:6f:66:20:4f:4e:54:73:20:74:68:61:74:20  er of ONTs that 
+00000020  63:61:6e:20:62:65:20:64:65:6c:65:74:65:64:3a:20  can be deleted: 
+00000030  31:2c:20:73:75:63:63:65:73:73:3a:20:31           1, success: 1
+
+<- NET_SSH2_MSG_CHANNEL_DATA (since last: 0.0241, network: 0.0001s)
+00000000  00:00:00:02:00:00:00:21:0d:0a:0d:0a:4d:41:35:36  .......!....MA56
+00000010  38:30:54:28:63:6f:6e:66:69:67:2d:69:66:2d:67:70  80T(config-if-gp
+00000020  6f:6e:2d:30:2f:31:33:29:23                       on-0/13)#
+
+-> NET_SSH2_MSG_DISCONNECT (since last: 9.8742, network: 0.0002s)
+00000000  00:00:00:0b:00:00:00:00:00:00:00:00              ............
+
+
+I notice the presence of this strange exclamation point before each timeout
+.......!....MA5680T(config-if-gpon-0/13)#
+","I solved it thanks to @nubert by setting the correct prompt for each $ssh->read();
+Example:
+$ssh->read('MA5680T>');,$ssh->read('MA5680T(config)#');
+",prompt
+oserror metallamallama27bchathf is not a local folder,"I'm trying to replied the code from this Hugging Face blog. At first I installed the transformers and created a token to login to hugging face hub:
+pip install transformers
+huggingface-cli login
+
+After that it is said to use use_auth_token=True when you have set a token. Unfortunately after running the code I get an error:
+from transformers import AutoTokenizer
+import transformers
+import torch
+
+model = ""meta-llama/Llama-2-7b-chat-hf""
+
+tokenizer = AutoTokenizer.from_pretrained(model, use_auth_token=True)
+pipeline = transformers.pipeline(
+    ""text-generation"",
+    model=model,
+    torch_dtype=torch.float16,
+    device_map=""auto"",
+)
+
+sequences = pipeline(
+    'I liked ""Breaking Bad"" and ""Band of Brothers"". Do you have any recommendations of other shows I might like?\n',
+    do_sample=True,
+    top_k=10,
+    num_return_sequences=1,
+    eos_token_id=tokenizer.eos_token_id,
+    max_length=200,
+)
+for seq in sequences:
+    print(f""Result: {seq['generated_text']}"")
+
+Error:
+OSError: meta-llama/Llama-2-7b-chat-hf is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo with `use_auth_token` or log in with `huggingface-cli login` and pass `use_auth_token=True`.
+
+It says that the model cannot be found, but you can find it in the list of models on hugging face here.
+This is the version of the transformers package I'm using:
+> pip show transformers
+
+Name: transformers
+Version: 4.33.0.dev0
+Summary: State-of-the-art Machine Learning for JAX, PyTorch and TensorFlow
+Home-page: https://github.com/huggingface/transformers
+Author: The Hugging Face team (past and future) with the help of all our contributors (https://github.com/huggingface/transformers/graphs/contributors)
+Author-email: transformers@huggingface.co
+License: Apache 2.0 License
+Location: /Users/quinten/opt/miniconda3/lib/python3.9/site-packages
+Requires: filelock, huggingface-hub, numpy, packaging, pyyaml, regex, requests, safetensors, tokenizers, tqdm
+Required-by: spacy-transformers
+
+Does anyone know how to fix this error?
+","def from_pretrained(cls, pretrained_model_name_or_path, *inputs, **kwargs):
+
+the pretrained_model_name_or_path may the model repo or the model path
+in your case the model repo is ""meta-llama/Llama-2-7b-chat-hf"" which is right.
+according to https://huggingface.co/meta-llama/Llama-2-7b-chat-hf/tree/main
+you must agree to the terms and conditions in the above link in order to access the model.
+",huggingface-transformers
+openai api error 429 quotyou exceeded your current quota please check your plan and billing detailsquot,"I'm making a Python script to use OpenAI via its API. However, I'm getting this error:
+
+openai.error.RateLimitError: You exceeded your current quota, please check your plan and billing details
+
+My script is the following:
+#!/usr/bin/env python3.8
+# -*- coding: utf-8 -*-
+
+import openai
+openai.api_key = ""<My PAI Key>""
+
+completion = openai.ChatCompletion.create(
+  model=""gpt-3.5-turbo"",
+  messages=[
+    {""role"": ""user"", ""content"": ""Tell the world about the ChatGPT API in the style of a pirate.""}
+  ]
+)
+
+print(completion.choices[0].message.content)
+
+I'm declaring the shebang python3.8, because I'm using pyenv. I think it should work, since I did 0 API requests, so I'm assuming there's an error in my code.
+","TL;DR: You need to upgrade to a paid plan. Set up a paid account, add a credit or debit card, and generate a new API key if your old one was generated before the upgrade. It might take 10 minutes or so after you upgrade to a paid plan before the paid account becomes active and the error disappears.
+Problem
+As stated in the official OpenAI documentation:
+
+
+
+
+TYPE
+OVERVIEW
+
+
+
+
+RateLimitError
+Cause: You have hit your assigned rate limit. Solution: Pace your requests. Read more in our rate limit guide.
+
+
+
+
+Also, read more about Error Code 429 - You exceeded your current quota, please check your plan and billing details:
+
+This (i.e., 429) error message indicates that you have hit your maximum monthly
+spend (hard limit) for the API. This means that you have consumed all
+the credits or units allocated to your plan and have reached the limit
+of your billing cycle. This could happen for several reasons, such as:
+
+You are using a high-volume or complex service that consumes a lot of credits or units per request.
+
+You are using a large or diverse data set that requires a lot of requests to process.
+
+Your limit is set too low for your organization’s usage.
+
+
+
+
+Did you sign up some time ago?
+You're getting error 429 because either you used all your free tokens or 3 months have passed since you signed up.
+As stated in the official OpenAI article:
+
+To explore and experiment with the API, all new users get $5
+worth of free tokens. These tokens expire after 3 months.
+After the quota has passed you can choose to enter billing information
+to upgrade to a paid plan and continue your use of the API on
+pay-as-you-go basis. If no billing information is entered you will
+still have login access, but will be unable to make any further API
+requests.
+Please see the pricing page for the latest information on
+pay-as-you-go pricing.
+
+Note: If you signed up earlier (e.g., in December 2022), you got $18 worth of free tokens.
+Check your API usage in the usage dashboard.
+For example, my free trial expires tomorrow and this is what I see right now in the usage dashboard:
+
+This is how my dashboard looks after expiration:
+
+If I run a simple script after my free trial has expired, I get the following error:
+
+openai.error.RateLimitError: You exceeded your current quota, please check your plan and billing details.
+
+
+Did you create your second OpenAI account?
+You're getting error 429 because you created a second OpenAI account with the same phone number. It seems like free credit is given based on phone numbers.
+As explained on the official OpenAI forum by @SapphireFelineBytes:
+
+I created an Open AI account in November and my $18 credits expired on
+March 1st. So, like many of you here, I tried creating a new account
+with a different email address, but same number. They gave me $0
+credits.
+I tried now with a different phone number and email. This time I got
+$5 credits.
+
+It's confirmed that free credit is given based on phone numbers, as explained on the official OpenAI forum by @logankilpatrick:
+
+Also note, you only get free credits for the first account associated
+with your phone number. Subsequent accounts are not granted free credits.
+
+Solution
+Try to do the following:
+
+Set up paid account.
+Add a credit or debit card.
+Generate a new API key if your old API key was generated before you upgraded to the paid plan.
+
+When you upgrade to a paid plan, don't expect the error to disappear immediately, as @dcferreira mentioned in the comment above. It might take a few minutes after the upgrade before the error disappears.
+In the comment below, @JoeMornin confirmed that it took 10 minutes for his paid account to become active. In the meantime, he was getting the following error:
+
+You've reached your usage limit. See your usage dashboard and billing settings for more details. If you have further questions, please contact us through our help center at help.openai.com.
+
+",prompt
+openai api in a laravel project backend implementation doesn39t work,"I am currently trying to use this API : https://github.com/openai-php/laravel in a personal Laravel project.
+I don’t really know what is currently wrong in my code, all I can say is that the code detailed below gets my message displayed in the chatbox but returns an error 419 on my POST request : XHR POST http://127.0.0.1:8000/send as well as a Fetch error: Server error.
+When NOT using the route and controller but giving the direct API endpoint to the JavaScript, I manage to get a JSON response to my message...
+Please note that I would really like to make the backend part to work, and not just doing it in JS.
+Also, I didn't want to use jQuery but I would if it might help.
+The JavaScript :
+//CSRF TOKEN
+    const csrfToken = document.querySelector('meta[name=""csrf-token""]').getAttribute('content');
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://api.openai.com/v1/chat/completions', true);
+    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+    const button = document.getElementById('button-submit');
+    const chatWindow = document.getElementById('chat-window');
+    const url = '{{ url('send') }}';
+
+//API FETCH ON BUTTON CLICK
+    button.addEventListener('click', function (){
+        const input = document.getElementById('input').value;
+
+        chatWindow.innerHTML += `<div class=""messages-user"">
+        <div class=""__user"">
+            <p>${input}</p>
+        </div>
+        <img src=""{{ asset('/images/avatar.png') }}"" alt=""Avatar"">
+        <div style=""clear: both""></div>
+        </div>`;
+
+        fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(input),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ""MY_OPENAI_KEY""'
+            }
+        }).then(function(response) {
+            if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error('Server error.');
+            }
+        }).then(function(data) {
+            chatWindow.innerHTML += `<div class=""messages-bot"">
+                            <div class=""__bot"">
+                                <p>${data}</p>
+                            </div>
+                            <img src=""{{ asset('/images/chatbot.png') }}"" alt=""Avatar"">
+                            </div>
+                            `;
+        }).catch(function(error) {
+            console.log('Fetch error:', error.message);
+        });
+    });
+
+The web.php :
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChatBotController;
+
+Route::get(‘/’, function () {
+    return view(‘welcome’);
+});
+
+Route::post(‘send’, [ChatBotController::class, ‘sendChat’]);
+
+The Controller :
+public function sendChat(Request $request){
+    $result = OpenAI::completions()->create([
+        ‘max-token’ => 100,
+        ‘model’ => ‘text-davinci-003’,
+        ‘prompt’ => $request->input
+    ]);
+
+    $response = array_reduce(
+        $result->toArray()['choices'],
+        fn(string $result, array $choice) => $result . $choice['text'], """"
+    );
+    
+    return $response;
+}
+
+Thanks for your time !
+","In laravel th 419 error, means thet the csrf token field is not resent or it is incorrect.
+In this case you probably dosen't need to use the crsf token for a API call.
+so you need to move this line of code:
+Route::post('send', [ChatBotController::class, ‘sendChat’]);
+
+from web.php (which uses the csrf protection) to the api.php file under the routes folder in your laravel project.
+At this point you need to call the /api/send endpoint instead of the /send endpoint
+",chatgpt
+spacy and gensim on jupyter notebooks,"I have bought a new macbook and have installed python 3.12.5 on it. I am trying to import and run libraries for Natural Langauge Processing in a Jupyter Notebook, and all is well... except when it comes to spaCy and gensim.
+import spacy
+import gensim
+
+TypeError: ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'
+
+I checked to see if they are imported with :
+!pip show spacy
+!pip show gensim
+
+Name: spacy
+Version: 3.7.5
+Summary: Industrial-strength Natural Language Processing (NLP) in Python
+Home-page: https://spacy.io
+Author: Explosion
+Author-email: contact@explosion.ai
+License: MIT
+Location: /opt/anaconda3/lib/python3.12/site-packages
+Requires: catalogue, cymem, jinja2, langcodes, murmurhash, numpy, packaging, preshed, pydantic, requests, setuptools, spacy-legacy, spacy-loggers, srsly, thinc, tqdm, typer, wasabi, weasel
+Required-by: 
+Name: gensim
+Version: 4.3.2
+Summary: Python framework for fast Vector Space Modelling
+Home-page: https://radimrehurek.com/gensim/
+Author: Radim Rehurek
+Author-email: me@radimrehurek.com
+License: LGPL-2.1-only
+Location: /opt/anaconda3/lib/python3.12/site-packages
+Requires: numpy, scipy, smart-open
+Required-by: 
+
+So they should be loaded, but I don't know what the TypeError refers to and how to fix it!
+I read that there is something with the python update...but could anyone help me clarify this?
+","Problem occurs in pydantic library (to be exact pydantic.v1.typing module) the best solution at the moment is to downgrade python version to 3.12.3. Patches to this problem has been already merged to repository but you need to wait for next release.
+",huggingface-transformers
+the chatcompletion operation does not work with the specified model gpt4omini,"Context
+I have below the Python code.
+client = AzureOpenAI(
+    api_key = os.getenv(""AZURE_OPENAI_API_KEY""),  
+    api_version = os.getenv('AZURE_OPENAI_API_VERSION'),
+    azure_endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+)  
+messages = [
+    {""role"": ""user"", ""content"": prompt}
+]
+response = client.chat.completions.create(
+    model=""gpt-4o-mini"",        
+    messages=messages,
+    temperature=0,  
+)
+
+Issue
+I faced the below error.
+openai.BadRequestError: Error code: 400 - 
+{
+   ""error"":{
+      ""code"":""OperationNotSupported"",
+      ""message"":""The chatCompletion operation does not work with the specified model, gpt-4o-mini. Please choose different model and try again. You can learn more about which models can be used with each operation here: https://go.microsoft.com/fwlink/?linkid=2197993.""
+   }
+}
+
+The above code works fine when I change the model to ""gpt-4o""
+","The Azure region you selected does not support this model. You need to check this list to select the appropriate region, and select the deployment type as ""Standard""
+https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#standard-deployment-model-availability
+",chatgpt
+do i need any environment variables set to execute some code call openai39s api and return a response,"I was going through a course in OpenAI's API using an in-browser jupyter notebook page but wanted to copy some example code from there into a local IDE. I installed Python and the jupyter extention in VS Code and the OpenAI library. My code is below:
+import openai
+import os
+
+# from dotenv import load_dotenv, find_dotenv
+# _ = load_dotenv(find_dotenv()) # read local .env file
+
+openai.api_key  = ""my api key is here""
+
+def get_completion(prompt, model=""gpt-3.5-turbo""):
+    messages = [{""role"": ""user"", ""content"": prompt}]
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=0, # this is the degree of randomness of the model's output
+    )
+    return response.choices[0].message[""content""]
+
+prompt = f""""""
+Determine whether each item in the following list of \
+topics is a topic in the text below, which
+is delimited with triple backticks.
+
+Give your answer as list with 0 or 1 for each topic.\
+
+List of topics: {"", "".join(topic_list)}
+
+Text sample: '''{story}'''
+""""""
+response = get_completion(prompt)
+print(response)
+
+I installed Python and imported the openai library. When I run I am getting the error:
+APIConnectionError: Error communicating with OpenAI: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+
+I'm assuming that's because I commented out lines 3 and 4 in the code because I am unsure what they do and do not know how to use the dotenv library. Is it simple to set this up just to make a basic call to the openai API? That's all I'm trying to do with this code right now.
+","Usually, you load your API KEY from your .env file but, as you are hardcoding it, you don't need anything else.
+The error you are getting might be related to the absence of the topic_list and story definitions.
+",chatgpt
+does prompt_token usage affect my billing when using azure openai models with your own data,"I have set Azure OpenAI on my data, Chat with Azure OpenAI models using your own data. My goal was to reduce token usage in each request.
+However, I have noticed additional prompt_token usage, even when I am sending user content without any prompt. For example, if I only send the text hello there, it results in a total of 2628 tokens, whereas it should only be 24. If a longer text (7 words) is provided without any prompt, it results in a total of approximately 3.4k tokens.
+Example:
+[{'role': 'system', 'content': ''}, {'role': 'user', 'content': 'hello there'}]
+total_tokens: {'completion_tokens': 24, 'prompt_tokens': 2604, 'total_tokens': 2628}
+
+----------------------------------------------------
+
+[{'role': 'system', 'content': ''},
+{'role': 'user', 'content': 'I worked overtime what should I do?'}]
+total_tokens: {'completion_tokens': 52, 'prompt_tokens': 3334, 'total_tokens': 3386}
+
+As you can see, under total token I am seeing prompt_token usage close the ~3.5k.
+Where does prompt_token usage come from since I do not provide any prompt or system message? Isn't the whole purpose of using Azure OpenAI models with your own data to reduce token usage? For each request, additional 3.5k token is very expensive. Will it affect my billing, where would prompt_token be considered as part of input tokens?
+
+Pricing/details/cognitive-services/openai-service/, states that Input (Per 1,000 tokens) is $0.0025, than as I understand for 4,000 tokens, the cost should be $0.01.
+","There is a bit of magic going on when they ""use your data""; it is essentially Retrieval Augmented Generation or RAG. Basically there's a few more steps than simply your prompt text.
+They explain it fairly well here:
+
+In total, there are two calls made to the model:
+
+
+For processing the intent: The token estimate for the intent prompt includes those for the user question, conversation history, and the instructions sent to the model for intent generation.
+
+
+For generating the response: The token estimate for the generation prompt includes those for the user question, conversation history, the retrieved list of document chunks, role information, and the instructions sent to it for generation.
+
+",chatgpt
+kill ios simulator from terminal,"I'm trying to terminate the iOS Simulator from the terminal console (needed for integrating automatic UI Testing in Jenkins),but every time I try the command:
+killall SimulatorBridge
+
+a prompt waiting for action gets displayed:
+
+The problem is that the simulator doesn't get dismissed until an action on the prompt is taken.  How to get rid of it?
+","Use killall ""iPhone Simulator""
+With XCode 6, use killall ""iOS Simulator"" (thanks @gempewsaw)
+With XCode 7, use killall ""Simulator"" (thanks @Stanislaw)
+With XCode 8, killing the Simulator process is sometimes not enough, also need to kill process com.apple.CoreSimulator.CoreSimulatorService (thanks @bensnider)
+",prompt
+preprovided parameters to command with required prompt in shell,"So I have to make deployment of AWS Elastic Beanstalk application with AWSEB CLI on Jenkins. When i try to use command
+eb init
+
+It requires some information and credentials. Credentials are stored as parameters or could be a secret file on Jenkins instance. Command have no such things like --parameter to provide it at start. Is there any solution to provide all parameters in the code that in runtime this command will now okay now this is provided now this and so on? Something like this:
+eb init --username XXX --password XXX --others XXX
+
+Here is documentation for that command
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html
+","Will this answer help your issue? It seems you can set some of the parameters as Environment variables and rest as flags.. For example.
+$ export AWS_ACCESS_KEY_ID=""xxx""
+$ export AWS_SECRET_ACCESS_KEY=""xxx""
+$ export AWS_DEFAULT_REGION=""xxx""
+
+Then
+eb init --region eu-west-1 --platform <platform-name> appname
+
+",prompt
+how can i allocate chat memory to the openai model,"I'm working in django, I have a view where I call the openai api, and in the frontend I work with react, where I have a chatbot, I want the model to have a record of the data, like the chatgpt page does.
+class chatbot(APIView):
+
+    def post(self, request):
+        chatbot_response = None
+        if api_key is not None and request.method == 'POST':
+            openai.api_key = api_key
+            user_input = request.data.get('user_input')
+            prompt = user_input
+
+            response = openai.Completion.create(
+                model = 'text-davinci-003',
+             
+                prompt = prompt,
+                max_tokens=250,
+                temperature=0.5
+            )
+           
+
+            chatbot_response = response[""choices""][0][""text""]
+        if chatbot_response is not None:
+            return Response({""response"": chatbot_response}, status=status.HTTP_200_OK)
+        else:
+            return Response({'errors': {'error_de_campo': ['Promt vacio']}},
+                                status=status.HTTP_404_NOT_FOUND)
+
+I was planning to create a model and save the questions in the database, but I don't know how to integrate that information into the view, I'm worried about the token spending, I don't really know how it works. I hope someone can clarify these doubts for me. thank you so much.
+","How can I allocate chat memory to the openai model?
+Save it in database
+by saving into database, you can permanently save the history
+by follow this
+https://docs.djangoproject.com/en/4.2/topics/db/queries/
+https://docs.djangoproject.com/en/4.0/intro/tutorial02/#database-setup
+
+you need to create a database model containing User Identification & History
+
+import jsonfield
+from django.db import models
+
+
+class ChatHistory(models.Model):
+    owner_uid = models.CharField(max_length=100)
+    chat = jsonfield.JSONField() # would be {USER, BOT} interaction
+
+    def __str__(self):
+        return self.name
+
+
+Create A Get History Endpoint
+
+from .models import ChatHistory
+class chatbot(APIView):
+
+    def post(self, request):
+        chatbot_response = None
+        if api_key is not None and request.method == 'POST':
+            openai.api_key = api_key
+            user_input = request.data.get('user_input')
+            prompt = user_input
+
+            response = openai.Completion.create(
+                model = 'text-davinci-003',
+             
+                prompt = prompt,
+                max_tokens=250,
+                temperature=0.5
+            )
+           
+
+            chatbot_response = response[""choices""][0][""text""]
+        if chatbot_response is not None:
+            return Response({""response"": chatbot_response}, status=status.HTTP_200_OK)
+        else:
+            return Response({'errors': {'error_de_campo': ['Promt vacio']}},
+                                status=status.HTTP_404_NOT_FOUND)
+    def get(self, request):
+        uid = request.GET.get('uid')  # Assuming the uid is passed as a query parameter
+
+        if uid is None:
+            return Response({'errors': {'uid': ['UID parameter is required.']}}, status=status.HTTP_400_BAD_REQUEST)
+
+        chat_history = ChatHistory.objects.filter(owner_uid=uid)
+        serialized_data = ChatHistorySerializer(chat_history, many=True).data
+
+        return Response({'data': serialized_data}, status=status.HTTP_200_OK)
+
+
+Showing it In frontend?
+well idk about your front-end code it's just a json data
+you should managed to do it easily!
+Worry About The Cost?
+Well you shouldn't use text-davinci-3 for chatbot purpose in the firstplace!
+text-davinci-3 is an InstructGPT model
+Instruct models are optimized to follow single-turn instructions. Ada is the fastest model, while Davinci is the most powerful(and very expensive)
+you should've used ChatCompletion with chatgpt-3.5-turbo instead
+https://platform.openai.com/docs/api-reference/chat/create?lang=python
+import os
+import openai
+openai.api_key = os.getenv(""OPENAI_API_KEY"")
+
+completion = openai.ChatCompletion.create(
+  model=""gpt-3.5-turbo"",
+  messages=[
+    {""role"": ""user"", ""content"": ""Hello!""}
+  ]
+)
+
+print(completion.choices[0].message)
+
+Why? take a look at the pricing
+gpt-3.5-turbo   $0.002 / 1K tokens
+Davinci         $0.0200 / 1K tokens
+The Cost Effectivness is 10 Times!
+",chatgpt
+can we control number of documents to return in retrievalqa langchain,"Can we control the document query parameter in RetrievalQA() like we could do in vectorDBQA() in langchain before? Also, shall I use map_reduce chain type instead for my large documents?
+I tried to look into the source code but could not find it.
+","You can customized the Retrieval and add your requirement
+   class URRetrival(BaseRetriever):
+
+    def __int__(self):
+        pass
+
+    def setparms(self, count):
+        self.count = count
+
+
+    def _get_relevant_documents(
+            self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+    ) -> List[Document]:
+        
+        # need to add your similarity search here and add set self.count as limit
+    #results = your vectordb.similarity(limit_or_k = self.count)
+        return results
+
+    async def _aget_relevant_documents(
+            self,
+            query: str,
+            *,
+            run_manager: AsyncCallbackManagerForRetrieverRun,
+            **kwargs: Any,
+    ) -> List[Document]:
+        raise NotImplementedError()
+
+in above example you need to add your vector db , its depend on you which you are using, and return the similarity results, the vector db supported for k/limit of relative docs
+_get_relevant_documents : method call when inside the chain, you need to pass this costume retrieval as chain retrieval
+Example:
+retrival = URRetrival()
+retrival.setparms(5)
+qa_with_sources_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=retrival,
+    callbacks=[handler],
+
+",llama
+python format float with three dots is possible,"I'm trying to format a float like
+10 / 3 = Quotient: 3.3333...
+42 / 10 = Quotient: 4.2
+i want to add three dots when there are more than 4 decimal places
+for the moment i have that format
+print(""{:{width}}{:.5g}"".format(""Quotient:"", a / b, width=width))
+result of this format :
+10 / 3 = Quotient: 3.3333
+42 / 10 = Quotient: 4.2
+how can i do that with format() or another function in py standard lib ?
+","You could create a helper function such as print_float to format the float and print it, using a ""reverse and find"" approach as suggested here:
+def print_float(f: float) -> None:
+    float_str = str(f)
+    num_decimal_places = float_str[::-1].find('.')
+    if num_decimal_places > 4:
+        print(float_str[:-num_decimal_places + 4], '...', sep='')
+    else:
+        print(float_str)
+
+Results:
+print_float(12345)     # 12345
+print_float(10 / 3)    # 3.3333...
+print_float(42 / 10)   # 4.2
+print_float(1.999999)  # 1.9999...
+
+Finally, here's a (potentially) more efficient solution, which doesn't involve doing [::-1] to reverse the string in place. Note that it uses len() in place of a string reversal, which should be an O(1) operation in any case.
+def print_float(f: float, max_decimal_places=4) -> None:
+    float_str = str(f)
+    len_float = len(float_str)
+    idx_after_point = float_str.find('.') + 1
+
+    if len_float - idx_after_point > max_decimal_places and idx_after_point:
+        print(float_str[:idx_after_point + max_decimal_places] + '...')
+    else:
+        print(float_str)
+
+",prompt
+no connection because in target machine is actively refusing it,"Here is my code:
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import ChatOllama
+from langchain_core.output_parsers import StrOutputParser
+
+llm = ChatOllama(
+    model = 'llama3.2',
+    temperature = 0
+)
+
+chat_template = ChatPromptTemplate.from_messages(
+    [
+        ('system', ""you have to give two line definition of the word given by user""),
+        ('human', 'the word is {user_input}')
+    ]
+)
+
+message = chat_template.format_messages(user_input = 'backlog')
+llm.invoke(message)
+chain = chat_template | llm | StrOutputParser()
+
+chain.invoke({'user_input' : 'backlog'})
+
+And it is showing connect error:
+httpx.ConnectError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+How can I fix this?
+I was trying to create basic word meaning chatbot using langchain.
+","this means that Ollama is not running on you machine.
+after Ollama pull <model name> you need to run Ollama serve
+",langchain
+get all documents from chromadb using python and langchain,"I'm using langchain to process a whole bunch of documents which are in an Mongo database.
+I can load all documents fine into the chromadb vector storage using langchain. Nothing fancy being done here. This is my code:
+
+from langchain.embeddings.openai import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings()
+
+from langchain.vectorstores import Chroma
+db = Chroma.from_documents(docs, embeddings, persist_directory='db')
+db.persist()
+
+
+Now, after storing the data, I want to get a list of all the documents and embeddings WITH id's.
+This is so I can store them back into MongoDb.
+I also want to put them through Bertopic to get the topic categories.
+Question 1 is: how do I get all documents I've just stored in the Chroma database? I want the documents, and all the metadata.
+Many thanks for your help!
+","Looking at the source code (https://github.com/hwchase17/langchain/blob/master/langchain/vectorstores/chroma.py)
+You can just call below
+db.get()
+
+and you will get a json output with the id's, embeddings and docs data.
+",langchain
+suppress huggingface logging warning quotsetting pad_token_id to eos_token_ideos_token_id for openend generationquot,"In HuggingFace, every time I call a pipeline() object, I get a warning:
+`""Setting `pad_token_id` to `eos_token_id`:{eos_token_id} for open-end generation.""
+
+How do I suppress this warning without suppressing all logging warnings? I want other warnings, but I don't want this one.
+","The warning comes for any text generation task done by HuggingFace. This is explained here, and you can see the code here.
+Avoid that warning by manually setting the pad_token_id (e.g., to match the tokenizer or the eos_token_id).
+Set the pad_token_id in the generation_config with:
+model.generation_config.pad_token_id = tokenizer.pad_token_id
+
+Alternatively, if you only need to make a single call to generate:
+
+When you call
+model.generate(**encoded_input)
+
+just change it to
+model.generate(**encoded_input, pad_token_id=tokenizer.eos_token_id)
+
+
+",huggingface-transformers
+nginx worker fails to boot flask app on elasticbeanstalk after installing openai,"Environment: Flask app running on python3.8 with AWS ElasticBeanstalk on an AL2 EC2 instance. After installing the OpenAI python package, there is an error in the EB instance on boot with the following error in the logs:
+ from openai import OpenAI
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/openai/__init__.py"", line 8, in <module>
+web: from . import types
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/openai/types/__init__.py"", line 5, in <module>
+web: from .batch import Batch as Batch
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/openai/types/batch.py"", line 7, in <module>
+web: from .._models import BaseModel
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/openai/_models.py"", line 25, in <module>
+web: from ._types import (
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/openai/_types.py"", line 21, in <module>
+web: import httpx
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpx/__init__.py"", line 2, in <module>
+web: from ._api import delete, get, head, options, patch, post, put, request, stream
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpx/_api.py"", line 6, in <module>
+web: from ._client import Client
+web: File ""<frozen importlib._bootstrap>"", line 991, in _find_and_load
+web: File ""<frozen importlib._bootstrap>"", line 975, in _find_and_load_unlocked
+web: File ""<frozen importlib._bootstrap>"", line 671, in _load_unlocked
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/newrelic/api/import_hook.py"", line 174, in exec_module
+web: self.loader.exec_module(module)
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpx/_client.py"", line 32, in <module>
+web: from ._transports.default import AsyncHTTPTransport, HTTPTransport
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpx/_transports/default.py"", line 32, in <module>
+web: import httpcore
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpcore/__init__.py"", line 1, in <module>
+web: from ._api import request, stream
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpcore/_api.py"", line 5, in <module>
+web: from ._sync.connection_pool import ConnectionPool
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpcore/_sync/__init__.py"", line 1, in <module>
+web: from .connection import HTTPConnection
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpcore/_sync/connection.py"", line 12, in <module>
+web: from .._synchronization import Lock
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/httpcore/_synchronization.py"", line 11, in <module>
+web: import trio
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/trio/__init__.py"", line 26, in <module>
+web: from . import abc, from_thread, lowlevel, socket, to_thread
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/trio/socket.py"", line 16, in <module>
+web: from . import _socket
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/trio/_socket.py"", line 526, in <module>
+web: class SocketType:
+web: File ""/var/app/venv/staging-LQM1lest/lib64/python3.8/site-packages/trio/_socket.py"", line 719, in SocketType
+web: @_wraps(_stdlib_socket.socket.sendmsg, assigned=(), updated=())
+web: AttributeError: type object 'GreenSocket' has no attribute 'sendmsg'
+web: [2024-07-29 21:44:08 +0000] [25719] [INFO] Worker exiting (pid: 25719)
+
+I've tried changing versions of OpenAI and the relevant dependencies and as soon as the OpenAI package is removed the worker successfully runs.
+","Here's what fixed my issue
+Wherever the environment is being hosted navigate to it, enter the venv, and  pip uninstall trio. Trio gets installed as a dependency of httpx which is a dependency of openai and messes with stdlib packages while not actually being used.
+",chatgpt
+azureopenai missing credentials of api_key azure_ad_token azure_ad_token_provider,"I'm trying to use the Azure OpenAI model to generate comments based on data from my BigQuery table in GCP using Cloud Functions. Here's the Python script I've been working on:
+from azure_openai import AzureOpenAI
+def generate_comment(month, year, country, column_name, current_value, previous_value):
+        prompt_ = ("""")
+    
+        client = AzureOpenAI(
+            api_key=os.getenv(""AZURE_OPENAI_API_KEY""), ## tried also api_key=""AZURE_OPENAI_API_KEY""
+            api_version=""2023-09-15-preview"",
+            azure_endpoint=os.getenv(""AZURE_OPENAI_ENDPOINT"")
+        )
+    
+        response = client.completions.create(model=""MODEL_NAME"", prompt=prompt_, max_tokens=50, temperature=0.35)
+        return response.choices[0].text
+
+I tried the old version before, but got openai.lib._old_api.APIRemovedInV1 error:
+openai.api_type = ""azure""
+openai.api_base = ""https://xxx.openai.azure.com/""
+openai.api_version = ""2023-09-15-preview""
+openai.api_key = ""xxx""
+
+response = openai.Completion.create(
+engine=""xxx"",
+prompt=prompt_,
+temperature=0.35)
+
+return response['choices'][0]['message']['content']
+
+However, I'm encountering a 500 Internal Server Error with the message:
+ValueError: Must provide one of the `base_url` or `azure_endpoint` arguments, or the `AZURE_OPENAI_ENDPOINT` environment variable
+
+I've checked my Azure OpenAI configuration and ensured that the API key and endpoint are correct. Could someone please help me identify what might be causing this error?
+","It worked like the following:
+import openai
+# Set up the Azure OpenAI configuration
+openai.api_type = ""azure""
+openai.api_base = ""https://XXXX.openai.azure.com/""
+openai.api_key = ""XXXX""
+openai.api_version = ""XXXX""
+
+def generate_comment():
+prompt_ = """"
+    messages = [
+        {""role"": ""system"", ""content"": ""You will generate comments based on the given data.""},
+        {""role"": ""user"", ""content"": prompt_}
+    ]
+    # Send a completion call to Azure OpenAI to generate a comment
+    response = openai.ChatCompletion.create(
+        engine=""XXXX"", # engine = ""deployment_name""
+        messages=[
+            {""role"": ""system"", ""content"": ""You will generate comments based on the given data.""},
+            {""role"": ""user"", ""content"": prompt_}
+        ],
+        max_tokens=50,
+        temperature=0.35
+    )
+    return response['choices'][0]['message']['content']
+
+",chatgpt
+why api of new account on openai not working,"I created new account on Open AI and it shows free $5 limit and using it for testing but it is respponding with 429 status error do I have to pay first to test or is it error from my code?
+import OpenAI from ""openai"";
+import dotenv from ""dotenv"";
+import { Router } from ""express"";
+dotenv.config();
+const router = Router();
+
+const openAiClient = new OpenAI({
+  organization: ""org-***"",
+  apiKey: ""sk-proj-***"",
+});
+router.get(""/openai"", async (req, res) => {
+  const completeChat = await openAiClient.chat.completions.create({
+    model: ""gpt-3.5-turbo"",
+    messages: [
+      {
+        role: ""user"",
+        content: ""make a description of black jeans"",
+      },
+    ],
+  });
+  console.log(completeChat);
+  res.sendStatus(200);
+});
+
+export default router;
+
+","OpenAI requires a payment method to be on file even when using free credits. This is a common practice to prevent abuse and ensure uninterrupted access to the service. If you haven't added a payment method, the API may restrict your access, resulting in error codes.
+",chatgpt
+indexerror list index out of range when trying to predict from the fine tuned model using hugginface,"i am trying to learn on how to fine tune a pretrained model and use it. this is my code
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
+from datasets import load_dataset
+import numpy as np
+import torch
+
+# Define a simple accuracy metric
+def compute_metrics(p):
+    predictions, labels = p
+    preds = np.argmax(predictions, axis=1)
+    return {""accuracy"": (preds == labels).mean()}
+
+# Load the dataset
+dataset = load_dataset(""imdb"", split='train[:1%]')
+small_train_dataset = dataset.train_test_split(test_size=0.1)['train']
+small_eval_dataset = dataset.train_test_split(test_size=0.1)['test']
+
+# Load the tokenizer and model
+model_name = ""bert-base-uncased""
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+
+# Tokenize the dataset
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding=""max_length"", truncation=True)
+
+small_train_dataset = small_train_dataset.map(tokenize_function, batched=True)
+small_eval_dataset = small_eval_dataset.map(tokenize_function, batched=True)
+small_train_dataset = small_train_dataset.rename_column(""label"", ""labels"")
+small_eval_dataset = small_eval_dataset.rename_column(""label"", ""labels"")
+small_train_dataset.set_format(""torch"", columns=[""input_ids"", ""attention_mask"", ""labels""])
+small_eval_dataset.set_format(""torch"", columns=[""input_ids"", ""attention_mask"", ""labels""])
+
+# Define training arguments
+training_args = TrainingArguments(
+    output_dir=""test_trainer"",
+    evaluation_strategy=""epoch"",
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
+    num_train_epochs=3,
+    weight_decay=0.01
+)
+
+# Initialize the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=small_train_dataset,
+    eval_dataset=small_eval_dataset,
+    compute_metrics=compute_metrics
+)
+
+# Train the model
+trainer.train()
+
+# Evaluate the model
+validation_results = trainer.evaluate()
+print(validation_results)
+
+now, i am trying to make a prediction on the fine tuned model, like this
+inputs=tokenizer(dataset[0]['text'], padding=""max_length"", truncation=True,return_tensors=""pt"")
+predictions = trainer.predict(test_dataset=inputs)
+
+i am getting this error when i am trying to make a prediction,
+
+IndexError Traceback (most recent call last) Cell In[8], line 7 3
+inputs=tokenizer(dataset[0][‘text’], padding=“max_length”,
+truncation=True,return_tensors=“pt”) 6 # Make predictions
+----> 7 predictions = trainer.predict(test_dataset=inputs)
+File C:\Python311\Lib\site-packages\transformers\trainer.py:3305, in
+Trainer.predict(self, test_dataset, ignore_keys, metric_key_prefix)
+3302 start_time = time.time() 3304 eval_loop = self.prediction_loop if
+self.args.use_legacy_prediction_loop else self.evaluation_loop → 3305
+output = eval_loop( 3306 test_dataloader, description=“Prediction”,
+ignore_keys=ignore_keys, metric_key_prefix=metric_key_prefix 3307 )
+3308 total_batch_size = self.args.eval_batch_size *
+self.args.world_size 3309 if
+f""{metric_key_prefix}_jit_compilation_time"" in output.metrics:
+File C:\Python311\Lib\site-packages\transformers\trainer.py:3408, in
+Trainer.evaluation_loop(self, dataloader, description,
+prediction_loss_only, ignore_keys, metric_key_prefix) 3406
+observed_num_examples = 0 3407 # Main evaluation loop → 3408 for step,
+inputs in enumerate(dataloader): 3409 # Update the observed num
+examples 3410 observed_batch_size = find_batch_size(inputs) 3411 if
+observed_batch_size is not None:
+File C:\Python311\Lib\site-packages\accelerate\data_loader.py:454, in
+DataLoaderShard.iter(self) 452 # We iterate one batch ahead to check
+when we are at the end 453 try: → 454 current_batch =
+next(dataloader_iter) 455 except StopIteration: 456 yield
+File
+C:\Python311\Lib\site-packages\torch\utils\data\dataloader.py:631, in
+_BaseDataLoaderIter.next(self) 628 if self._sampler_iter is None: 629 # TODO(Bug in dataloader iterator found by mypy · Issue #76750 · pytorch/pytorch · GitHub) 630 self._reset() # type: ignore[call-arg] →
+631 data = self._next_data() 632 self._num_yielded += 1 633 if
+self._dataset_kind == _DatasetKind.Iterable and 634
+self._IterableDataset_len_called is not None and 635 self._num_yielded
+
+self._IterableDataset_len_called:
+
+File
+C:\Python311\Lib\site-packages\torch\utils\data\dataloader.py:675, in
+_SingleProcessDataLoaderIter._next_data(self) 673 def _next_data(self): 674 index = self._next_index() # may raise StopIteration → 675 data = self._dataset_fetcher.fetch(index) # may
+raise StopIteration 676 if self._pin_memory: 677 data =
+_utils.pin_memory.pin_memory(data, self._pin_memory_device)
+File
+C:\Python311\Lib\site-packages\torch\utils\data_utils\fetch.py:51, in
+_MapDatasetFetcher.fetch(self, possibly_batched_index) 49 data = self.dataset.getitems(possibly_batched_index) 50 else: —> 51 data =
+[self.dataset[idx] for idx in possibly_batched_index] 52 else: 53 data
+= self.dataset[possibly_batched_index]
+File
+C:\Python311\Lib\site-packages\torch\utils\data_utils\fetch.py:51, in
+(.0) 49 data = self.dataset.getitems(possibly_batched_index) 50 else:
+—> 51 data = [self.dataset[idx] for idx in possibly_batched_index] 52
+else: 53 data = self.dataset[possibly_batched_index]
+File
+C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py:255,
+in BatchEncoding.getitem(self, item) 253 return self.data[item] 254
+elif self._encodings is not None: → 255 return self._encodings[item]
+256 elif isinstance(item, slice): 257 return {key:
+self.data[key][item] for key in self.data.keys()}
+IndexError: list index out of range
+
+","The error you are encountering is because the trainer.predict method expects a dataset as input, but you are passing a single example that has been tokenized into tensors.
+To perform predictions on a single input, you need to prepare it similarly to how the dataset was prepared before training, and then use the model directly for prediction.
+Here's how you can modify your code to make predictions on a single input:
+
+Prepare the input correctly
+Use the model directly for prediction
+
+Here's the revised code:
+
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
+from datasets import load_dataset
+import numpy as np
+import torch
+
+# Define a simple accuracy metric
+def compute_metrics(p):
+    predictions, labels = p
+    preds = np.argmax(predictions, axis=1)
+    return {""accuracy"": (preds == labels).mean()}
+
+# Load the dataset
+dataset = load_dataset(""imdb"", split='train[:1%]')
+small_train_dataset = dataset.train_test_split(test_size=0.1)['train']
+small_eval_dataset = dataset.train_test_split(test_size=0.1)['test']
+
+# Load the tokenizer and model
+model_name = ""bert-base-uncased""
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+
+# Tokenize the dataset
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding=""max_length"", truncation=True)
+
+small_train_dataset = small_train_dataset.map(tokenize_function, batched=True)
+small_eval_dataset = small_eval_dataset.map(tokenize_function, batched=True)
+small_train_dataset = small_train_dataset.rename_column(""label"", ""labels"")
+small_eval_dataset = small_eval_dataset.rename_column(""label"", ""labels"")
+small_train_dataset.set_format(""torch"", columns=[""input_ids"", ""attention_mask"", ""labels""])
+small_eval_dataset.set_format(""torch"", columns=[""input_ids"", ""attention_mask"", ""labels""])
+
+# Define training arguments
+training_args = TrainingArguments(
+    output_dir=""test_trainer"",
+    evaluation_strategy=""epoch"",
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
+    num_train_epochs=3,
+    weight_decay=0.01
+)
+
+# Initialize the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=small_train_dataset,
+    eval_dataset=small_eval_dataset,
+    compute_metrics=compute_metrics
+)
+
+# Train the model
+trainer.train()
+
+# Evaluate the model
+validation_results = trainer.evaluate()
+print(validation_results)
+
+# Make a prediction on a single input
+inputs = tokenizer(dataset[0]['text'], padding=""max_length"", truncation=True, return_tensors=""pt"")
+model.eval()  # Set the model to evaluation mode
+with torch.no_grad():  # Disable gradient calculation
+    outputs = model(**inputs)
+    predictions = torch.argmax(outputs.logits, dim=-1)
+
+print(f""Predicted label: {predictions.item()}"")
+
+",huggingface-transformers
+openai api error quotno module named 39openaiembeddings_utils39 39openai39 is not a packagequot,"I want to use openai.embeddings_utils import get_embeddings
+So already install openai
+Name: openai
+Version: 0.26.5
+Summary: Python client library for the OpenAI API
+Home-page: https://github.com/openai/openai-python
+Author: OpenAI
+Author-email: support@openai.com
+License: 
+Location: /Users/lima/Desktop/Paprika/Openai/.venv/lib/python3.9/site-packages
+Requires: aiohttp, requests, tqdm
+Required-by: 
+
+This is my openai
+But why not use openai.embeddings_utils??
+","For my case, check the version of openai.
+openai.embeddings_utils does not exist in latest openai 1.2.0, but exists in 0.27.7
+",chatgpt
+running through this error  attributeerror can39t set attribute when finetuning llama2,"I am trying to fine-tune llama2 on my M2 macos, when I run this snippet of code
+tokenizer = AutoTokenizer.from_pretrained(base_model, use_fast=True)
+tokenizer.pad_token = tokenizer.unk_token
+tokenizer.padding_side = ""right""
+
+I get this error:
+Traceback (most recent call last):
+  File ""/Users/salmakhaled/Pobot/venv/lib/python3.9/site-packages/IPython/core/interactiveshell.py"", line 3550, in run_code
+    exec(code_obj, self.user_global_ns, self.user_ns)
+  File ""/var/folders/67/wk5jj9q91n3g7llmbclsf6wm0000gp/T/ipykernel_24144/1335867970.py"", line 2, in <module>
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+  File ""/Users/salmakhaled/Pobot/venv/lib/python3.9/site-packages/transformers/models/auto/tokenization_auto.py"", line 787, in from_pretrained
+  File ""/Users/salmakhaled/Pobot/venv/lib/python3.9/site-packages/transformers/tokenization_utils_base.py"", line 2028, in from_pretrained
+    if isinstance(value, dict):
+  File ""/Users/salmakhaled/Pobot/venv/lib/python3.9/site-packages/transformers/tokenization_utils_base.py"", line 2260, in _from_pretrained
+    save_directory, (filename_prefix + ""-"" if filename_prefix else """") + ADDED_TOKENS_FILE
+  File ""/Users/salmakhaled/Pobot/venv/lib/python3.9/site-packages/transformers/models/llama/tokenization_llama_fast.py"", line 129, in __init__
+    self.can_save_slow_tokenizer = False if not self.vocab_file else True
+AttributeError: can't set attribute
+
+My model name is llama2-7b-chat-hf
+Python 3.9.6
+transformers 4.36.1
+accelerate 0.25.0
+torch 2.3.0.dev20240118
+I tried to upgrade the libraries versions but I still encounter this error. So I don't know is this issue with a dependencies conflict or another thing.
+","The error AttributeError: can't set attribute is raised when you attempt to change a property (see more here)
+From the error message this line is the cause of the problem :
+self.can_save_slow_tokenizer = False if not self.vocab_file else True
+
+The can_save_slow_tokenizer is updated to be a property in this commit, The line does not exist in transformers >= 4.33.0, it was replaced with :
+    @property
+    def can_save_slow_tokenizer(self) -> bool:
+        return os.path.isfile(self.vocab_file) if self.vocab_file else False
+
+as you mentioned you may have dependencies conflict, consider creating a new virtual environment and install transformers.
+",llama
+how do i change the commandline prompt in windows,"How do I change the command-line prompt into a console?
+I've been looking in the console functions API, but I could not find anything for it.
+","There's the PROMPT environment variable:
+set PROMPT=$P$G
+
+$P$G is the default value, giving you the usual C:\> type output. There are more format variables available here.
+",prompt
+llama321binstruct generate inconsistent output,"I want to use Llama-3.2-1B-Instruct model, and although I have set ""temperature"": 0.0, ""top_p"":0.0 and ""top_k"":0, it still generates inconsistent output. This is how my pipeline looks like:
+pipe = pipeline(
+    ""text-generation"",
+    model=model_id,
+    torch_dtype=torch.bfloat16,
+    device_map=""mps"",
+        model_kwargs={""temperature"": 0.0,
+                  ""do_sample"":True,
+                              ""top_p"":0.0,
+                              ""top_k"":0,},
+)
+
+Any idea how to solve this issue?
+","The model inconsistent output can be due to two main factors:
+1. Temperature:
+setting temperature to zero give more inconsistent result. You can refer Opeani discussion page for detail.
+So the best option is to set temperature to very low values such as 0.00001 instead of zero.
+2. do_sample
+You already set it false, and it should remain that way only.
+",huggingface-transformers
+importerror no module named langchainllms,"I used the following import statetement:
+from langchain.llms import OpenAI 
+
+And I am getting the following error:
+
+pycode python main.py Traceback (most recent call last):   File
+""main.py"", line 1, in 
+from langchain.llms import openai ImportError: No module named langchain.llms
+
+I am using Python 3.11.6 and I installed the packages using
+pip3 install openai langchain
+
+","
+it works with
+Version: 0.0.274
+
+the latest langchain version is 0.0.320 and try to import like this:
+from langchain.llms.openai import OpenAI
+
+Maybe your python version installed an early verison of langchain due to dependency requirements
+",chatgpt
+huggingface valueerror expected sequence of length 165 at dim 1 got 128,"I am trying to fine-tune the BERT language model on my own data. I've gone through their docs, but their tasks seem to be not quite what I need, since my end goal is embedding text. Here's my code:
+from datasets import load_dataset
+from transformers import BertTokenizerFast, AutoModel, TrainingArguments, Trainer
+import glob
+import os
+
+
+base_path = '../data/'
+model_name = 'bert-base-uncased'
+max_length = 512
+checkpoints_dir = 'checkpoints'
+
+tokenizer = BertTokenizerFast.from_pretrained(model_name, do_lower_case=True)
+
+
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding=True, truncation=True, max_length=max_length)
+
+
+dataset = load_dataset('text',
+        data_files={
+            'train': f'{base_path}train.txt',
+            'test': f'{base_path}test.txt',
+            'validation': f'{base_path}valid.txt'
+        }
+)
+
+print('Tokenizing data. This may take a while...')
+tokenized_dataset = dataset.map(tokenize_function, batched=True)
+train_dataset = tokenized_dataset['train']
+eval_dataset = tokenized_dataset['test']
+
+model = AutoModel.from_pretrained(model_name)
+
+training_args = TrainingArguments(checkpoints_dir)
+
+print('Training the model...')
+trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset)
+trainer.train()
+
+I get the following error:
+  File ""train_lm_hf.py"", line 44, in <module>
+    trainer.train()
+...
+  File ""/opt/conda/lib/python3.7/site-packages/transformers/data/data_collator.py"", line 130, in torch_default_data_collator
+    batch[k] = torch.tensor([f[k] for f in features])
+ValueError: expected sequence of length 165 at dim 1 (got 128)
+
+What am I doing wrong?
+","I fixed this solution by changing the tokenize function to:
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=max_length)
+
+(note the padding argument). Also, I used a data collator like so:
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer, mlm=True, mlm_probability=0.15
+)
+trainer = Trainer(
+        model=model,
+        args=training_args,
+        data_collator=data_collator,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset
+)
+
+",huggingface-transformers
+gradle will not build in command prompt gradle v,"Gradle shows up in echo %PATH% no problem.. 
+It has has it's own directory in Program Files, however when I attempt:
+gradle -v .. 
+
+It responds: 'gradle' is not recognised as an internal or external command, operable program or batch file..
+I am trying to get this to work in conjunction with an Eclipse Simpleservlet project..
+","I just solved the problem. My PATH variable value was like: 
+
+path1;path2,path3,gradlebinpath
+
+I replaced , with ; and added a ; at the end of the value and it just worked. The final value looked like:
+
+path1;path2;path3;gradlebinpath;
+
+",prompt
+azure openai whipser rest endpoints,"I wanted to use Whisper deployed through Azure OpenAI but I am having trouble finding the right resources for it.
+I am trying to integrate a translator using Whisper in a flutter app that will take multilingual input and give out the output in english.
+Right now the transcription is working using this endpoint:
+https://<dep>.openai.azure.com/openai/deployments/<name>/audio/transcriptions?api-version=2024-02-01 
+and structuring the request like:
+var uri = Uri.parse(whisperEndpoint);
+          var request = http.MultipartRequest('POST', uri)
+            ..headers['api-key'] = whisperApiKey
+            ..files.add(await http.MultipartFile.fromPath('file', filePath));
+
+What is the endpoint for translation, tts and other services?
+I have tried sending the text transcribed by whisper back to be translated but I'd prefer direct translation by whisper
+","You can use below endpoint for trnaslation.
+https://reproaistudio.openai.azure.com/openai/deployments/<deplymentname>/audio/translations?api-version=2024-06-01
+
+And it will convert it into English text.
+Here, is the sample output with Bengali as the input file language.
+
+If you want to convert this text to speech then use  tts-1 or tts-1-hd models in azure openai.
+Make sure you have your open ai resource in supported region of above models
+",chatgpt
+importerror urllib3 v20 only supports openssl 111 currently the 39ssl39 module is compiled with libressl 283,"After pip install openai, when I try to import openai, it shows this error:
+
+the 'ssl' module of urllib3 is compile with LibreSSL not OpenSSL
+
+I just followed a tutorial on a project about using API of OpenAI. But when I get to the first step which is the install and import OpenAI, I got stuck. And I tried to find the solution for this error but I found nothing.
+Here is the message after I try to import OpenAI:
+Python 3.9.6 (default, Mar 10 2023, 20:16:38)
+[Clang 14.0.3 (clang-1403.0.22.14.1)] on darwin
+Type ""help"", ""copyright"", ""credits"" or ""license"" for more information.
+
+>>> import openai
+
+Traceback (most recent call last):
+  File ""<stdin>"", line 1, in <module>
+  File ""/Users/yule/Library/Python/3.9/lib/python/site-packages/openai/__init__.py"", line 19, in <module>
+    from openai.api_resources import (
+  File ""/Users/mic/Library/Python/3.9/lib/python/site-packages/openai/api_resources/__init__.py"", line 1, in <module>
+    from openai.api_resources.audio import Audio  # noqa: F401
+  File ""/Users/mic/Library/Python/3.9/lib/python/site-packages/openai/api_resources/audio.py"", line 4, in <module>
+    from openai import api_requestor, util
+  File ""/Users/mic/Library/Python/3.9/lib/python/site-packages/openai/api_requestor.py"", line 22, in <module>
+    import requests
+  File ""/Users/mic/Library/Python/3.9/lib/python/site-packages/requests/__init__.py"", line 43, in <module>
+    import urllib3
+  File ""/Users/mic/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py"", line 38, in <module>
+    raise ImportError(
+ImportError: urllib3 v2.0 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with LibreSSL 2.8.3. See: https://github.com/urllib3/urllib3/issues/2168
+
+I tried to --upgrade the urllib3, but it is still not working. The result is:
+pip3 install --upgrade urllib3
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: urllib3 in ./Library/Python/3.9/lib/python/site-packages (2.0.2)
+
+","The reason why the error message mentioned OpenSSL 1.1.1+ and LibreSSL 2.8.3 is that urllib3 v2.0 (the version you've installed) requires OpenSSL 1.1.1+ to work properly, as it relies on some new features of OpenSSL 1.1.1.
+The issue is that the version of the 'ssl' module that is currently installed in your environment is compiled with LibreSSL 2.8.3, which is not compatible with urllib3 v2.0.
+To use urllib3 v2.0, you need an 'ssl' module compiled with OpenSSL 1.1.1 or later, by trying:
+brew install openssl@1.1
+
+Or you could use an older version of urllib3 that is compatible suc. For example urllib3 v1.26.6, which does not have a strict OpenSSL version requirement.
+You can force the version installing with this command:
+pip install urllib3==1.26.6
+
+",chatgpt
+run command prompt commands,"Is there any way to run command prompt commands from within a C# application?  If so how would I do the following:
+copy /b Image1.jpg + Archive.rar Image2.jpg
+
+This basically embeds an RAR file within JPG image.  I was just wondering if there was a way to do this automatically in C#.
+","this is all you have to do run shell commands from C#
+string strCmdText;
+strCmdText= ""/C copy /b Image1.jpg + Archive.rar Image2.jpg"";
+System.Diagnostics.Process.Start(""CMD.exe"",strCmdText);
+
+EDIT:
+This is to hide the cmd window.
+System.Diagnostics.Process process = new System.Diagnostics.Process();
+System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+startInfo.FileName = ""cmd.exe"";
+startInfo.Arguments = ""/C copy /b Image1.jpg + Archive.rar Image2.jpg"";
+process.StartInfo = startInfo;
+process.Start();
+
+EDIT 2:
+It is important that the argument begins with /C, otherwise it won't work. As @scott-ferguson said: /C carries out the command specified by the string and then terminates.
+",prompt
+making an exe of a llama index application,"I got a strange error when tying to build an exe using pyinstaller. Im using a conda virtual environment, and smaller apps compile ok. However it is giving me an error:
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\Users\me\AppData\Local\Temp\_MEI140402\llama_index\VERSION'
+The strange thing about it is that the program runs all okay on my system, and I'm having many issues making this exe. When I run locally there is no file like this in the temp folder.
+Are there any other options to distribute my code?
+# -*- mode: python ; coding: utf-8 -*-
+
+
+a = Analysis(
+    ['run.py'],
+    pathex=[ all extra paths ],
+    binaries=[],
+    datas=[('added_hook.py', '.'),
+    ],
+    hiddenimports=['docmaker'],
+    hookspath=['all hooks' ],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='run',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='run',
+)
+
+I added all paths to my pathex so pyinstaller would pick it up, even the temp folder.
+Also i added a py file called added_hook.py that adds more resources with the code. I attempted this to make sure pyinstaller would collect more files to compile the .exe
+from PyInstaller.utils.hooks import collect_data_files
+Instruct PyInstaller to collect data files from the 'resources' package.
+datas = collect_data_files('resources')
+","Having the same problem. The file that is missing is in the llama_index/ package install directory itself. Not sure how to get this file included via pyinstaller
+Nasty hack that works for me: (but then blows up thinking transformers isn't installed...)
+datas += [('.venv/lib/python3.11/site-packages/llama_index/VERSION', 'llama_index/')]
+",llama
+copy only latest files in command prompt,"I have two directories with the same files. On the source directory, I always make updates. Now I just want to copy the updated files from the source directory to the destination directory. So it would be like updating files instead of copying all files.
+I had also tried on the ""Batch script to copy newest file"". Though it worked well but it only copies the newest files.
+Is there something that could compare the dates of the files from the directories?
+","Check out RoboCopy, it has switches for filtering files based on dates
+",prompt
