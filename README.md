@@ -26,10 +26,12 @@ RefactorCoderQA introduces a structured multi-agent prompting approach:
 - **SolverLLM:** Generates accurate, executable code.
 - **JudgeLLM:** Performs automated solution evaluations, ensuring correctness, clarity, and efficiency.
 
-### Framework Overview (Figure 3)
+### Agentic Workflow Framework Overview
 ![Framework Overview](Image/Agentic_flow.png)
 
-*Figure 3: RefactorCoderQA Multi-Agent Workflow illustrating interactions between GuideLLM, SolverLLM, and JudgeLLM.*
+*Figure 3: Overview of the RefactorCoderQA Agentic Workflow: A multi-agent framework that processes coding-related problem
+statements through three coordinated stages, GuideLLM for structured methodology generation, SolverLLM for executable
+code synthesis, and JudgeLLM for automated performance evaluation across accuracy, clarity, and efficiency dimensions.*
 
 ## Benchmark Results
 
