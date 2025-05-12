@@ -1,4 +1,4 @@
-# RefactorCoderQA: Benchmarking Large Language Models for Multi-Domain Coding Tasks
+# RefactorCoderQA: Benchmarking Large Language Models for Multi-Domain Coding Question Solutions
 
 RefactorCoderQA is a comprehensive benchmark designed to evaluate and enhance the performance of Large Language Models (LLMs) across multiple technical domains, including Software Engineering, Data Science, Machine Learning, and Natural Language Processing. The benchmark utilizes real-world coding challenges from Stack Overflow, structured to optimize model reasoning and problem-solving effectiveness.
 
