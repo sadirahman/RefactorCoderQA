@@ -37,7 +37,7 @@ code synthesis, and JudgeLLM for automated performance evaluation across accurac
 
 The fine-tuned model, **RefactorCoder-MoE**, achieves state-of-the-art accuracy (76.84%) and consistently outperforms existing open-source and closed-source baselines across all technical domains.
 
-### Performance Comparison (Table 1)
+### Performance Comparison
 
 | **Model**                      | **SEQA** | **NLPQA** | **MLQA** | **DSQA** | **Overall** |
 |--------------------------------|----------|-----------|----------|----------|-------------|
